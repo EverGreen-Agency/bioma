@@ -6,7 +6,7 @@
  *  Atualizada automaticamente pelo release-please a cada release em main
  *  (a anotação x-release-please-version na linha abaixo é o marcador).
  */
-export const APP_VERSION = "0.5.0"; // x-release-please-version
+export const APP_VERSION = "0.6.0"; // x-release-please-version
 
 /** Estado do build, injetado pelo Vite (ver vite.config.mjs).
  *

@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.6.0](https://github.com/EverGreen-Agency/evergreen-ai-os/compare/bioma-web-v0.5.0...bioma-web-v0.6.0) (2026-08-08)
+
+
+### Features
+
+* **integracoes:** exibe guia de integracao em modal portal centralizado com backdrop ([9a0a01f](https://github.com/EverGreen-Agency/evergreen-ai-os/commit/9a0a01f053140f2fdac7360bfb82e305569c4883))
+* **metricas:** "IA Insight" passa a ter IA; guia vira janela cheia ([5d5eb9b](https://github.com/EverGreen-Agency/evergreen-ai-os/commit/5d5eb9bc67b6ed3e4ed000bc7d750141986105a9))
+* **prova:** uptime medido por fora, coletado e exibido em /operacao/prova ([5e691d6](https://github.com/EverGreen-Agency/evergreen-ai-os/commit/5e691d61ab8b142fe604f3fb5a1944e7a070857d))
+
+
+### Bug Fixes
+
+* **acesso:** ocultar um modulo agora vale no Cockpit tambem ([828c3ef](https://github.com/EverGreen-Agency/evergreen-ai-os/commit/828c3efe4f2fd022c6a74447b737af212e5f4a5d))
+* **integracoes:** guia ocupa a tela e distingue conta sob MCC/BM de conta avulsa ([83b4689](https://github.com/EverGreen-Agency/evergreen-ai-os/commit/83b46891233cb40c9188e948f0db56361ad3518e))
+
 ## [0.5.0](https://github.com/EverGreen-Agency/evergreen-ai-os/compare/bioma-web-v0.4.0...bioma-web-v0.5.0) (2026-08-07)
 
 
