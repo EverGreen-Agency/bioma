@@ -224,6 +224,11 @@ export function CockpitView() {
               mostrava só atraso e risco; nada que funcionou aparecia em lugar
               nenhum. Detectado uma vez por sessão (acima), não a cada troca de
               tela. */}
+          {/* O CARD inteiro respeita a preferência, não só o botão dentro
+              dele. Guardar apenas o atalho deixava o card "Vitórias" na tela
+              com a lista de vitórias — ou seja, ocultar não ocultava nada, só
+              tirava o link. Superfície escondida some por completo da tela. */}
+          {showsSurface("/eg-vitorias") && (
           <article className="bento-card row-span-2 cockpit-wins">
             <div className="bento-header">
               <h3>Vitórias</h3>
@@ -245,12 +250,11 @@ export function CockpitView() {
               </ul>
             )}
 
-            {showsSurface("/eg-vitorias") && (
             <button type="button" className="bento-action ghost" onClick={() => navigate("/eg-vitorias")} style={{ marginTop: "auto" }}>
               Ver mural <ArrowRight size={13} />
             </button>
-            )}
           </article>
+          )}
 
           <article className="bento-card">
             <div className="bento-header">
