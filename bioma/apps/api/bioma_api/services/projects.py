@@ -70,10 +70,10 @@ def get_project(project_id: UUID, user: CurrentUserResponse) -> ProjectDetail:
 def create_project(workspace_id: UUID, payload: ProjectCreate, user: CurrentUserResponse) -> ProjectDetail:
     with connect() as conn:
         context = _workspace(conn, workspace_id, user, "manage_work")
-        _validate_user(conn, workspace_id, payload.owner_user_id)
+        _validate_user(conn, context["workspace_id"], payload.owner_user_id)
         row = project_repo.create_project(conn, context, user.id, payload.model_dump())
         project_repo.write_audit(conn, user.id, context["subject_organization_id"], "project.created", {
-            "workspace_id": str(workspace_id), "project_id": str(row["id"]), "project_type": row["project_type"],
+            "workspace_id": str(context["workspace_id"]), "project_id": str(row["id"]), "project_type": row["project_type"],
         })
     return get_project(row["id"], user)
 
