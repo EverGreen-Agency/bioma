@@ -423,8 +423,8 @@ export function CopilotPanel() {
               <div className="copilot-message agent">
                 {trace.generation_mode === "preview" && (
                   <div className="copilot-preview-flag">
-                    Prévia local — nenhum modelo foi consultado. Configure uma conta em
-                    Operação&nbsp;EG&nbsp;→&nbsp;IA para usar a cota da sua assinatura.
+                    Prévia local — nenhum modelo foi consultado (sem chave de IA no servidor). Configure em
+                    Configurações&nbsp;→&nbsp;Empresa ou Operação&nbsp;EG&nbsp;→&nbsp;IA.
                   </div>
                 )}
                 <div className="copilot-answer" dangerouslySetInnerHTML={renderAnswer(trace.answer ?? "")} />
