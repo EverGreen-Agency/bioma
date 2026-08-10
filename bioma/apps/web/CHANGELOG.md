@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.6.1](https://github.com/EverGreen-Agency/evergreen-ai-os/compare/bioma-web-v0.6.0...bioma-web-v0.6.1) (2026-08-08)
+
+
+### Bug Fixes
+
+* **cockpit:** ocultar Vitorias esconde o CARD, nao so o botao dentro … ([90ec56b](https://github.com/EverGreen-Agency/evergreen-ai-os/commit/90ec56b31c1dbda8fbc503867e84b22e7e7aad22))
+
 ## [0.6.0](https://github.com/EverGreen-Agency/evergreen-ai-os/compare/bioma-web-v0.5.0...bioma-web-v0.6.0) (2026-08-08)
 
 
