@@ -24,6 +24,7 @@ from bioma_api.schemas.ai_routing import (
     RoutePreviewRequest,
     RoutingPolicySummary,
     RoutingPolicyUpsert,
+    WebSessionConnectPayload,
 )
 from bioma_api.schemas.auth import CurrentUserResponse
 from bioma_api.services.ai_operations import _eg_organization_id
@@ -357,6 +358,32 @@ def bootstrap_models(account_id: UUID, user: CurrentUserResponse) -> AiRoutingCo
             {"account_id": str(account_id), "channel": account.channel, "models": len(presets)},
         )
     return _control_plane(organization_id)
+
+
+def connect_web_session(
+    account_id: UUID,
+    payload: WebSessionConnectPayload,
+    user: CurrentUserResponse,
+) -> AiRoutingControlPlane:
+    organization_id = _eg_organization_id(user)
+    with connect() as conn:
+        if not repo.connect_web_session(conn, organization_id, account_id, user.id, payload.model_dump(exclude_unset=True)):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conta de IA não encontrada.")
+            
+        client_hub_repo.write_audit(
+            conn,
+            user.id,
+            organization_id,
+            "ai.provider_account.connected",
+            {"account_id": str(account_id), "method": "web_session"},
+        )
+    
+    # Após conectar a sessão com sucesso, vamos tentar preencher os modelos iniciais do canal
+    try:
+        return bootstrap_models(account_id, user)
+    except HTTPException:
+        # Se o canal não possuir modelos pré-configurados, retornamos normalmente
+        return _control_plane(organization_id)
 
 
 def record_quota(

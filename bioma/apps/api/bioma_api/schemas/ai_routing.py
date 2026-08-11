@@ -71,6 +71,13 @@ class ProviderAccountUpdate(BaseModel):
         return self
 
 
+class WebSessionConnectPayload(BaseModel):
+    session_token: str = Field(min_length=1, max_length=2000)
+    refresh_token: str | None = Field(default=None, max_length=2000)
+    oauth_token: str | None = Field(default=None, max_length=2000)
+    client_id: str | None = Field(default=None, max_length=200)
+
+
 class ModelCatalogUpsert(BaseModel):
     model_id: str = Field(min_length=1, max_length=180)
     display_name: str = Field(min_length=1, max_length=180)

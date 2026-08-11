@@ -11,6 +11,10 @@ COPY apps/api/requirements.txt ./requirements.txt
 COPY apps/worker/requirements.txt ./worker-requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt -r worker-requirements.txt
 
+# Instalar NodeJS para suportar as CLIs de IA
+RUN apt-get update && apt-get install -y nodejs npm && rm -rf /var/lib/apt/lists/*
+RUN npm install -g @openai/codex @anthropic-ai/claude-code
+
 RUN groupadd --system bioma && useradd --system --gid bioma --create-home bioma
 
 COPY --chown=bioma:bioma apps/api/ ./

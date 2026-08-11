@@ -3113,6 +3113,19 @@ export const api = {
     request<AiRoutingControlPlane>(`/backoffice/ai-operations/accounts/${accountId}/models/bootstrap`, {
       method: "POST",
     }),
+  connectAiProviderWebSession: (
+    accountId: string,
+    payload: {
+      session_token: string;
+      refresh_token?: string | null;
+      oauth_token?: string | null;
+      client_id?: string | null;
+    },
+  ) =>
+    request<AiRoutingControlPlane>(`/backoffice/ai-operations/accounts/${accountId}/connect-web-session`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   recordAiQuotaBucket: (accountId: string, payload: {
     bucket_key: string;
     scope?: string;

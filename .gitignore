@@ -65,3 +65,6 @@ bioma/apps/api/*.sqlite
 
 # Exports de sessão dos copilots
 cc-exports/
+
+.vercel
+.env*

@@ -276,6 +276,28 @@ def update_account(
     return bool(row)
 
 
+def connect_web_session(
+    conn,
+    organization_id: UUID,
+    account_id: UUID,
+    user_id: UUID,
+    session_data: dict[str, Any],
+) -> bool:
+    res = conn.execute(
+        """
+        update ai_provider_accounts
+        set status = 'active',
+            settings = coalesce(settings, '{}'::jsonb) || jsonb_build_object('web_session', %s::jsonb),
+            updated_at = now(),
+            updated_by = %s
+        where id = %s and organization_id = %s
+        returning id
+        """,
+        (Jsonb(session_data), user_id, account_id, organization_id),
+    ).fetchone()
+    return bool(res)
+
+
 def upsert_model(
     conn,
     organization_id: UUID,
