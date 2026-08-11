@@ -113,6 +113,25 @@ export function TasksView({ workspaceId }: TasksViewProps) {
           })()}
         </div>
 
+        {/* Decisão 13: a visão combinada se DECLARA como tradução.
+            Growth e Tech têm vocabulários de status diferentes — `Backlog` é
+            ACTIVE em Growth e NOT_STARTED em Tech. Agrupar por `group_status`
+            funciona, mas coloca dois cards escritos igual em colunas
+            diferentes, e sem este aviso não há como saber por quê. */}
+        {!discipline && (
+          <span
+            style={{
+              fontSize: 11.5,
+              color: "var(--text-faint)",
+              flexBasis: "100%",
+              lineHeight: 1.45,
+            }}
+          >
+            Visão combinada: cada disciplina tem os próprios status, então as
+            colunas aqui vêm do agrupamento (a fazer / em progresso / concluído),
+            não do nome do status. Para trabalhar, escolha a disciplina.
+          </span>
+        )}
 
 
         {projects.length > 0 && (

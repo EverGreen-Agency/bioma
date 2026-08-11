@@ -479,9 +479,6 @@ export function IntegrationsTab({
 
           {selectedClient && (
             <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-              {/* WhatsApp Multi-provider Section */}
-              <WhatsAppManager workspaceId={selectedClient.id} />
-
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 16 }}>
                 {/* Kommo CRM */}
                 <article className="surface" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 12 }}>

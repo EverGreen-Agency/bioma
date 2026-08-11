@@ -139,6 +139,13 @@ SURFACE_CATALOG: dict[str, dict] = {
         "parent": "operacao",
         "feature_key": "local_radar",
     },
+    "whatsapp": {
+        "label": "WhatsApp & Mensagens",
+        "group": "Configurações",
+        "scope": "both",
+        "module": "integrations",
+        "feature_key": "whatsapp_multiprovider",
+    },
     # ------------------------------------------------ hub do cliente (ambos)
     "cliente.hub": {
         "label": "Visão geral do cliente",

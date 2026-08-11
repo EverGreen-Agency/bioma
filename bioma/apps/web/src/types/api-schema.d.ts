@@ -603,6 +603,23 @@ export interface paths {
         patch: operations["update_account_backoffice_ai_operations_accounts__account_id__patch"];
         trace?: never;
     };
+    "/backoffice/ai-operations/accounts/{account_id}/connect-web-session": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Connect Web Session */
+        post: operations["connect_web_session_backoffice_ai_operations_accounts__account_id__connect_web_session_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/backoffice/ai-operations/accounts/{account_id}/models": {
         parameters: {
             query?: never;
@@ -2954,6 +2971,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/clients/{client_id}/performance/sync-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Sync Runs
+         * @description Ultimas sincronizacoes, com o motivo quando falharam.
+         */
+        get: operations["list_sync_runs_clients__client_id__performance_sync_runs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/clients/{client_id}/purge": {
         parameters: {
             query?: never;
@@ -5175,6 +5212,26 @@ export interface paths {
         put?: never;
         /** Request Sync */
         post: operations["request_sync_workspaces__client_id__performance_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{client_id}/performance/sync-runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Sync Runs
+         * @description Ultimas sincronizacoes, com o motivo quando falharam.
+         */
+        get: operations["list_sync_runs_workspaces__client_id__performance_sync_runs_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -10910,6 +10967,40 @@ export interface components {
              */
             provider: "google_ads" | "ga4" | "search_console" | "gtm" | "meta_ads" | "linkedin_ads" | "instagram_organic" | "google_business_profile" | "google_adsense" | "youtube_organic" | "tiktok_organic" | "tiktok_ads" | "linkedin_organic" | "rd_station_crm" | "hubspot" | "all";
         };
+        /**
+         * PerformanceSyncRunEntry
+         * @description Uma execucao de sync, com o ERRO quando houve.
+         *
+         *     Existe porque `POST /sync` pedia e nada devolvia o resultado: o sintoma de
+         *     uma conexao mal configurada era silencio total na tela.
+         */
+        PerformanceSyncRunEntry: {
+            /** Error Code */
+            error_code?: string | null;
+            /** Error Message */
+            error_message?: string | null;
+            /** Finished At */
+            finished_at?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Provider */
+            provider?: string | null;
+            /**
+             * Records Processed
+             * @default 0
+             */
+            records_processed: number;
+            /**
+             * Started At
+             * Format: date-time
+             */
+            started_at: string;
+            /** Status */
+            status: string;
+        };
         /** PerformanceSyncRunSummary */
         PerformanceSyncRunSummary: {
             /** Date From */
@@ -12873,7 +12964,7 @@ export interface components {
              * Provider
              * @enum {string}
              */
-            provider: "openai" | "anthropic" | "google";
+            provider: "openai" | "anthropic" | "google" | "openrouter" | "deepseek" | "groq";
             /** Settings */
             settings?: {
                 [key: string]: unknown;
@@ -12929,7 +13020,7 @@ export interface components {
              * Provider
              * @enum {string}
              */
-            provider: "openai" | "anthropic" | "google";
+            provider: "openai" | "anthropic" | "google" | "openrouter" | "deepseek" | "groq";
             /** Quota Buckets */
             quota_buckets: components["schemas"]["QuotaBucketSummary"][];
             /** Settings */
@@ -13324,7 +13415,7 @@ export interface components {
              * Provider
              * @enum {string}
              */
-            provider: "openai" | "anthropic" | "google";
+            provider: "openai" | "anthropic" | "google" | "openrouter" | "deepseek" | "groq";
             /** Quota Headroom */
             quota_headroom?: string | null;
             /** Reasons */
@@ -15562,6 +15653,17 @@ export interface components {
              */
             status: "active" | "expired" | "rotating" | "compromised" | "revoked";
         };
+        /** WebSessionConnectPayload */
+        WebSessionConnectPayload: {
+            /** Client Id */
+            client_id?: string | null;
+            /** Oauth Token */
+            oauth_token?: string | null;
+            /** Refresh Token */
+            refresh_token?: string | null;
+            /** Session Token */
+            session_token: string;
+        };
         /** WhatsAppMessageLogSummary */
         WhatsAppMessageLogSummary: {
             /** Error Message */
@@ -17440,6 +17542,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["ProviderAccountUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiRoutingControlPlane"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    connect_web_session_backoffice_ai_operations_accounts__account_id__connect_web_session_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WebSessionConnectPayload"];
             };
         };
         responses: {
@@ -22622,6 +22759,37 @@ export interface operations {
             };
         };
     };
+    list_sync_runs_clients__client_id__performance_sync_runs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerformanceSyncRunEntry"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     purge_client_clients__client_id__purge_post: {
         parameters: {
             query?: never;
@@ -27631,6 +27799,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PerformanceSyncRunSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_sync_runs_workspaces__client_id__performance_sync_runs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                client_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PerformanceSyncRunEntry"][];
                 };
             };
             /** @description Validation Error */

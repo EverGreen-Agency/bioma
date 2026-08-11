@@ -75,9 +75,33 @@ def _validate_dates(conn, values: dict, task_id: UUID | None = None) -> None:
         )
 
 
-def _validate_project(conn, workspace_id: UUID, values: dict) -> None:
+def _validate_project(conn, workspace_id: UUID, values: dict, context: dict | None = None) -> None:
+    """Projeto tem que ser do mesmo workspace — e, em CLIENTE, é obrigatório.
+
+    Decisão 13 (2026-08-08). Tarefa de cliente sem projeto perde o contexto que
+    liga comunicação, planejamento, documento e proposta — é esse elo que
+    alimenta o copiloto, o benchmark da EG e a geração de conteúdo. Cada tarefa
+    que nasce órfã é histórico que fica caro de reconstruir depois.
+
+    Na Operação EG continua OPCIONAL, de propósito: demanda interna legítima
+    existe sem projeto (treinamento, hackathon, social da casa). Exigir projeto
+    ali obrigaria a inventar um projeto "diversos", que polui exatamente o
+    contexto que esta regra existe para melhorar.
+    """
     project_id = values.get("project_id")
-    if project_id is not None and not tasks_repo.project_belongs_to_workspace(conn, workspace_id, project_id):
+
+    if project_id is None:
+        if context and context.get("workspace_kind") == "client":
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    "Tarefa de cliente precisa estar vinculada a um projeto. "
+                    "Crie o projeto em Projetos e contratos e vincule a tarefa a ele."
+                ),
+            )
+        return
+
+    if not tasks_repo.project_belongs_to_workspace(conn, workspace_id, project_id):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail="O projeto precisa pertencer ao mesmo workspace da tarefa.",
@@ -181,7 +205,7 @@ def create_workspace_task(workspace_id: UUID, data: TaskCreate, user: CurrentUse
         _authorize(context, user, "manage_work", "Workspace não encontrado.")
         _validate_people(conn, workspace_id, values)
         _validate_dates(conn, values)
-        _validate_project(conn, workspace_id, values)
+        _validate_project(conn, workspace_id, values, context)
         _validate_parent(conn, workspace_id, values)
         _validate_dependencies(conn, workspace_id, dependencies)
         row = tasks_repo.create_task_in_workspace(conn, workspace_id, values)

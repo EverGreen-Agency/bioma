@@ -84,6 +84,31 @@ def update_connection(conn, workspace_id: UUID, connection_id: UUID, updates: di
     return updated is not None
 
 
+def list_recent_sync_runs(conn, workspace_id, client_id, limit: int = 5):
+    """Ultimas execucoes de sync, com status e ERRO.
+
+    Existia `POST /sync` para pedir e nada para ver o resultado: `sync_runs`
+    guardava status, error_code e error_message e nada disso chegava na tela.
+    O sintoma era o pior possivel — pedir sync, nao acontecer nada, e nao
+    aparecer erro nenhum.
+
+    Aceita workspace OU cliente porque linhas legadas (anteriores a 0087) tem
+    `workspace_id` nulo, e ignora-las esconderia justamente o historico antigo.
+    """
+    return conn.execute(
+        """
+        select id, provider, status, error_code, error_message,
+               records_processed, started_at, finished_at, summary
+        from sync_runs
+        where source = 'performance'
+          and (workspace_id = %s or (workspace_id is null and client_id = %s))
+        order by started_at desc
+        limit %s
+        """,
+        (workspace_id, client_id, limit),
+    ).fetchall()
+
+
 def list_freshness(conn, client_id: UUID):
     return conn.execute(
         """
