@@ -41,7 +41,7 @@ export function SettingsView() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [activeTab, setActiveTab] = useState<"user" | "company">("user");
-  const [activeSubTab, setActiveSubTab] = useState<"general" | "teams" | "whatsapp" | "integrations" | "vault">("general");
+  const [activeSubTab, setActiveSubTab] = useState<"general" | "teams" | "integrations" | "vault">("general");
   const { data: workspaces = [] } = useWorkspaces(Boolean(user));
   const [vaultWorkspaceId, setVaultWorkspaceId] = useState("");
   const clientWorkspaces = workspaces.filter((workspace) => workspace.kind === "client" && workspace.status === "active");
@@ -502,13 +502,6 @@ export function SettingsView() {
             </button>
             <button
               type="button"
-              onClick={() => setActiveSubTab("whatsapp")}
-              style={{ background: "transparent", border: "none", cursor: "pointer", color: activeSubTab === "whatsapp" ? "var(--text-main)" : "var(--text-muted)", fontWeight: activeSubTab === "whatsapp" ? 600 : 400, padding: "8px 0", borderBottom: activeSubTab === "whatsapp" ? "2px solid var(--brand-accent)" : "2px solid transparent" }}
-            >
-              WhatsApp & Mensagens
-            </button>
-            <button
-              type="button"
               onClick={() => setActiveSubTab("integrations")}
               style={{ background: "transparent", border: "none", cursor: "pointer", color: activeSubTab === "integrations" ? "var(--text-main)" : "var(--text-muted)", fontWeight: activeSubTab === "integrations" ? 600 : 400, padding: "8px 0", borderBottom: activeSubTab === "integrations" ? "2px solid var(--brand-accent)" : "2px solid transparent" }}
             >
@@ -560,12 +553,6 @@ export function SettingsView() {
                       pessoa, no mesmo lugar onde a equipe é montada. */}
                   <SurfaceAccessManager />
                 </div>
-              </Suspense>
-            )}
-
-            {activeSubTab === "whatsapp" && (
-              <Suspense fallback={<div className="notice">Carregando gerenciador de WhatsApp...</div>}>
-                <WhatsAppManager workspaceId={agencyWorkspace?.id ?? workspaces[0]?.id ?? "default"} />
               </Suspense>
             )}
 
