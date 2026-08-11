@@ -170,6 +170,22 @@ class PerformanceInsightSummary(BaseModel):
     created_at: datetime
 
 
+class PerformanceSyncRunEntry(BaseModel):
+    """Uma execucao de sync, com o ERRO quando houve.
+
+    Existe porque `POST /sync` pedia e nada devolvia o resultado: o sintoma de
+    uma conexao mal configurada era silencio total na tela."""
+
+    id: UUID
+    provider: str | None = None
+    status: str
+    error_code: str | None = None
+    error_message: str | None = None
+    records_processed: int = 0
+    started_at: datetime
+    finished_at: datetime | None = None
+
+
 class PerformanceOverviewResponse(BaseModel):
     workspace_id: UUID
     # Nulo no workspace da agência, que não tem registro comercial. Quem

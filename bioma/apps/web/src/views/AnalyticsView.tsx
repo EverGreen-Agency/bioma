@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   AlertTriangle,
   Bot,
@@ -30,6 +31,7 @@ import {
   type GtmSnapshotSummary,
   type PerformanceOverview,
   type PerformanceProvider,
+  type PerformanceSyncRunEntry,
 } from "../lib/api";
 import {
   useClients,
@@ -96,6 +98,54 @@ function FreshnessBanner({ freshness }: { freshness: FreshnessEntry | null }) {
         Ainda sem sincronização real desta fonte para este cliente. Os números exibidos vêm da simulação
         do Bioma até a conexão no painel de Integrações.
       </span>
+    </div>
+  );
+}
+
+/** Por que a tela está sem número: última sincronização, status e ERRO.
+ *
+ * Existia `POST /sync` para pedir e nada para ver o resultado — conexão mal
+ * configurada dava silêncio total. Agora o motivo real aparece aqui. */
+function SyncDiagnostics({ clientId }: { clientId: string }) {
+  const { data: runs = [], isLoading } = useQuery({
+    queryKey: ["performance-sync-runs", clientId],
+    queryFn: () => api.performanceSyncRuns(clientId),
+    enabled: Boolean(clientId),
+  });
+
+  const last = runs[0];
+  const failed = runs.find((run: PerformanceSyncRunEntry) => run.status === "error");
+
+  return (
+    <div className="demo-banner" role="status" style={{ flexDirection: "column", alignItems: "flex-start", gap: 8 }}>
+      <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <AlertTriangle size={18} />
+        <strong>Nenhuma fonte sincronizou ainda — os números abaixo são zero, não estimativa.</strong>
+      </span>
+
+      {isLoading && <span style={{ fontSize: 12.5 }}>Consultando o histórico de sincronização...</span>}
+
+      {!isLoading && runs.length === 0 && (
+        <span style={{ fontSize: 12.5 }}>
+          Nenhuma execução registrada. Cadastre a conta em Configurações → Empresa → Integrações e clique em
+          Sincronizar — ou espere o worker rodar (de hora em hora).
+        </span>
+      )}
+
+      {failed && (
+        <span style={{ fontSize: 12.5, color: "var(--danger)" }}>
+          Última falha{failed.provider ? ` (${failed.provider})` : ""}:{" "}
+          {failed.error_message || failed.error_code || "sem motivo registrado"}
+        </span>
+      )}
+
+      {last && !failed && (
+        <span style={{ fontSize: 12.5 }}>
+          Última execução: {last.status} · {last.records_processed} registro(s) ·{" "}
+          {new Date(last.started_at).toLocaleString("pt-BR")}
+          {last.status === "queued" && " — ainda na fila, o worker roda de hora em hora."}
+        </span>
+      )}
     </div>
   );
 }
@@ -709,15 +759,11 @@ export function AnalyticsView({ clientId, workspaceName }: { clientId: string; w
 
       {tab === "overview" && (
         <>
-          {demoMode && (
-            <div className="demo-banner" role="status">
-              <AlertTriangle size={18} />
-              <span>
-                Performance está conectada ao backend do Bioma, mas ainda sem credenciais reais validadas. Os números
-                podem vir do seed de demonstração até o primeiro sync Google/Meta/LinkedIn controlado.
-              </span>
-            </div>
-          )}
+          {/* Diagnóstico em vez de aviso vago. O texto antigo dizia que os
+              números "podem vir do seed de demonstração" — mas quando nada
+              sincronizou eles são ZERO, e a mensagem escondia a informação
+              útil: nunca rodou, e por quê. */}
+          {demoMode && <SyncDiagnostics clientId={effectiveClientId} />}
 
           <div className="metrics analytics-metrics">
             <article className="metric-card analytics-card">

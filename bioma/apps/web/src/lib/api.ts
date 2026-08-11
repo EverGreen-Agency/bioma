@@ -1229,6 +1229,17 @@ export type SurfaceCatalogEntry = {
 };
 
 /** Decisão 8: artefatos do Estúdio — o que a conversa produziu. */
+export type PerformanceSyncRunEntry = {
+  id: string;
+  provider: string | null;
+  status: string;
+  error_code: string | null;
+  error_message: string | null;
+  records_processed: number;
+  started_at: string;
+  finished_at: string | null;
+};
+
 export type StudioArtifactStatus = "draft" | "approved" | "published" | "archived";
 
 export type StudioArtifactVersion = {
@@ -3700,6 +3711,8 @@ export const api = {
     request<FeatureFlag[]>(`/organizations/${organizationId}/feature-flags/${featureKey}`, { method: "DELETE" }),
 
   /** Decisão 11 — o que eu vejo e por quê. Decisão e explicação na mesma resposta. */
+  performanceSyncRuns: (clientId: string) =>
+    request<PerformanceSyncRunEntry[]>(`/clients/${clientId}/performance/sync-runs`),
   proofPanel: () => request<ProofPanel>("/eg/proof"),
   mySurfaces: () => request<SurfaceAccessEntry[]>("/me/surfaces"),
   setSurfacePreference: (surfaceKey: string, hidden: boolean) =>

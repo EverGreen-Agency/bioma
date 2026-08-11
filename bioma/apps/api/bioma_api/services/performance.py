@@ -19,6 +19,7 @@ from bioma_api.schemas.performance import (
     PerformanceConnectionUpdateRequest,
     PerformanceInsightSummary,
     PerformanceOverviewResponse,
+    PerformanceSyncRunEntry,
     PerformanceSyncRequest,
     PerformanceSyncRunSummary,
     SourceFreshnessSummary,
@@ -69,6 +70,28 @@ def update_connection(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conexão de performance não encontrada.")
 
     return list_connections(client_id, user)
+
+
+def list_sync_runs(client_id: UUID, user: CurrentUserResponse) -> list[PerformanceSyncRunEntry]:
+    """Ultimas execucoes de sync deste workspace, com status e erro."""
+    with connect() as conn:
+        client = _accessible_client(conn, client_id, user)
+        rows = performance_repo.list_recent_sync_runs(conn, client["workspace_id"], client["id"])
+    return [
+        PerformanceSyncRunEntry(
+            id=row["id"],
+            provider=row["provider"],
+            status=row["status"],
+            error_code=row["error_code"],
+            # `summary.skipped` guarda o motivo das guardas (ex.: workspace sem
+            # cliente), que nao passam por error_message.
+            error_message=row["error_message"] or (row["summary"] or {}).get("skipped"),
+            records_processed=row["records_processed"],
+            started_at=row["started_at"],
+            finished_at=row["finished_at"],
+        )
+        for row in rows
+    ]
 
 
 def get_overview(

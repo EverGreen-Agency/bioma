@@ -14,6 +14,7 @@ from bioma_api.schemas.performance import (
     PerformanceConnectionSummary,
     PerformanceConnectionUpdateRequest,
     PerformanceOverviewResponse,
+    PerformanceSyncRunEntry,
     PerformanceSyncRequest,
     PerformanceSyncRunSummary,
 )
@@ -37,6 +38,16 @@ def get_overview(
     user: CurrentUserResponse = Depends(current_user_from_request),
 ) -> PerformanceOverviewResponse:
     return performance_service.get_overview(client_id, user, date_from, date_to)
+
+
+@router.get("/sync-runs", response_model=list[PerformanceSyncRunEntry])
+@workspace_router.get("/sync-runs", response_model=list[PerformanceSyncRunEntry])
+def list_sync_runs(
+    client_id: UUID,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> list[PerformanceSyncRunEntry]:
+    """Ultimas sincronizacoes, com o motivo quando falharam."""
+    return performance_service.list_sync_runs(client_id, user)
 
 
 @router.get("/connections", response_model=list[PerformanceConnectionSummary])
