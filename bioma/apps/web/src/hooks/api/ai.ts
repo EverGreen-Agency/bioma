@@ -126,6 +126,13 @@ export function useBootstrapAiModels() {
   return useControlPlaneMutation<string>(api.bootstrapAiModels);
 }
 
+export function useConnectAiProviderWebSession() {
+  return useControlPlaneMutation<{
+    accountId: string;
+    payload: Parameters<typeof api.connectAiProviderWebSession>[1];
+  }>(({ accountId, payload }) => api.connectAiProviderWebSession(accountId, payload));
+}
+
 export function useRecordAiQuotaBucket() {
   return useControlPlaneMutation<{
     accountId: string;

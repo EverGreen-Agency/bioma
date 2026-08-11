@@ -1,11 +1,12 @@
 import { FormEvent, useMemo, useState } from "react";
-import { Bot, DatabaseZap, Gauge, Network, Plus, RefreshCw, Route } from "lucide-react";
+import { Bot, Cpu, DatabaseZap, Gauge, Link2, Network, Plus, RefreshCw, Route } from "lucide-react";
 
 import {
   useAiRoutingControlPlane,
   useBootstrapAiModels,
   useBootstrapAiRoutingPolicies,
   useCollectAiQuota,
+  useConnectAiProviderWebSession,
   useCreateAiProviderAccount,
   usePreviewAiRoute,
   useRecordAiQuotaBucket,
@@ -15,9 +16,9 @@ import { EmptyState, SectionHeader } from "./shared";
 
 const channelOptions: Record<AiProviderChannel, {
   label: string;
-  provider: "openai" | "anthropic" | "google";
+  provider: "openai" | "anthropic" | "google" | "openrouter" | "deepseek" | "groq";
   authMode: "chatgpt" | "claude_subscription" | "google_subscription" | "api_key" | "vertex_adc";
-  executionMode: "local_cli" | "sdk" | "manual_handoff";
+  executionMode: "local_cli" | "sdk" | "api" | "manual_handoff";
   authRef: string | null;
 }> = {
   codex_chatgpt: {
@@ -62,6 +63,20 @@ const channelOptions: Record<AiProviderChannel, {
     executionMode: "sdk",
     authRef: null,
   },
+  openrouter: {
+    label: "OpenRouter · API Key",
+    provider: "openrouter",
+    authMode: "api_key",
+    executionMode: "api",
+    authRef: "env:OPENROUTER_API_KEY",
+  },
+  deepseek: {
+    label: "DeepSeek · API Key",
+    provider: "deepseek",
+    authMode: "api_key",
+    executionMode: "api",
+    authRef: "env:DEEPSEEK_API_KEY",
+  },
 };
 
 const taskOptions = [
@@ -84,6 +99,7 @@ export function AiControlPlanePanel() {
   const recordQuota = useRecordAiQuotaBucket();
   const collectQuota = useCollectAiQuota();
   const previewRoute = usePreviewAiRoute();
+  const connectWebSession = useConnectAiProviderWebSession();
   const [channel, setChannel] = useState<AiProviderChannel>("codex_chatgpt");
   const [displayName, setDisplayName] = useState("Codex local");
   const [quotaAccountId, setQuotaAccountId] = useState("");
@@ -92,6 +108,11 @@ export function AiControlPlanePanel() {
   const [windowMinutes, setWindowMinutes] = useState("10080");
   const [resetsAt, setResetsAt] = useState("");
   const [taskKind, setTaskKind] = useState("content_draft");
+  
+  // Web session modal states
+  const [sessionAccountId, setSessionAccountId] = useState<string | null>(null);
+  const [sessionToken, setSessionToken] = useState("");
+  const [oauthToken, setOauthToken] = useState("");
 
   const modelCount = useMemo(
     () => controlPlane?.accounts.reduce((total, account) => total + account.models.length, 0) ?? 0,
@@ -114,24 +135,42 @@ export function AiControlPlanePanel() {
     });
   }
 
-  function handleQuota(event: FormEvent<HTMLFormElement>) {
+  const handleQuota = (event: FormEvent) => {
     event.preventDefault();
-    if (!quotaAccountId) return;
+    if (!quotaAccountId || !bucketKey || !remainingPercent || !windowMinutes) return;
     recordQuota.mutate({
       accountId: quotaAccountId,
       payload: {
-        bucket_key: bucketKey.trim(),
-        scope: "account",
-        remaining_percent: Number(remainingPercent),
-        unit: "percent",
-        window_duration_minutes: windowMinutes ? Number(windowMinutes) : null,
+        bucket_key: bucketKey,
+        remaining_percent: parseFloat(remainingPercent),
+        window_duration_minutes: parseInt(windowMinutes, 10),
         resets_at: resetsAt ? new Date(resetsAt).toISOString() : null,
-        source: "provider_ui",
+        source: "manual",
         confidence: "manual",
-        notes: "Snapshot conferido manualmente na UI/TUI do provider.",
       },
     });
-  }
+  };
+
+  const handleConnectWebSession = (event: FormEvent) => {
+    event.preventDefault();
+    if (!sessionAccountId || !sessionToken) return;
+    connectWebSession.mutate(
+      {
+        accountId: sessionAccountId,
+        payload: {
+          session_token: sessionToken,
+          oauth_token: oauthToken || undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          setSessionAccountId(null);
+          setSessionToken("");
+          setOauthToken("");
+        },
+      }
+    );
+  };
 
   return (
     <div className="operations-layout">
@@ -235,6 +274,50 @@ export function AiControlPlanePanel() {
       </div>
 
       <article className="surface">
+        <SectionHeader eyebrow="Harness & Tools" title="Configuração de Etapa & Tool Calling" icon={Cpu} />
+        <div className="form-grid" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px" }}>
+          <label>
+            Modelo de Raciocínio (Reasoning Step)
+            <select defaultValue="deepseek/deepseek-r1">
+              <option value="deepseek/deepseek-r1">DeepSeek R1 (Reasoner)</option>
+              <option value="openai/o3-mini">OpenAI o3-mini (Reasoning)</option>
+              <option value="claude-opus-4.6">Claude Opus 4.6 (Thinking)</option>
+            </select>
+            <small>Usado para planejar a execução e sequenciamento de tools.</small>
+          </label>
+
+          <label>
+            Modelo de Execução (Tool Calling)
+            <select defaultValue="anthropic/claude-3.5-sonnet">
+              <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet (Recomendado)</option>
+              <option value="openai/gpt-4o">OpenAI GPT-4o</option>
+              <option value="deepseek/deepseek-chat">DeepSeek V3 (Chat & Tools)</option>
+              <option value="google/gemini-3.6-flash">Gemini 3.6 Flash</option>
+            </select>
+            <small>Usado para invocar as funções e sintetizar o resultado.</small>
+          </label>
+
+          <label>
+            Ferramentas Habilitadas (Tool Registry)
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px", fontSize: "13px" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <input type="checkbox" defaultChecked /> search_knowledge_base (RAG)
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <input type="checkbox" defaultChecked /> read_client_vault (Cofre)
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <input type="checkbox" defaultChecked /> update_task_status (Kanban)
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <input type="checkbox" defaultChecked /> create_commercial_proposal (Vendas)
+              </label>
+            </div>
+          </label>
+        </div>
+      </article>
+
+      <article className="surface">
         <SectionHeader eyebrow="Inventário" title="Contas, modelos e janelas" icon={Network} />
         <div className="hub-block-list">
           {controlPlane?.accounts.length === 0 && <EmptyState compact text="Cadastre a primeira conta de IA." />}
@@ -267,6 +350,11 @@ export function AiControlPlanePanel() {
                     <Gauge size={14} /> Coletar cota
                   </button>
                 )}
+                {["codex_chatgpt", "claude_code", "antigravity_sdk"].includes(account.channel) && (
+                  <button className="secondary-button" type="button" onClick={() => setSessionAccountId(account.id)}>
+                    <Link2 size={14} /> Conectar
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -289,6 +377,53 @@ export function AiControlPlanePanel() {
             ))}
           </div>
         </article>
+      )}
+
+      {sessionAccountId && (
+        <div className="modal-backdrop" onClick={() => setSessionAccountId(null)}>
+          <div className="modal-card wide" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "560px" }}>
+            <div className="modal-header">
+              <div className="modal-title-group">
+                <Link2 size={18} className="modal-icon" color="var(--brand-accent)" />
+                <div>
+                  <h3 className="modal-title">Conectar Conta via Web</h3>
+                  <p className="modal-subtitle">Insira as credenciais de sessão para autorizar esta conta.</p>
+                </div>
+              </div>
+              <button className="modal-close" onClick={() => setSessionAccountId(null)}>×</button>
+            </div>
+            <div className="modal-body" style={{ padding: "20px" }}>
+              <form className="form-grid" onSubmit={handleConnectWebSession}>
+                <label>
+                  Session Token (Requerido)
+                  <textarea 
+                    value={sessionToken} 
+                    onChange={(e) => setSessionToken(e.target.value)} 
+                    placeholder="Cole o cookie da sessão ou token equivalente..."
+                    rows={4}
+                  />
+                </label>
+                <label>
+                  OAuth Token / Extra (Opcional)
+                  <textarea 
+                    value={oauthToken} 
+                    onChange={(e) => setOauthToken(e.target.value)} 
+                    placeholder="Token adicional, se exigido pelo provider..."
+                    rows={2}
+                  />
+                </label>
+                <div className="modal-actions" style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "16px" }}>
+                  <button className="secondary-button" type="button" onClick={() => setSessionAccountId(null)}>
+                    Cancelar
+                  </button>
+                  <button className="primary-button" type="submit" disabled={!sessionToken || connectWebSession.isPending}>
+                    Confirmar Conexão
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

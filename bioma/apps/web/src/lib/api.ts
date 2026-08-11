@@ -1985,7 +1985,9 @@ export type AiProviderChannel =
   | "antigravity_cli"
   | "antigravity_sdk"
   | "gemini_api"
-  | "vertex";
+  | "vertex"
+  | "openrouter"
+  | "deepseek";
 
 export type AiQuotaBucket = {
   id: string;
@@ -3096,7 +3098,7 @@ export const api = {
   aiRoutingControlPlane: () =>
     request<AiRoutingControlPlane>("/backoffice/ai-operations/control-plane"),
   createAiProviderAccount: (payload: {
-    provider: "openai" | "anthropic" | "google";
+    provider: "openai" | "anthropic" | "google" | "openrouter" | "deepseek" | "groq";
     channel: AiProviderChannel;
     display_name: string;
     auth_mode: AiProviderAccount["auth_mode"];
@@ -3112,6 +3114,19 @@ export const api = {
   bootstrapAiModels: (accountId: string) =>
     request<AiRoutingControlPlane>(`/backoffice/ai-operations/accounts/${accountId}/models/bootstrap`, {
       method: "POST",
+    }),
+  connectAiProviderWebSession: (
+    accountId: string,
+    payload: {
+      session_token: string;
+      refresh_token?: string | null;
+      oauth_token?: string | null;
+      client_id?: string | null;
+    },
+  ) =>
+    request<AiRoutingControlPlane>(`/backoffice/ai-operations/accounts/${accountId}/connect-web-session`, {
+      method: "POST",
+      body: JSON.stringify(payload),
     }),
   recordAiQuotaBucket: (accountId: string, payload: {
     bucket_key: string;

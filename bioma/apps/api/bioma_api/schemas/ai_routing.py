@@ -6,7 +6,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, model_validator
 
 
-Provider = Literal["openai", "anthropic", "google"]
+Provider = Literal["openai", "anthropic", "google", "openrouter", "deepseek", "groq"]
 AuthMode = Literal[
     "chatgpt",
     "claude_subscription",
@@ -69,6 +69,13 @@ class ProviderAccountUpdate(BaseModel):
         if self.auth_ref and not self.auth_ref.startswith("env:"):
             raise ValueError("auth_ref deve apontar para uma variável de ambiente no formato env:NOME.")
         return self
+
+
+class WebSessionConnectPayload(BaseModel):
+    session_token: str = Field(min_length=1, max_length=2000)
+    refresh_token: str | None = Field(default=None, max_length=2000)
+    oauth_token: str | None = Field(default=None, max_length=2000)
+    client_id: str | None = Field(default=None, max_length=200)
 
 
 class ModelCatalogUpsert(BaseModel):

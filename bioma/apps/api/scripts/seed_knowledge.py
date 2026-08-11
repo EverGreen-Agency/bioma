@@ -35,40 +35,35 @@ def _array(value) -> list[str]:
     return []
 
 
+def _get_tombstones(conn, entity_type: str) -> set[str]:
+    try:
+        rows = conn.execute(
+            "select slug from eg_tombstones where entity_type = %s", (entity_type,)
+        ).fetchall()
+        return {r["slug"] for r in rows}
+    except Exception:
+        return set()
+
+
 def seed_ideas(conn) -> int:
     path = SEED_DIR / "ideas.json"
     if not path.exists():
         return 0
     payload = json.loads(path.read_text(encoding="utf-8"))
+    tombstones = _get_tombstones(conn, "idea")
     count = 0
     for item in payload.get("ideas", []):
         slug = item.get("id")
-        if not slug:
+        if not slug or slug in tombstones:
             continue
         conn.execute(
             """
             insert into eg_ideas (
               slug, title, description, category, stage, horizon, origin, source,
-              readiness, part_of, depends_on, enables, archived
+              readiness, part_of, depends_on, enables, archived, seeded
             )
-            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            on conflict (slug) do update set
-              title = excluded.title,
-              description = excluded.description,
-              category = excluded.category,
-              stage = excluded.stage,
-              horizon = excluded.horizon,
-              origin = excluded.origin,
-              source = excluded.source,
-              readiness = excluded.readiness,
-              part_of = excluded.part_of,
-              depends_on = excluded.depends_on,
-              enables = excluded.enables,
-              archived = excluded.archived,
-              updated_at = now()
-            -- Só atualiza enquanto o registro continua sendo semente. Editou
-            -- pela tela? O deploy não reverte mais.
-            where eg_ideas.seeded = true
+            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, true)
+            on conflict (slug) do nothing
             """,
             (
                 slug,
@@ -95,24 +90,17 @@ def seed_stack(conn) -> int:
     if not path.exists():
         return 0
     payload = json.loads(path.read_text(encoding="utf-8"))
+    tombstones = _get_tombstones(conn, "tech")
     count = 0
     for item in payload.get("techs", []):
         slug = item.get("id")
-        if not slug:
+        if not slug or slug in tombstones:
             continue
         conn.execute(
             """
-            insert into eg_stack_techs (slug, name, ring, quadrant, note, adr, source)
-            values (%s, %s, %s, %s, %s, %s, %s)
-            on conflict (slug) do update set
-              name = excluded.name,
-              ring = excluded.ring,
-              quadrant = excluded.quadrant,
-              note = excluded.note,
-              adr = excluded.adr,
-              source = excluded.source,
-              updated_at = now()
-            where eg_stack_techs.seeded = true
+            insert into eg_stack_techs (slug, name, ring, quadrant, note, adr, source, seeded)
+            values (%s, %s, %s, %s, %s, %s, %s, true)
+            on conflict (slug) do nothing
             """,
             (
                 slug,
@@ -132,8 +120,11 @@ def seed_docs(conn) -> int:
     directory = SEED_DIR / "knowledge"
     if not directory.is_dir():
         return 0
+    tombstones = _get_tombstones(conn, "doc")
     count = 0
     for path in sorted(directory.glob("*.md")):
+        if path.name in tombstones:
+            continue
         category, _, filename = path.name.partition("__")
         if category not in ("knowledge", "engineering", "architecture", "company"):
             category, filename = "knowledge", path.name
@@ -147,8 +138,6 @@ def seed_docs(conn) -> int:
               content = excluded.content,
               title = excluded.title,
               updated_at = now()
-            -- Só sobrescreve o que continua sendo semente: documento editado
-            -- dentro do Bioma não é revertido por redeploy.
             where eg_knowledge_docs.seeded = true
             """,
             (path.name, category, title, content),
@@ -166,8 +155,12 @@ def seed_engineering(conn) -> int:
     directory = SEED_DIR / "engineering"
     if not directory.is_dir():
         return 0
+    tombstones = _get_tombstones(conn, "doc")
     count = 0
     for path in sorted(directory.glob("*.md")):
+        doc_path = f"engineering/{path.name}"
+        if doc_path in tombstones or path.name in tombstones:
+            continue
         content = path.read_text(encoding="utf-8", errors="replace")
         title = path.name.removesuffix(".md").replace("__", " / ")
         conn.execute(
@@ -178,10 +171,40 @@ def seed_engineering(conn) -> int:
               content = excluded.content, title = excluded.title, updated_at = now()
             where eg_knowledge_docs.seeded = true
             """,
-            (f"engineering/{path.name}", title, content),
+            (doc_path, title, content),
         )
         count += 1
     return count
+
+
+def seed_ideas_docs(conn) -> int:
+    """Documentos detalhados do Banco de Ideias ("Ler Detalhes")."""
+    directory = SEED_DIR / "ideas_docs"
+    if not directory.is_dir():
+        return 0
+    tombstones = _get_tombstones(conn, "doc")
+    count = 0
+    for path in sorted(directory.glob("*.md")):
+        doc_slug = path.name.removesuffix(".md")
+        doc_path = f"ideas_docs/{path.name}"
+        if doc_path in tombstones or doc_slug in tombstones:
+            continue
+        content = path.read_text(encoding="utf-8", errors="replace")
+        title = f"Ideia / {doc_slug}"
+        for p in (doc_path, f"ideas/{doc_slug}.md"):
+            conn.execute(
+                """
+                insert into eg_knowledge_docs (path, category, title, content, seeded)
+                values (%s, 'ideas_docs', %s, %s, true)
+                on conflict (path) do update set
+                  content = excluded.content, title = excluded.title, updated_at = now()
+                where eg_knowledge_docs.seeded = true
+                """,
+                (p, title, content),
+            )
+        count += 1
+    return count
+
 
 
 def main() -> None:
@@ -193,11 +216,14 @@ def main() -> None:
         techs = seed_stack(conn)
         docs = seed_docs(conn)
         engineering = seed_engineering(conn)
+        ideas_docs = seed_ideas_docs(conn)
     print(
         f"seed_knowledge: {ideas} ideia(s), {techs} tecnologia(s), "
-        f"{docs} documento(s), {engineering} arquivo(s) de engenharia."
+        f"{docs} documento(s), {engineering} arquivo(s) de engenharia, "
+        f"{ideas_docs} doc(s) de ideias."
     )
 
 
 if __name__ == "__main__":
     main()
+

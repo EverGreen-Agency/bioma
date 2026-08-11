@@ -24,6 +24,7 @@ from bioma_api.schemas.ai_routing import (
     RoutePreviewRequest,
     RoutingPolicySummary,
     RoutingPolicyUpsert,
+    WebSessionConnectPayload,
 )
 from bioma_api.schemas.auth import CurrentUserResponse
 from bioma_api.services.ai_operations import _eg_organization_id
@@ -179,6 +180,65 @@ MODEL_PRESETS: dict[str, list[dict[str, Any]]] = {
             "cost_score": 48,
             "latency_score": 58,
             "priority": 10,
+        },
+    ],
+    "openrouter": [
+        {
+            "model_id": "openrouter/auto",
+            "display_name": "OpenRouter Auto Router",
+            "family": "openrouter",
+            "capability_tier": "balanced",
+            "capabilities": ["chat", "content", "code", "tools"],
+            "quality_score": 85,
+            "cost_score": 85,
+            "latency_score": 85,
+            "priority": 10,
+        },
+        {
+            "model_id": "anthropic/claude-3.5-sonnet:beta",
+            "display_name": "Claude 3.5 Sonnet (OpenRouter)",
+            "family": "claude",
+            "capability_tier": "frontier",
+            "capabilities": ["chat", "content", "strategy", "code", "tools"],
+            "quality_score": 95,
+            "cost_score": 70,
+            "latency_score": 75,
+            "priority": 20,
+        },
+        {
+            "model_id": "deepseek/deepseek-r1",
+            "display_name": "DeepSeek R1 (OpenRouter)",
+            "family": "deepseek",
+            "capability_tier": "frontier",
+            "capabilities": ["reasoning", "code", "strategy", "tools"],
+            "quality_score": 97,
+            "cost_score": 90,
+            "latency_score": 60,
+            "priority": 15,
+        },
+    ],
+    "deepseek": [
+        {
+            "model_id": "deepseek-reasoner",
+            "display_name": "DeepSeek R1 (Reasoner)",
+            "family": "deepseek",
+            "capability_tier": "frontier",
+            "capabilities": ["reasoning", "strategy", "code"],
+            "quality_score": 98,
+            "cost_score": 92,
+            "latency_score": 60,
+            "priority": 10,
+        },
+        {
+            "model_id": "deepseek-chat",
+            "display_name": "DeepSeek V3 (Chat & Tools)",
+            "family": "deepseek",
+            "capability_tier": "balanced",
+            "capabilities": ["chat", "content", "code", "tools"],
+            "quality_score": 90,
+            "cost_score": 95,
+            "latency_score": 85,
+            "priority": 20,
         },
     ],
 }
@@ -357,6 +417,32 @@ def bootstrap_models(account_id: UUID, user: CurrentUserResponse) -> AiRoutingCo
             {"account_id": str(account_id), "channel": account.channel, "models": len(presets)},
         )
     return _control_plane(organization_id)
+
+
+def connect_web_session(
+    account_id: UUID,
+    payload: WebSessionConnectPayload,
+    user: CurrentUserResponse,
+) -> AiRoutingControlPlane:
+    organization_id = _eg_organization_id(user)
+    with connect() as conn:
+        if not repo.connect_web_session(conn, organization_id, account_id, user.id, payload.model_dump(exclude_unset=True)):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conta de IA não encontrada.")
+            
+        client_hub_repo.write_audit(
+            conn,
+            user.id,
+            organization_id,
+            "ai.provider_account.connected",
+            {"account_id": str(account_id), "method": "web_session"},
+        )
+    
+    # Após conectar a sessão com sucesso, vamos tentar preencher os modelos iniciais do canal
+    try:
+        return bootstrap_models(account_id, user)
+    except HTTPException:
+        # Se o canal não possuir modelos pré-configurados, retornamos normalmente
+        return _control_plane(organization_id)
 
 
 def record_quota(

@@ -12,6 +12,7 @@ from bioma_api.schemas.ai_routing import (
     RoutePreview,
     RoutePreviewRequest,
     RoutingPolicyUpsert,
+    WebSessionConnectPayload,
 )
 from bioma_api.schemas.auth import CurrentUserResponse
 from bioma_api.services import ai_routing as service
@@ -59,6 +60,15 @@ def bootstrap_models(
     user: CurrentUserResponse = Depends(current_user_from_request),
 ) -> AiRoutingControlPlane:
     return service.bootstrap_models(account_id, user)
+
+
+@router.post("/accounts/{account_id}/connect-web-session", response_model=AiRoutingControlPlane)
+def connect_web_session(
+    account_id: UUID,
+    payload: WebSessionConnectPayload,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> AiRoutingControlPlane:
+    return service.connect_web_session(account_id, payload, user)
 
 
 @router.post(

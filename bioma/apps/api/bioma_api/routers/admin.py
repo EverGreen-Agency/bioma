@@ -173,31 +173,41 @@ def save_ideas(data: IdeasData, _user: CurrentUserResponse = Depends(_require_eg
 
 @router.get("/ideas/doc")
 def get_idea_doc(id: str, _user: CurrentUserResponse = Depends(_require_eg_admin)):
-    # O id vira nome de arquivo: sem validação daria path traversal
-    # (id=../../qualquer-coisa leria .md arbitrário do disco).
     if not _DOC_ID_PATTERN.match(id) or ".." in id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Identificador inválido.")
-    paths = _paths()
-    if not paths:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doc não encontrado.")
-    doc_path = (paths["ideas_docs"] / f"{id}.md").resolve()
-    if not doc_path.is_relative_to(paths["ideas_docs"].resolve()) or not doc_path.exists():
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Doc não encontrado.")
-    return PlainTextResponse(doc_path.read_text(encoding="utf-8"))
+
+    with connect() as conn:
+        doc = (
+            knowledge_repo.get_doc(conn, f"ideas/{id}.md")
+            or knowledge_repo.get_doc(conn, f"ideas_docs/{id}.md")
+            or knowledge_repo.get_doc(conn, f"engineering/{id}__spec.md")
+            or knowledge_repo.get_doc(conn, f"{id}.md")
+        )
+        if doc:
+            return PlainTextResponse(doc["content"])
+
+    # Fallback para seed_data no disco se ainda não tiver no Postgres
+    seed_file = Path(__file__).resolve().parents[2] / "seed_data" / "ideas_docs" / f"{id}.md"
+    if seed_file.exists():
+        return PlainTextResponse(seed_file.read_text(encoding="utf-8"))
+
+    return PlainTextResponse(f"# {id}\n\nNenhum documento detalhado anexado a esta ideia ainda.")
 
 
 @router.put("/ideas/doc/{id}")
-def save_idea_doc(id: str, data: IdeaDocData, _user: CurrentUserResponse = Depends(_require_eg_admin)):
+def save_idea_doc(id: str, data: IdeaDocData, user: CurrentUserResponse = Depends(_require_eg_admin)):
     if not _DOC_ID_PATTERN.match(id) or ".." in id:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Identificador inválido.")
-    paths = _paths()
-    if not paths:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Indisponível neste ambiente.")
-    doc_path = (paths["ideas_docs"] / f"{id}.md").resolve()
-    if not doc_path.parent.is_relative_to(paths["ideas_docs"].resolve()):
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Caminho inválido.")
-    doc_path.parent.mkdir(parents=True, exist_ok=True)
-    doc_path.write_text(data.content, encoding="utf-8")
+
+    with connect() as conn:
+        knowledge_repo.create_doc(
+            conn,
+            path=f"ideas/{id}.md",
+            category="ideas_docs",
+            title=f"Ideia / {id}",
+            content=data.content,
+            updated_by=user.user_id,
+        )
     return {"status": "ok"}
 
 

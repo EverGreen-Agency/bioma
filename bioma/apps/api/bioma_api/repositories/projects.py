@@ -4,16 +4,19 @@ from uuid import UUID
 from psycopg.types.json import Jsonb
 
 
-def find_workspace_context(conn, workspace_id: UUID, is_admin: bool, user_id: UUID):
+def find_workspace_context(conn, context_id: UUID, is_admin: bool, user_id: UUID):
     return conn.execute(
         """
         select w.id as workspace_id, w.tenant_organization_id, w.subject_organization_id,
           case when %s then 'platform_admin' else workspace_access_role(w.id, %s) end as access_role
         from workspaces w
-        where w.id = %s and w.status = 'active'
+        left join clients c on c.organization_id = w.subject_organization_id
+        where (w.id = %s or c.id = %s) and w.status = 'active'
           and (%s or workspace_access_role(w.id, %s) is not null)
+        order by case when w.id = %s then 0 else 1 end
+        limit 1
         """,
-        (is_admin, user_id, workspace_id, is_admin, user_id),
+        (is_admin, user_id, context_id, context_id, is_admin, user_id, context_id),
     ).fetchone()
 
 

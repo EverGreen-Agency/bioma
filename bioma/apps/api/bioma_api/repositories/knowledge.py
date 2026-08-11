@@ -169,3 +169,14 @@ def search_docs(conn, term: str, limit: int = 10) -> list[dict[str, Any]]:
         """,
         (term, term, limit),
     ).fetchall()
+
+
+def delete_idea(conn, slug: str) -> None:
+    conn.execute("insert into eg_tombstones (entity_type, slug) values ('idea', %s) on conflict do nothing", (slug,))
+    conn.execute("delete from eg_ideas where slug = %s", (slug,))
+
+
+def delete_doc(conn, path: str) -> None:
+    conn.execute("insert into eg_tombstones (entity_type, slug) values ('doc', %s) on conflict do nothing", (slug,))
+    conn.execute("delete from eg_knowledge_docs where path = %s", (path,))
+
