@@ -12,6 +12,7 @@ import {
   usePersonalAccessTokens,
   useCreatePersonalAccessToken,
   useRevokePersonalAccessToken,
+  useSurfaceVisibility,
 } from "../hooks/useBiomaApi";
 import { SectionHeader, GoogleIcon } from "../components/shared";
 import { SurfacePreferencesCard } from "../components/SurfacePreferencesCard";
@@ -36,6 +37,7 @@ const WhatsAppManager = lazy(() =>
 
 export function SettingsView() {
   const { data: user } = useCurrentUser();
+  const { isSurfaceVisible } = useSurfaceVisibility();
   const location = useLocation();
   const queryClient = useQueryClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -500,13 +502,15 @@ export function SettingsView() {
             >
               Equipes & carteiras
             </button>
-            <button
-              type="button"
-              onClick={() => setActiveSubTab("whatsapp")}
-              style={{ background: "transparent", border: "none", cursor: "pointer", color: activeSubTab === "whatsapp" ? "var(--text-main)" : "var(--text-muted)", fontWeight: activeSubTab === "whatsapp" ? 600 : 400, padding: "8px 0", borderBottom: activeSubTab === "whatsapp" ? "2px solid var(--brand-accent)" : "2px solid transparent" }}
-            >
-              WhatsApp & Mensagens
-            </button>
+            {isSurfaceVisible("whatsapp") && (
+              <button
+                type="button"
+                onClick={() => setActiveSubTab("whatsapp")}
+                style={{ background: "transparent", border: "none", cursor: "pointer", color: activeSubTab === "whatsapp" ? "var(--text-main)" : "var(--text-muted)", fontWeight: activeSubTab === "whatsapp" ? 600 : 400, padding: "8px 0", borderBottom: activeSubTab === "whatsapp" ? "2px solid var(--brand-accent)" : "2px solid transparent" }}
+              >
+                WhatsApp & Mensagens
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setActiveSubTab("integrations")}
@@ -563,7 +567,7 @@ export function SettingsView() {
               </Suspense>
             )}
 
-            {activeSubTab === "whatsapp" && (
+            {activeSubTab === "whatsapp" && isSurfaceVisible("whatsapp") && (
               <Suspense fallback={<div className="notice">Carregando gerenciador de WhatsApp...</div>}>
                 <WhatsAppManager workspaceId={agencyWorkspace?.id ?? workspaces[0]?.id ?? "default"} />
               </Suspense>
