@@ -648,6 +648,8 @@ export function AnalyticsView({ clientId, workspaceName }: { clientId: string; w
     if (!effectiveClientId) return;
     setSyncingMedia(true);
     try {
+      // `POST /sync` responde 202: ENFILEIRA, não executa. Quem executa é o
+      // worker, no cron de hora em hora.
       await api.requestPerformanceSync(effectiveClientId, "all");
       const [nextOverview, nextCampaigns] = await Promise.all([
         api.performanceOverview(effectiveClientId),
@@ -655,9 +657,18 @@ export function AnalyticsView({ clientId, workspaceName }: { clientId: string; w
       ]);
       setOverview(nextOverview);
       setCampaigns(nextCampaigns);
-      alert("Sincronização de mídia (Meta Ads & LinkedIn Ads) solicitada com sucesso!");
+      // A mensagem antiga dizia "solicitada com sucesso" e a tela recarregava
+      // na hora — ainda vazia, porque o worker nem tinha rodado. Quem clicava
+      // concluía, com razão, que o botão não funcionava. Dizer que ficou NA
+      // FILA e quando roda é a diferença entre "quebrado" e "aguardando".
+      alert(
+        "Sincronização enfileirada. " +
+        "Ela não roda agora: o worker processa a fila de hora em hora. " +
+        "Os números aparecem depois disso — e se falhar, o motivo fica no aviso " +
+        "no topo desta tela."
+      );
     } catch (err: any) {
-      alert("Erro ao sincronizar mídia: " + (err.message || "Erro de conexão."));
+      alert("Erro ao enfileirar a sincronização: " + (err.message || "Erro de conexão."));
     } finally {
       setSyncingMedia(false);
     }
@@ -679,7 +690,7 @@ export function AnalyticsView({ clientId, workspaceName }: { clientId: string; w
         <div className="analytics-actions" style={{ display: "flex", gap: "10px" }}>
           <button className="secondary-button" type="button" onClick={handleSyncMedia} disabled={syncingMedia}>
             <RefreshCw size={16} className={syncingMedia ? "spin" : ""} />
-            {syncingMedia ? "Sincronizando..." : "Varredura de Mídia em Tempo Real"}
+            {syncingMedia ? "Enfileirando..." : "Sincronizar mídia agora"}
           </button>
           {/* Desabilitado sem dados: o modal só renderiza com `overview`, então
               antes o clique nao fazia NADA — botao habilitado que ignora o
