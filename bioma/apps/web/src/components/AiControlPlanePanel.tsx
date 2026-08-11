@@ -1,5 +1,5 @@
 import { FormEvent, useMemo, useState } from "react";
-import { Bot, DatabaseZap, Gauge, Link2, Network, Plus, RefreshCw, Route } from "lucide-react";
+import { Bot, Cpu, DatabaseZap, Gauge, Link2, Network, Plus, RefreshCw, Route } from "lucide-react";
 
 import {
   useAiRoutingControlPlane,
@@ -62,6 +62,20 @@ const channelOptions: Record<AiProviderChannel, {
     authMode: "vertex_adc",
     executionMode: "sdk",
     authRef: null,
+  },
+  openrouter: {
+    label: "OpenRouter · API Key",
+    provider: "openrouter",
+    authMode: "api_key",
+    executionMode: "api",
+    authRef: "env:OPENROUTER_API_KEY",
+  },
+  deepseek: {
+    label: "DeepSeek · API Key",
+    provider: "deepseek",
+    authMode: "api_key",
+    executionMode: "api",
+    authRef: "env:DEEPSEEK_API_KEY",
   },
 };
 
@@ -258,6 +272,50 @@ export function AiControlPlanePanel() {
           </div>
         </article>
       </div>
+
+      <article className="surface">
+        <SectionHeader eyebrow="Harness & Tools" title="Configuração de Etapa & Tool Calling" icon={Cpu} />
+        <div className="form-grid" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px" }}>
+          <label>
+            Modelo de Raciocínio (Reasoning Step)
+            <select defaultValue="deepseek/deepseek-r1">
+              <option value="deepseek/deepseek-r1">DeepSeek R1 (Reasoner)</option>
+              <option value="openai/o3-mini">OpenAI o3-mini (Reasoning)</option>
+              <option value="claude-opus-4.6">Claude Opus 4.6 (Thinking)</option>
+            </select>
+            <small>Usado para planejar a execução e sequenciamento de tools.</small>
+          </label>
+
+          <label>
+            Modelo de Execução (Tool Calling)
+            <select defaultValue="anthropic/claude-3.5-sonnet">
+              <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet (Recomendado)</option>
+              <option value="openai/gpt-4o">OpenAI GPT-4o</option>
+              <option value="deepseek/deepseek-chat">DeepSeek V3 (Chat & Tools)</option>
+              <option value="google/gemini-3.6-flash">Gemini 3.6 Flash</option>
+            </select>
+            <small>Usado para invocar as funções e sintetizar o resultado.</small>
+          </label>
+
+          <label>
+            Ferramentas Habilitadas (Tool Registry)
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px", fontSize: "13px" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <input type="checkbox" defaultChecked /> search_knowledge_base (RAG)
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <input type="checkbox" defaultChecked /> read_client_vault (Cofre)
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <input type="checkbox" defaultChecked /> update_task_status (Kanban)
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                <input type="checkbox" defaultChecked /> create_commercial_proposal (Vendas)
+              </label>
+            </div>
+          </label>
+        </div>
+      </article>
 
       <article className="surface">
         <SectionHeader eyebrow="Inventário" title="Contas, modelos e janelas" icon={Network} />

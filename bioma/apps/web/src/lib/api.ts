@@ -1985,7 +1985,9 @@ export type AiProviderChannel =
   | "antigravity_cli"
   | "antigravity_sdk"
   | "gemini_api"
-  | "vertex";
+  | "vertex"
+  | "openrouter"
+  | "deepseek";
 
 export type AiQuotaBucket = {
   id: string;

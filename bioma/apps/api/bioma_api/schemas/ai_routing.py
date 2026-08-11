@@ -6,7 +6,7 @@ from uuid import UUID
 from pydantic import BaseModel, Field, model_validator
 
 
-Provider = Literal["openai", "anthropic", "google"]
+Provider = Literal["openai", "anthropic", "google", "openrouter", "deepseek", "groq"]
 AuthMode = Literal[
     "chatgpt",
     "claude_subscription",
