@@ -3098,7 +3098,7 @@ export const api = {
   aiRoutingControlPlane: () =>
     request<AiRoutingControlPlane>("/backoffice/ai-operations/control-plane"),
   createAiProviderAccount: (payload: {
-    provider: "openai" | "anthropic" | "google";
+    provider: "openai" | "anthropic" | "google" | "openrouter" | "deepseek" | "groq";
     channel: AiProviderChannel;
     display_name: string;
     auth_mode: AiProviderAccount["auth_mode"];
