@@ -54,6 +54,11 @@ FEATURE_CATALOG: dict[str, dict[str, str]] = {
         "description": "Assistência ao vivo em reunião comercial, com transcrição.",
         "default_state": "beta",
     },
+    "whatsapp_multiprovider": {
+        "label": "WhatsApp multi-provedor",
+        "description": "Envio e histórico de WhatsApp por Evolution API, Meta Cloud ou Z-API.",
+        "default_state": "beta",
+    },
     "portfolio_performance": {
         "label": "Rollup da carteira",
         "description": "Investimento por canal e leads de todos os clientes lado a lado.",

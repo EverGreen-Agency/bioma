@@ -144,7 +144,7 @@ SURFACE_CATALOG: dict[str, dict] = {
         "group": "Configurações",
         "scope": "both",
         "module": "integrations",
-        "feature_key": "whatsapp-multiprovider",
+        "feature_key": "whatsapp_multiprovider",
     },
     # ------------------------------------------------ hub do cliente (ambos)
     "cliente.hub": {
