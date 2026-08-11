@@ -1,6 +1,6 @@
 # Decisões abertas — Bioma
 
-Atualizado em 2026-08-02.
+Atualizado em 2026-08-08.
 
 Cada bloco tem **contexto**, **opções**, **minha recomendação** e uma linha
 `RESPOSTA:` para você preencher. O que estiver respondido eu implemento sem
@@ -9,6 +9,11 @@ voltar a perguntar; o que ficar em branco continua parado.
 Decisão respondida sai daqui e vira comentário no código, que é onde alguém a
 encontra quando importa. O histórico fica no git. Este arquivo é só o que ainda
 trava — se ele encolhe, é sinal bom.
+
+**Regra de manutenção:** decisão IMPLEMENTADA desce para "Fechadas" com uma
+linha do que ficou valendo, no mesmo commit que a implementa. Deixá-la no corpo
+faz o arquivo parecer maior do que o trabalho realmente aberto — foi o que
+aconteceu com as decisões 8 e 11, movidas em 2026-08-08.
 
 ---
 
@@ -315,77 +320,6 @@ Muda quem enxerga por padrão, e a decisão errada aqui é cara de desfazer.
 
 ---
 
-## 8. Estúdio IA — unificar no copiloto (decidido, não implementado)
-
-**Contexto.** Sua avaliação em 2026-08-05: "a parte de social media tá bem
-ruim, o Estúdio IA não está alinhado com a visão — era um ChatGPT em que eu
-converso e ele vai criando os materiais, e o Bioma serve pra salvar, organizar,
-ter visão limpa, histórico, threads, sessões das criações".
-
-**O diagnóstico é estrutural, não visual.** `AiContentStudio.tsx` é um
-formulário: seções fixas (Brand Book, Retrospectiva, Calendário), dropdown de
-tipo de conteúdo e provedor, botão "gerar". Não tem thread, sessão nem
-histórico de conversa.
-
-E o copiloto **já tem tudo isso** — `copilot_threads`, `copilot_runs`, trilha
-com fontes, custo e anexos. São dois sistemas paralelos que não se falam; é
-por isso que "não parece linkado" e você precisa ficar referenciando documento.
-
-**Decisão (2026-08-05): unificar no copiloto, via artefatos.** A conversa gera
-um artefato (roteiro, post, proposta); o artefato fica salvo, versionado e
-navegável; o Estúdio vira a **vista limpa** desses artefatos em vez de um
-formulário concorrente. Reaproveita thread/trilha/custo/roteamento por cota
-que já existem, em vez de duplicá-los.
-
-**Ainda não implementado.** Ordem combinada: MCP do ChatGPT primeiro, depois
-refino de tarefas, depois isto.
-
-`RESPOSTA (o que é artefato de primeira classe: roteiro, post, proposta, tudo?):`
-
-**Recomendação (2026-08-06).** O corte certo **não é por gênero de conteúdo**
-(roteiro/post/proposta). Essa lista não acaba nunca, e cada gênero novo viraria
-uma tabela ou um valor de enum — é assim que se constrói o formulário de novo,
-só que distribuído.
-
-O corte é por **o que a coisa faz na operação**. É artefato de primeira classe o
-que passa nos três testes:
-
-1. **é revisado** — existe versão 2, e comparar com a 1 tem valor;
-2. **é referenciado** — uma tarefa, um cliente ou um link apontam para ele;
-3. **sai do Bioma** — vai para o cliente, para uma plataforma ou para um link
-   público.
-
-Por esse teste: **roteiro, post, legenda, prompt de arte, planejamento e
-mensagem de prospecção são artefatos.** A resposta analítica do copiloto
-("quantos leads esse mês?") **não é** — vira ruído e cemitério.
-
-**A descoberta que muda a resposta: `artifacts` já existe** (migração 0001) —
-`organization_id`, `title`, `kind` (texto livre, não enum), `visibility`
-(`internal`/`client`), `url`, `content`. Ou seja, a taxonomia aberta que eu ia
-recomendar já está no banco, e criar uma tabela nova de artefatos seria
-exatamente a fragmentação que o projeto proíbe.
-
-O que falta em `artifacts` é o que a decisão 8 pede, e só isso:
-
-| Falta | Para quê |
-|---|---|
-| `thread_id` / `run_id` | procedência: qual conversa e qual execução geraram isto |
-| `artifact_versions` | versionar de verdade, em vez de sobrescrever `content` |
-| `workspace_id` | hoje é só por organização; roteiro é de um workspace |
-| `status` | rascunho × aprovado × publicado |
-
-**E proposta NÃO entra.** Ela já tem casa própria (`proposals`, com link
-público, ciclo de vida e tradução em cache da decisão 2). Transformá-la em
-artefato genérico seria rebaixar o que já é mais completo. O mesmo vale para
-briefing. O desenho certo aí é **promover**: a conversa gera o artefato, e um
-botão o entrega para a casa especializada quando ela existe.
-
-Resumindo a recomendação: **artefato é um só conceito, com `kind` aberto,
-estendendo a tabela que já existe** — e quem já tem casa própria continua na
-sua.
-
----
-
 ## 9. GitHub ↔ Tech — fechar o loop
 
 **Contexto.** Sua pergunta em 2026-08-05: "o Tech está integrado
@@ -481,99 +415,6 @@ voz e as diretivas da EG vazariam para a outra empresa. As outras duas camadas
 (workspace e pessoal) já estão corretas e não mudam.
 
 `RESPOSTA (a Notorious tem P&L próprio? isso decide irmã vs. workspace):` vai virar workspace no momento.
-
----
-
-## 11. Ocultar módulos que a EG não usa agora
-
-**Contexto.** Você quer esconder Gestão RH, Logística Kits, Freelas, Pesquisa
-de Mercado e Radar Local sem apagar nada, e perguntou se bastava gerenciar
-acesso nas configurações da empresa.
-
-**Não basta** — e o motivo é que existem dois eixos e nenhum atinge o EG admin:
-
-- `enabled_modules` (organização) = "o cliente contratou isso?" — filtra só a
-  visão do `client_user`;
-- `feature_flags` = "isso está pronto para este cliente?"
-  (`hidden`/`coming_soon`/`beta`/`active`) — mesma coisa.
-
-O menu de EG admin renderiza `groupAdmin` **sem filtro** (`Sidebar.tsx`).
-
-**Falta um terceiro eixo: "eu não uso isso agora"** — preferência de navegação
-da EG, ortogonal a contrato e a maturidade. Nada é apagado; a rota continua
-funcionando por URL direta e religar é um clique.
-
-**Recomendação: por usuário, não por organização.** Você esconder o RH não
-deveria escondê-lo de quem for cuidar do RH depois.
-
-`RESPOSTA (por usuário confirma? algum além de RH/Kits/Freelas/Pesquisa/Radar?):` Tem alguns módulos e features. E concordo que seria por usuário, mas pense que o que temos hoje de gerenciamento de acesso para os clientes, também seria interessante ter gerenciamento a nível de usuários dos clientes, e também de equipes inteiras nossas (EG). Assim não preciso ficar usuário a usuário configurando acessos. Então a nível global (Workspace/EG) e a usuários e equipes.
-
-**Resposta (2026-08-06).** Sua resposta troca o problema: deixou de ser
-"esconder o que não uso" e virou **gerenciamento de acesso em três níveis**.
-São coisas diferentes e vale não misturar — uma é preferência de tela, a outra
-é permissão de verdade.
-
-A boa notícia: **times já existem** (`teams` + `team_memberships`, migração
-0014, com serviço e rotas). Não precisa criar a entidade, só usá-la como
-sujeito de permissão, o que hoje não acontece.
-
-O desenho que proponho, do mais forte para o mais fraco, resolvido nessa ordem:
-
-| Nível | Sujeito | Pergunta que responde | Existe hoje? |
-|---|---|---|---|
-| **Organização** | cliente | contratou o módulo? | sim (`enabled_modules`) |
-| **Equipe** | time da EG ou do cliente | esta equipe trabalha com isso? | ❌ falta |
-| **Usuário** | pessoa | esta pessoa precisa disso? | ❌ falta |
-| **Preferência** | você mesmo | quero ver isso agora? | ❌ falta |
-
-Regra de resolução: **o mais restritivo vence**, e preferência pessoal nunca
-concede o que a permissão nega — só esconde o que ela permitiria. Sem essa
-regra, "ocultei para mim" viraria um jeito acidental de burlar acesso.
-
-Duas armadilhas que quero evitar:
-
-1. **Esconder não é proibir.** Se o módulo some do menu mas a rota responde,
-   isso é organização visual, não segurança. Para cliente, tem que ser
-   proibição no backend (é como `enabled_modules` já funciona). Para você,
-   esconder basta.
-2. **Herança precisa ser visível.** "Por que não vejo o RH?" tem que ter
-   resposta na tela — herdado da equipe, da organização ou escolha sua. Sem
-   isso vira suporte eterno.
-
-`RESPOSTA (fazer os 4 níveis de uma vez, ou começar por preferência pessoal + equipe?):` Fazer os 4 níveis de uma vez
-
-**Implementado em 2026-08-06** (migração 0086). Catálogo de superfícies em
-código (`surfaces.py`), resolução em função pura (`surface_access.py`),
-`/me/surfaces` devolvendo decisão **e** explicação na mesma resposta.
-
-Quatro coisas que vale registrar porque mudam o que dá para fazer depois:
-
-- **A chave da superfície é a rota.** `eg-rh` é `/eg-rh`; `operacao.radar-local`
-  é `/operacao/radar-local`. É o que permite partir de uma URL e chegar ao
-  motivo de ela ter sumido do menu.
-- **"Preferência nunca concede" virou garantia estrutural**, não promessa de
-  código: `surface_preferences.hidden` tem `check (hidden)`. O Postgres recusa
-  gravar uma preferência que libere — um bug futuro falha na escrita, não em
-  produção com a porta aberta.
-- **`allowed` e `visible` são campos separados.** Guarda de rota usa `allowed`,
-  menu usa `visible`. É isso que faz "escondi para mim" não quebrar link salvo.
-- **O frontend falha ABERTO de propósito.** Se `/me/surfaces` não responder,
-  vale o comportamento anterior. Falhar fechado faria um soluço de rede parecer
-  "sumiu tudo", e o cliente-side nunca foi a fronteira de segurança.
-
-**Uma interpretação que eu fiz e você pode querer desfazer.** Você disse "o mais
-restritivo vence". Entre **equipes** apliquei isso ao pé da letra (basta uma
-negar). Entre **equipe e usuário** apliquei **especificidade**: o usuário vence
-a equipe nos dois sentidos. O motivo é que a regra literal tornaria o nível de
-usuário inútil justamente no caso que o motivou — negar o RH para a equipe
-inteira e liberar para quem cuida do RH. A propriedade que você queria proteger
-("esconder não vira jeito de burlar acesso") continua inteira: ela mora no teto
-da organização e na preferência, e tem teste provando que `allow` de usuário
-não fura módulo não contratado.
-
-**Onde mexer:** Configurações → Telas e módulos (preferência pessoal, com a
-herança visível) e Configurações → empresa → Equipes & carteiras → Acesso a
-telas (equipe e pessoa).
 
 ---
 
@@ -701,13 +542,33 @@ chumbado o sistema"*. Então a regra que eu proporia:
 Isso entrega o contexto onde ele importa (cliente, benchmark, conteúdo) sem
 engessar a casa.
 
-`RESPOSTA (vínculo obrigatório só em cliente, ou em todos os workspaces?):`
+`RESPOSTA (vínculo obrigatório só em cliente, ou em todos os workspaces?):` Só para cliente.
 
-`RESPOSTA (a aba combinada some, ou fica declarada como tradução?):`
+`RESPOSTA (a aba combinada some, ou fica declarada como tradução?):` Fica declarada como tradução.
+
+**Concordo.** Sumir com ela custaria a única visão de "tudo que está aberto
+neste cliente", que é o que se quer no início do dia. O problema nunca foi a
+existência da aba — foi ela se apresentar como matriz. Declarada, ela vira o
+que sempre deveria ter sido: um panorama que avisa que os nomes de status
+pertencem a vocabulários diferentes, e que a coluna vem de `group_status`, não
+do nome.
 
 ---
 
 ## Fechadas — implementadas, não precisam voltar
+
+- **8. Estúdio IA como artefatos do copiloto** — implementado em 2026-08-08
+  (migração 0089). Estendeu a tabela `artifacts` que já existia em vez de criar
+  outra; procedência (`thread_id`/`run_id`) deduzida no servidor; versão nunca
+  sobrescreve; `/artifacts/from-run/{id}` salva a resposta do copiloto e, com
+  `artifact_id`, vira a próxima versão. Proposta e briefing ficaram nas casas
+  próprias. Estúdio virou a vista; o formulário virou "Geração direta".
+- **11. Ocultar módulos que a EG não usa** — implementado em 2026-08-06
+  (migração 0086), com os 4 níveis: organização, equipe, usuário e preferência.
+  "Preferência nunca concede" virou `check (hidden)` no banco. `allowed` e
+  `visible` são campos separados, e é isso que faz esconder não quebrar link
+  salvo. Papel `eg_member` (0090) veio depois, para convite ao time deixar de
+  criar administrador sempre.
 
 - **S3**: já configurado na Railway. Os 2 binários (`Manual de Marca.pdf`,
   `Proposta_EverGreen_HM_Conexoes_Poderosas_v3.pdf`) foram enviados por você.
