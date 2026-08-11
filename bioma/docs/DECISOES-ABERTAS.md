@@ -631,6 +631,82 @@ E não entendi sua pergunta. Mas prefiro implementar novos modelos pois parece q
 
 ---
 
+## 13. Tarefa ligada a projeto, e disciplina como estrutura (não filtro)
+
+Levantado pelo Eduardo em 2026-08-08, e ele está certo em dois pontos que eu
+tinha respondido errado antes. São **dois problemas distintos** que vieram
+juntos na conversa; separá-los é o que torna os dois resolvíveis.
+
+### Problema A — disciplina não é filtro, é vocabulário
+
+Eu disse que Growth/Tech eram "só um filtro". Não são. Cada frente tem o
+**próprio conjunto de status** (`lib/task-frentes.ts`), e o mesmo nome muda de
+significado entre elas:
+
+| Status | Growth | Tech |
+|---|---|---|
+| `Backlog` | **ACTIVE** | **NOT_STARTED** |
+
+Growth vai de Brain a Finalizado; Tech tem `To Do (Sprint)`, `Code review`,
+`QA / testes`, `Pronto p/ release`, `Implantado`; Social tem `Roteirização`,
+`Aprovação cliente`, `Publicado`. São vocabulários operacionais diferentes, não
+rótulos.
+
+Consequência, que é o que o Eduardo chamou de "de-para": a aba **Todas as
+disciplinas** não é a matriz nem a visão canônica. Ela agrupa por
+`group_status`, então funciona — mas coloca lado a lado dois cards escritos
+`Backlog` em colunas diferentes, e quem lê não tem como saber por quê. A visão
+combinada é uma tradução, e hoje ela não se anuncia como tal.
+
+### Problema B — tarefa sem projeto perde o contexto
+
+A proposta: tarefa se liga a projeto, e as abas de disciplina só se destravam
+quando existe projeto no workspace (com mensagem dizendo "crie um projeto para
+vincular").
+
+O argumento não é organização — é **contexto acumulado**. Projeto como o nó que
+amarra comunicação (WhatsApp, e-mail), planejamento, documento, proposta e
+artefato. Isso alimenta, nesta ordem de valor:
+
+1. o copiloto saber o que já aconteceu naquele projeto;
+2. o benchmark da EG (o que funcionou, em que tipo de projeto);
+3. a identificação de gaps quando se procura projeto ou vaga;
+4. a geração de conteúdo — nossa e do cliente — com contexto real.
+
+### Onde eu concordo
+
+- **Disciplina é estrutural.** A aba combinada precisa se declarar como
+  tradução, ou some.
+- **Ligar tarefa a projeto vale.** E vale AGORA: cada tarefa e artefato que
+  nasce sem `project_id` é histórico órfão que fica caro de retrofitar. Os
+  artefatos (0089) já carregam `thread_id`/`run_id`; dar-lhes `project_id`
+  fecha metade do desenho.
+
+### Onde eu faria diferente
+
+**Destravar a aba ≠ tornar o vínculo obrigatório.** São coisas diferentes, e a
+segunda quebra um caso real: a Operação EG tem demanda interna legítima sem
+projeto — treinamento, hackathon, social da casa. Forçar projeto ali obrigaria
+a inventar um projeto "diversos", que é pior que o vínculo nulo porque polui o
+contexto que a mudança existe para melhorar.
+
+O próprio Eduardo disse: *"não estou falando que tem que prender tudo e tornar
+chumbado o sistema"*. Então a regra que eu proporia:
+
+| Workspace | Vínculo com projeto |
+|---|---|
+| **Cliente** | obrigatório — toda tarefa pertence a um projeto contratado |
+| **Operação EG** | opcional — demanda interna existe sem projeto |
+
+Isso entrega o contexto onde ele importa (cliente, benchmark, conteúdo) sem
+engessar a casa.
+
+`RESPOSTA (vínculo obrigatório só em cliente, ou em todos os workspaces?):`
+
+`RESPOSTA (a aba combinada some, ou fica declarada como tradução?):`
+
+---
+
 ## Fechadas — implementadas, não precisam voltar
 
 - **S3**: já configurado na Railway. Os 2 binários (`Manual de Marca.pdf`,
