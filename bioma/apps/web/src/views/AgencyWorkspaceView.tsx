@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import { BarChart3, Bot, FileSearch, MapPin, Users, WalletCards } from "lucide-react";
+import { BarChart3, Bot, FileSearch, MapPin, MessageSquare, Users, WalletCards } from "lucide-react";
 import { Link, Outlet, useOutletContext } from "react-router-dom";
 
 import { EmptyState } from "../components/shared";
@@ -16,6 +16,7 @@ const AiOperationsView = lazy(() => import("./AiOperationsView").then((module) =
 const MarketResearchStudio = lazy(() => import("../components/MarketResearchStudio").then((module) => ({ default: module.MarketResearchStudio })));
 const ProofView = lazy(() => import("./ProofView").then((module) => ({ default: module.ProofView })));
 const LocalRadarStudio = lazy(() => import("../components/LocalRadarStudio").then((module) => ({ default: module.LocalRadarStudio })));
+const WhatsAppManager = lazy(() => import("../components/WhatsAppManager").then((module) => ({ default: module.WhatsAppManager })));
 
 type AgencyWorkspaceOutletContext = {
   workspace: AgencyWorkspaceContext;
@@ -116,6 +117,12 @@ export function AgencyOverviewRoute() {
       to: "/operacao/metricas",
       icon: BarChart3,
     },
+    {
+      title: "WhatsApp & Disparos",
+      description: "Configuração multi-provedor (Evolution, Meta Cloud, Z-API, Custom), disparo experimental e auditoria.",
+      to: "/operacao/whatsapp",
+      icon: MessageSquare,
+    },
   ];
 
   // Esta grade é navegação, igual ao menu lateral — logo obedece à mesma
@@ -204,7 +211,14 @@ export function AgencyMarketResearchRoute() {
   );
 }
 
-
+export function AgencyWhatsAppRoute() {
+  const { workspace } = useAgencyWorkspace();
+  return (
+    <Suspense fallback={<ModuleLoading />}>
+      <WhatsAppManager workspaceId={workspace.workspaceId} />
+    </Suspense>
+  );
+}
 
 /** Painel de prova (decisão de 2026-08-08). Fica na Operação EG porque é
  *  registro da própria agência, não de um cliente. */

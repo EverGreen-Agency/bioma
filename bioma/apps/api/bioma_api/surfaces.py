@@ -139,11 +139,10 @@ SURFACE_CATALOG: dict[str, dict] = {
         "parent": "operacao",
         "feature_key": "local_radar",
     },
-    "operacao.whatsapp": {
-        "label": "WhatsApp & Disparos EG",
+    "whatsapp": {
+        "label": "WhatsApp & Disparos",
         "group": "Operação EG",
-        "scope": "eg",
-        "parent": "operacao",
+        "scope": "both",
         "module": "integrations",
         "feature_key": "whatsapp-multiprovider",
     },
@@ -214,20 +213,6 @@ SURFACE_CATALOG: dict[str, dict] = {
         "group": "Hub do cliente",
         "scope": "eg",
         "module": "integrations",
-    },
-    "cliente.whatsapp": {
-        "label": "WhatsApp & Mensagens",
-        "group": "Hub do cliente",
-        "scope": "both",
-        "module": "integrations",
-        "feature_key": "whatsapp-multiprovider",
-    },
-    "whatsapp": {
-        "label": "Multi-provedor WhatsApp",
-        "group": "Operação EG",
-        "scope": "both",
-        "module": "integrations",
-        "feature_key": "whatsapp-multiprovider",
     },
 }
 
