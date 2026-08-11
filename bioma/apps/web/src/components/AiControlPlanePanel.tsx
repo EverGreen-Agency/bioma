@@ -16,9 +16,9 @@ import { EmptyState, SectionHeader } from "./shared";
 
 const channelOptions: Record<AiProviderChannel, {
   label: string;
-  provider: "openai" | "anthropic" | "google";
+  provider: "openai" | "anthropic" | "google" | "openrouter" | "deepseek" | "groq";
   authMode: "chatgpt" | "claude_subscription" | "google_subscription" | "api_key" | "vertex_adc";
-  executionMode: "local_cli" | "sdk" | "manual_handoff";
+  executionMode: "local_cli" | "sdk" | "api" | "manual_handoff";
   authRef: string | null;
 }> = {
   codex_chatgpt: {
