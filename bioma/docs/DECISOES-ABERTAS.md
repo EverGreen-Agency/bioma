@@ -472,7 +472,7 @@ E não entendi sua pergunta. Mas prefiro implementar novos modelos pois parece q
 
 ---
 
-## 13. Tarefa ligada a projeto, e disciplina como estrutura (não filtro)
+## 13. Tarefa ligada a projeto, e disciplina como estrutura (decidido, parcialmente implementado)
 
 Levantado pelo Eduardo em 2026-08-08, e ele está certo em dois pontos que eu
 tinha respondido errado antes. São **dois problemas distintos** que vieram
@@ -544,6 +544,19 @@ engessar a casa.
 
 `RESPOSTA (vínculo obrigatório só em cliente, ou em todos os workspaces?):` Só para cliente.
 
+**Implementado em 2026-08-08 (backend).** `_validate_project` passa a exigir
+`project_id` quando `workspace_kind = 'client'`, com mensagem dizendo onde
+criar o projeto. Operação EG segue opcional. Não precisou de migração:
+`eg_tasks.project_id` já existia desde a 0065, nulável.
+
+**Falta (frontend):** a tela de tarefas do cliente ainda não bloqueia a criação
+antes de existir projeto — hoje a pessoa preenche e leva 422. O certo é a aba
+mostrar "crie um projeto para vincular" e o formulário exigir o campo.
+
+**Correção de uma afirmação minha:** eu disse que as abas de disciplina eram
+fixas. Não são — `TasksView` já as filtra por disciplina que tenha projeto ou
+tarefa, e só mostra ambas quando não há nada cadastrado.
+
 `RESPOSTA (a aba combinada some, ou fica declarada como tradução?):` Fica declarada como tradução.
 
 **Concordo.** Sumir com ela custaria a única visão de "tudo que está aberto
@@ -552,6 +565,10 @@ existência da aba — foi ela se apresentar como matriz. Declarada, ela vira o
 que sempre deveria ter sido: um panorama que avisa que os nomes de status
 pertencem a vocabulários diferentes, e que a coluna vem de `group_status`, não
 do nome.
+
+**Implementado em 2026-08-08.** A visão combinada agora traz uma linha dizendo
+que as colunas vêm do agrupamento, não do nome do status, e que para trabalhar
+convém escolher a disciplina.
 
 ---
 
