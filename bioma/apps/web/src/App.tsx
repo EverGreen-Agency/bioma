@@ -46,7 +46,6 @@ const AgencyAiOperationsRoute = lazy(() => import("./views/AgencyWorkspaceView")
 const AgencyMarketResearchRoute = lazy(() => import("./views/AgencyWorkspaceView").then((module) => ({ default: module.AgencyMarketResearchRoute })));
 const AgencyProofRoute = lazy(() => import("./views/AgencyWorkspaceView").then((module) => ({ default: module.AgencyProofRoute })));
 const AgencyLocalRadarRoute = lazy(() => import("./views/AgencyWorkspaceView").then((module) => ({ default: module.AgencyLocalRadarRoute })));
-const AgencyWhatsAppRoute = lazy(() => import("./views/AgencyWorkspaceView").then((module) => ({ default: module.AgencyWhatsAppRoute })));
 
 
 // Views administrativas EG
@@ -337,7 +336,6 @@ export function App() {
             <Route path="pesquisa-mercado" element={guardSurface("operacao.pesquisa-mercado", <AgencyMarketResearchRoute />)} />
             <Route path="radar-local" element={guardSurface("operacao.radar-local", <AgencyLocalRadarRoute />)} />
             <Route path="prova" element={guardSurface("operacao.prova", <AgencyProofRoute />)} />
-            <Route path="whatsapp" element={guardSurface("whatsapp", <AgencyWhatsAppRoute />)} />
             {/* As integrações da EG moram em Configurações → Empresa →
                 Integrações, junto das credenciais do ambiente. Esta rota fica
                 como atalho para quem já tinha o link. */}

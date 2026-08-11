@@ -117,12 +117,6 @@ export function AgencyOverviewRoute() {
       to: "/operacao/metricas",
       icon: BarChart3,
     },
-    {
-      title: "WhatsApp & Disparos",
-      description: "Configuração multi-provedor (Evolution, Meta Cloud, Z-API, Custom), disparo experimental e auditoria.",
-      to: "/operacao/whatsapp",
-      icon: MessageSquare,
-    },
   ];
 
   // Esta grade é navegação, igual ao menu lateral — logo obedece à mesma
@@ -207,15 +201,6 @@ export function AgencyMarketResearchRoute() {
   return (
     <Suspense fallback={<ModuleLoading />}>
       <MarketResearchStudio workspaceId={workspace.workspaceId} accessRole={workspace.accessRole} />
-    </Suspense>
-  );
-}
-
-export function AgencyWhatsAppRoute() {
-  const { workspace } = useAgencyWorkspace();
-  return (
-    <Suspense fallback={<ModuleLoading />}>
-      <WhatsAppManager workspaceId={workspace.workspaceId} />
     </Suspense>
   );
 }

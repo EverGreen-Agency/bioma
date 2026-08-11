@@ -104,13 +104,6 @@ export const agencyWorkspaceNavItems: Array<{
     module: "hub",
     icon: MapPin,
   },
-  {
-    id: "whatsapp",
-    label: "WhatsApp & Disparos",
-    path: "whatsapp",
-    module: "integrations",
-    icon: MessageSquare,
-  },
 ];
 
 // Feature-gating por organização (decisão 2026-07-14): cada view exige um

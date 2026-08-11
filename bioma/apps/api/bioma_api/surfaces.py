@@ -140,8 +140,8 @@ SURFACE_CATALOG: dict[str, dict] = {
         "feature_key": "local_radar",
     },
     "whatsapp": {
-        "label": "WhatsApp & Disparos",
-        "group": "Operação EG",
+        "label": "WhatsApp & Mensagens",
+        "group": "Configurações",
         "scope": "both",
         "module": "integrations",
         "feature_key": "whatsapp-multiprovider",
