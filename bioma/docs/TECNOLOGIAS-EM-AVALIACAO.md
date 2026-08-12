@@ -30,15 +30,43 @@ recomendação fechada.
 | [Conversions API](https://developers.facebook.com/documentation/ads-commerce/conversions-api) | ⚠️ envia conversão server-side | **alto valor para cliente** — melhora atribuição sem depender de pixel/cookie |
 | [Ad Library API](https://www.facebook.com/ads/library/api/) | ⚠️ anúncios públicos de qualquer anunciante | **alto valor** para benchmark de concorrente, e é pública |
 
-### O risco do Ads MCP Server da Meta
+### Ads MCP Server da Meta — o que foi verificado (2026-08-11)
 
-Ele **escreve**. Um MCP que cria e edita campanha conectado a um modelo é,
-literalmente, IA com acesso ao orçamento de mídia do cliente. Isso não é
-argumento para não usar — é argumento para usar com aprovação humana explícita
-por ação, que é a mesma regra que já vale para as ações do copiloto no Bioma.
+**Confirmado:**
 
-Eu não ligaria isso a workspace de cliente antes de existir um registro de
-quem autorizou o quê.
+- remoto em `mcp.facebook.com/ads`; **lê e escreve** — cria e edita campanhas,
+  ad sets e anúncios, em 7 categorias de ferramentas;
+- autenticação **OAuth com escopos granulares POR FERRAMENTA**, e a orientação
+  da própria Meta é conceder o mínimo: "only select scopes for tools you
+  actually need";
+- uso governado pelos Meta Platform Terms;
+- existe também um **Devtools MCP**, para gerenciar apps e webhooks.
+
+**NÃO confirmado** (as páginas de "Get started" truncam; três tentativas):
+se exige App próprio da EG, se há verificação de negócio, Tech Provider ou
+allowlist.
+
+**Leitura do que foi confirmado:** OAuth com escopo por ferramenta, num servidor
+hospedado pela Meta, é o mesmo padrão de Canva e Google Drive — o usuário
+conecta a PRÓPRIA conta e autoriza escopos. Isso sugere fortemente que **não é
+preciso construir App para usar**, diferente da Marketing API. Sugere, não
+prova: confirmar no primeiro contato.
+
+### Correção de uma recomendação anterior
+
+Eu havia escrito "não ligaria a workspace de cliente antes de existir registro
+de quem autorizou o quê". Era cauteloso demais e o Eduardo apontou com razão:
+**gerenciar ads por IA é exatamente o objetivo**, não um efeito colateral a
+conter.
+
+A posição correta: a capacidade é desejada; o que ela **exige** é aprovação
+humana por ação que gasta dinheiro — que é a mesma regra que o copiloto do
+Bioma já aplica ("ação visível ao cliente sempre pede confirmação"). É
+requisito de implementação, não motivo para adiar.
+
+O escopo granular por ferramenta ajuda aqui: dá para conectar só as ferramentas
+de LEITURA primeiro e acrescentar as de escrita quando a aprovação estiver no
+fluxo.
 
 ## App na Meta e Tech Provider — o que eu sei e o que não sei
 
@@ -56,10 +84,30 @@ started" que não foi lida.
 processo com prazo, e descobrir a exigência depois de prometer a data é o tipo
 de erro caro.
 
+## Ad Library como inteligência de criação
+
+O Eduardo levantou um uso que eu não tinha considerado e que é melhor que
+"benchmark de concorrente": **alimentar a criação** de roteiro, imagem e vídeo
+com os anúncios que estão no ar.
+
+Isso encaixa direto no que já existe — o Estúdio gera artefatos, e o dossiê que
+alimenta a geração hoje tem marca, tom e métricas. Acrescentar "o que os
+concorrentes estão veiculando agora" é contexto real, público e verificável,
+diferente de benchmark inventado (que o prompt do insight multicanal proíbe
+justamente por não ter fonte).
+
+Vale para os dois ecossistemas: a Meta tem a
+[Ad Library API](https://www.facebook.com/ads/library/api/) e o Google tem o
+Ads Transparency Center. ⚠️ O do Google não foi verificado — não sei se tem API
+pública ou só interface.
+
 ## Ordem que eu proporia
 
-1. **Conversions API** — valor direto para cliente, e o App que ela exige é o
-   mesmo que a Marketing API já usa.
-2. **Ad Library API** — barata, pública, alimenta benchmark de concorrente.
-3. **MCPs (Google e Meta)** — depois que o copiloto interno estiver estável.
-   Ligar IA com escrita em mídia paga antes disso é ordem invertida.
+1. **Ad Library (Meta)** — pública, sem App, e alimenta criação de conteúdo.
+   Maior valor pelo menor bloqueio.
+2. **Ads MCP (Meta)** — conectar primeiro com escopos de LEITURA, que já
+   entrega análise conversacional sem risco de orçamento. Escrita entra com
+   aprovação por ação.
+3. **Conversions API** — valor direto para cliente; usa o App que a Marketing
+   API já exige.
+4. **MCP do Google Ads** — mesmo raciocínio do da Meta, depois.
