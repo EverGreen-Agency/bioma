@@ -56,6 +56,17 @@ export const INTEGRATION_GUIDES: Record<string, IntegrationGuideContent> = {
       "Developer token do Google Ads aprovado na conta MCC da EG",
     ],
     steps: [
+      {
+        title: "Antes de tudo: a service account existe?",
+        description:
+          "Se ainda não existe, é aqui que começa. No Google Cloud Console da EG: crie/escolha um projeto, ative a Google Ads API em APIs e serviços › Biblioteca, e vá em IAM e Admin › Contas de serviço › Criar. Não precisa conceder papel algum no projeto — o acesso vem do Google Ads, não do GCP. Depois abra a conta criada › aba Chaves › Adicionar chave › Criar nova › JSON. O arquivo baixado é o que vai na variável do worker.",
+        link: { label: "Google Cloud Console — Contas de serviço", url: "https://console.cloud.google.com/iam-admin/serviceaccounts" },
+      },
+      {
+        title: "Cole o JSON na variável do WORKER (não da API)",
+        description:
+          "Abra o .json num editor de TEXTO PURO (Bloco de Notas — não Word, não editor que reformata), copie tudo e cole em GOOGLE_SERVICE_ACCOUNT_JSON no serviço do worker na Railway. O ponto crítico: a `private_key` precisa ficar em UMA linha, com \n escapados. Se aparecer quebrada em várias linhas, o JSON fica inválido e o sync falha antes de chamar o Google — é o erro mais comum desta integração. Ponha também GOOGLE_ADS_DEVELOPER_TOKEN e, se a conta estiver sob MCC, GOOGLE_ADS_LOGIN_CUSTOMER_ID (só números).",
+      },
       GOOGLE_SERVICE_ACCOUNT_STEP,
       {
         title: "Pegue o Customer ID da conta do cliente",
@@ -84,6 +95,7 @@ export const INTEGRATION_GUIDES: Record<string, IntegrationGuideContent> = {
       },
     ],
     caveat:
+      "O worker e a API sao SERVICOS SEPARADOS na Railway: as variaveis do Google vao no WORKER, e redeployar a API nao redeploya o worker. O worker roda como cron job — so gera log quando dispara, e os logs ficam em Deployments (a execucao especifica), nao na aba Logs do servico. " +
       "Há dois caminhos e eles não são intercambiáveis: conta AVULSA (cliente que não está sob o nosso MCC) exige convidar a service account nela; conta SOB O MCC dispensa esse convite mas exige preencher o campo de gerente. Escolher o caminho errado dá o mesmo sintoma — erro de permissão na sincronização.",
     envVars: ["GOOGLE_SERVICE_ACCOUNT_JSON", "GOOGLE_ADS_DEVELOPER_TOKEN"],
   },

@@ -572,6 +572,63 @@ convém escolher a disciplina.
 
 ---
 
+## 14. CMS — publicar artigo no WordPress do cliente (e da EG)
+
+Levantado em 2026-08-11. Necessidade real e imediata: gerenciar e publicar
+artigos no blog da EG (SEO/GEO) e no de pelo menos um cliente. Hoje isso é
+manual e não existe nada no Bioma.
+
+**O encaixe é melhor do que parece**, porque três peças já existem e a
+integração é o elo que falta, não uma feature do zero:
+
+- **artefatos versionados** (0089) — o artigo nasce como artefato, com
+  procedência (`thread_id`/`run_id`) e versão;
+- **Estúdio** — a vista onde se revisa antes de publicar;
+- **`performance_connections`** — o padrão de conexão por workspace, com
+  credencial no ambiente e nunca no banco.
+
+**WordPress não precisa de plugin.** A REST API é nativa
+(`/wp-json/wp/v2/posts`) e autentica por Application Password, que se gera no
+perfil do usuário. É a rota mais simples e a que menos depende do cliente.
+
+### Desenho proposto
+
+```
+conversa com copiloto  →  artefato (kind: artigo)
+                              ↓ revisão no Estúdio
+                              ↓ status: approved
+                       publicar  →  WordPress como RASCUNHO
+                              ↓
+                    guarda post_id + URL de volta no artefato
+```
+
+**Publicar sempre como rascunho, nunca direto no ar.** Erro de IA no blog do
+cliente é público, indexável e fica no cache do Google — o custo de um rascunho
+a mais é zero perto disso. Quem aperta "publicar" é uma pessoa, no WordPress.
+
+Guardar `post_id` e URL de volta no artefato é o que fecha o ciclo: sem isso,
+uma segunda publicação cria post duplicado em vez de atualizar, e ninguém
+consegue ir do artefato ao que está no ar.
+
+### O que eu NÃO faria junto
+
+**Score de SEO/GEO é outra feature.** Score exige critério definido — e sem
+critério vira exatamente o problema das recomendações fixas que saíram dos PDFs
+e do "IA Insight": um número com aparência de análise e nenhuma análise atrás.
+Se for fazer, primeiro se define o que se mede.
+
+**Newsletter também é outra coisa.** WordPress publica; newsletter dispara. São
+provedores diferentes (Mailchimp, Brevo, Resend) e o risco é oposto — post
+errado se despublica, e-mail enviado não volta.
+
+`RESPOSTA (WordPress primeiro, ou já contemplar outros CMS?):`
+
+`RESPOSTA (publicar como rascunho sempre, ou permitir publicar direto?):`
+
+`RESPOSTA (score de SEO/GEO entra agora ou fica para depois?):`
+
+---
+
 ## Fechadas — implementadas, não precisam voltar
 
 - **8. Estúdio IA como artefatos do copiloto** — implementado em 2026-08-08
