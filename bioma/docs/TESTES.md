@@ -8,13 +8,13 @@ Este documento existe para responder três coisas: **o que já existe**, **por q
 
 | Camada | Quantidade | Cobre |
 |---|---|---|
-| Testes puros (pytest) | 16 arquivos, 161 testes | regras de borda, sem banco |
+| Testes puros (pytest) | 19 arquivos, 214 testes | regras de borda, sem banco |
 | Smokes | 59 scripts | integração real contra Postgres |
-| Frontend | **2 arquivos, 9 testes** (novos) | lógica pura de `src/lib` |
+| Frontend | 3 arquivos, 16 testes | lógica pura de `src/lib` |
 
 **Cobertura medida:**
 
-- backend, só testes puros: **21%** (14.329 statements)
+- backend, só testes puros: **23%** (14.498 statements)
 - backend, incluindo smokes: **não medido ainda** — ver abaixo
 - frontend, camada `lib`: **9,4%**
 
@@ -108,6 +108,36 @@ python scripts/coverage_report.py --smokes
 cd bioma/apps/web && npm test
 npm run test:cov
 ```
+
+## O que a regra "TDD daqui pra frente" produziu na prática
+
+Decidida em 2026-08-11 e aplicada no mesmo dia a três entregas. O resultado
+mensurável:
+
+| Módulo | Escrito | Cobertura |
+|---|---|---|
+| `bioma_api/cms.py` | teste antes | **96%** |
+| `bioma_api/content_quality.py` | teste antes | **96%** |
+| média do resto da base | teste depois, ou nunca | 23% |
+
+Código escrito com o teste antes chega perto de coberto **sem ninguém
+perseguir cobertura** — o número vira consequência em vez de meta. É o
+argumento mais forte a favor da regra, e ele é desta base, não de artigo.
+
+E o teste antes achou coisa que ninguém tinha visto:
+
+- A regra da decisão 13 estava **morta**: nunca recusou uma tarefa sequer.
+  Descoberta ao escrever o primeiro teste dela.
+- Texto **vazio** pontuava 6 no score SEO, porque "nenhuma imagem tem alt ruim"
+  passava no vácuo. Virou o conceito de check que *não se aplica*.
+- As reticências do resumo eram somadas **depois** do corte, estourando o
+  limite em 3 caracteres.
+
+E uma ressalva honesta, do mesmo dia: **um dos testes que escrevi estava
+errado** — reprovava um slug correto. TDD estreita muito a margem de erro, mas
+não a fecha: o teste também é código, e escrito com a mesma confiança. Por isso
+os testes aqui têm nome em português e asserção óbvia — a revisão humana do
+teste é o que fecha essa última brecha.
 
 ## O que ainda não foi feito
 
