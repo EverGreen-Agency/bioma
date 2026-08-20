@@ -12,7 +12,8 @@ TASK_COLUMNS = """
 def find_workspace_context(conn, workspace_id: UUID, is_admin: bool, user_id: UUID):
     return conn.execute(
         """
-        select w.id as workspace_id, w.tenant_organization_id, w.subject_organization_id,
+        select w.id as workspace_id, w.kind as workspace_kind,
+          w.tenant_organization_id, w.subject_organization_id,
           case when %s then 'platform_admin' else workspace_access_role(w.id, %s) end as access_role
         from workspaces w
         where w.id = %s
@@ -26,7 +27,8 @@ def find_workspace_context(conn, workspace_id: UUID, is_admin: bool, user_id: UU
 def find_list_context(conn, list_id: UUID, is_admin: bool, user_id: UUID):
     return conn.execute(
         """
-        select l.id as list_id, l.workspace_id, w.tenant_organization_id, w.subject_organization_id,
+        select l.id as list_id, l.workspace_id, w.kind as workspace_kind,
+          w.tenant_organization_id, w.subject_organization_id,
           case when %s then 'platform_admin' else workspace_access_role(w.id, %s) end as access_role
         from eg_task_lists l
         join workspaces w on w.id = l.workspace_id and w.status = 'active'
@@ -41,7 +43,7 @@ def find_task_context(conn, task_id: UUID, is_admin: bool, user_id: UUID):
     return conn.execute(
         """
         select t.id as task_id, t.group_status, t.external_source, t.list_id,
-          coalesce(t.workspace_id, l.workspace_id) as workspace_id,
+          coalesce(t.workspace_id, l.workspace_id) as workspace_id, w.kind as workspace_kind,
           w.tenant_organization_id, w.subject_organization_id,
           case when %s then 'platform_admin' else workspace_access_role(w.id, %s) end as access_role
         from eg_tasks t
@@ -58,7 +60,7 @@ def find_subtask_context(conn, subtask_id: UUID, is_admin: bool, user_id: UUID):
     return conn.execute(
         """
         select s.id as subtask_id, s.task_id, t.external_source,
-          coalesce(t.workspace_id, l.workspace_id) as workspace_id,
+          coalesce(t.workspace_id, l.workspace_id) as workspace_id, w.kind as workspace_kind,
           w.tenant_organization_id, w.subject_organization_id,
           case when %s then 'platform_admin' else workspace_access_role(w.id, %s) end as access_role
         from eg_task_subtasks s

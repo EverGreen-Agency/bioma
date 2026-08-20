@@ -1028,6 +1028,24 @@
   font-size: 12px;
 }
 
+/* Decisao 13: cliente sem projeto nao ganha campo de titulo, ganha o caminho.
+   Deliberadamente NAO usa a cor de erro — nao e erro da pessoa, e um passo que
+   falta. Tokens conferidos contra tokens.css: `var()` de token inexistente e
+   descartado em silencio e o texto sairia invisivel. */
+.inline-task-composer-blocked {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 6px;
+  background: var(--bg-inset);
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 /* No kanban o composer vira um card, alinhado com os TaskCard da coluna. */
 .task-column .inline-task-composer {
   padding: 8px;

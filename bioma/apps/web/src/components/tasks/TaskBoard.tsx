@@ -6,8 +6,11 @@ import { statusesForFrente, groupForStatus, getMacroGroupTooltip } from "../../l
 import { TaskCard } from "./TaskCard";
 import { TaskDrawer } from "./TaskDrawer";
 import { InlineTaskComposer } from "./InlineTaskComposer";
+import type { ComposerProjectState } from "../../lib/task-composer";
 
 type TaskBoardProps = {
+  /** Projeto da nova tarefa, resolvido pela decisao 13. */
+  composerProject: ComposerProjectState;
   workspaceId: string;
   tasks: TaskSummary[];
   discipline?: Discipline | string;
@@ -22,7 +25,7 @@ const MACRO_COLUMNS: { id: string; group: TaskGroupStatus; label: string }[] = [
   { id: "CLOSED", group: "CLOSED", label: "Finalizado" },
 ];
 
-export function TaskBoard({ workspaceId, tasks: allTasks, discipline, taskFilter, listId }: TaskBoardProps) {
+export function TaskBoard({ workspaceId, tasks: allTasks, discipline, composerProject, taskFilter, listId }: TaskBoardProps) {
   const tasks = taskFilter ? allTasks.filter(taskFilter) : allTasks;
   const updateTask = useUpdateTask();
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -150,6 +153,7 @@ export function TaskBoard({ workspaceId, tasks: allTasks, discipline, taskFilter
 
               {composerColumn === col.id && (
                 <InlineTaskComposer
+                  project={composerProject}
                   workspaceId={workspaceId}
                   // Ver TaskListView: sem status detalhado, gravar o rótulo da
                   // coluna inventaria um status que nenhuma frente reconhece.

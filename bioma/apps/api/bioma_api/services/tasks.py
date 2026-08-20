@@ -75,7 +75,7 @@ def _validate_dates(conn, values: dict, task_id: UUID | None = None) -> None:
         )
 
 
-def _validate_project(conn, workspace_id: UUID, values: dict, context: dict | None = None) -> None:
+def _validate_project(conn, workspace_id: UUID, values: dict, context: dict) -> None:
     """Projeto tem que ser do mesmo workspace — e, em CLIENTE, é obrigatório.
 
     Decisão 13 (2026-08-08). Tarefa de cliente sem projeto perde o contexto que
@@ -87,11 +87,17 @@ def _validate_project(conn, workspace_id: UUID, values: dict, context: dict | No
     existe sem projeto (treinamento, hackathon, social da casa). Exigir projeto
     ali obrigaria a inventar um projeto "diversos", que polui exatamente o
     contexto que esta regra existe para melhorar.
+
+    `context` NAO tem valor padrao e o tipo e lido por colchete, de proposito.
+    A primeira versao aceitava `context=None` e usava `.get()`: dois dos tres
+    caminhos de escrita nao passavam contexto, e as queries de contexto nem
+    selecionavam `w.kind` — a regra ficou MORTA, liberando tudo, sem erro
+    nenhum. Faltando o dado agora, explode.
     """
     project_id = values.get("project_id")
 
     if project_id is None:
-        if context and context.get("workspace_kind") == "client":
+        if context["workspace_kind"] == "client":
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=(
@@ -255,7 +261,7 @@ def create_task(list_id: UUID, data: TaskCreate, user: CurrentUserResponse) -> T
         )
         _validate_people(conn, context["workspace_id"], values)
         _validate_dates(conn, values)
-        _validate_project(conn, context["workspace_id"], values)
+        _validate_project(conn, context["workspace_id"], values, context)
         _validate_parent(conn, context["workspace_id"], values)
         _validate_dependencies(conn, context["workspace_id"], dependencies)
         row = tasks_repo.create_task(conn, list_id, values)
@@ -285,7 +291,7 @@ def update_task(task_id: UUID, data: TaskUpdate, user: CurrentUserResponse) -> T
         _require_local_task(context)
         _validate_people(conn, context["workspace_id"], updates)
         _validate_dates(conn, updates, task_id)
-        _validate_project(conn, context["workspace_id"], updates)
+        _validate_project(conn, context["workspace_id"], updates, context)
         _validate_parent(conn, context["workspace_id"], updates, task_id)
         if dependencies is not None:
             _validate_dependencies(conn, context["workspace_id"], dependencies, task_id)

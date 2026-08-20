@@ -5,11 +5,14 @@ import { useUpdateTask } from "../../hooks/useBiomaApi";
 import { EmptyState } from "../shared";
 import { TaskDrawer } from "./TaskDrawer";
 import { InlineTaskComposer } from "./InlineTaskComposer";
+import type { ComposerProjectState } from "../../lib/task-composer";
 import { formatDueDate } from "../../lib/format";
 import { statusesForFrente } from "../../lib/task-frentes";
 import type { Discipline, TaskGroupStatus, TaskListType, TaskSummary } from "../../lib/api";
 
 type TaskListViewProps = {
+  /** Projeto da nova tarefa, resolvido pela decisao 13. */
+  composerProject: ComposerProjectState;
   workspaceId: string;
   tasks: TaskSummary[];
   discipline?: Discipline | string;
@@ -26,7 +29,7 @@ const MACRO_SECTIONS: { status: string; group: TaskGroupStatus; label: string }[
   { status: "CLOSED", group: "CLOSED", label: "Finalizado" },
 ];
 
-export function TaskListView({ workspaceId, tasks: allTasks, discipline, listId, listType, taskFilter }: TaskListViewProps) {
+export function TaskListView({ workspaceId, tasks: allTasks, discipline, composerProject, listId, listType, taskFilter }: TaskListViewProps) {
   const tasks = taskFilter ? allTasks.filter(taskFilter) : allTasks;
   const updateTask = useUpdateTask();
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
@@ -162,6 +165,7 @@ export function TaskListView({ workspaceId, tasks: allTasks, discipline, listId,
                       para nascer nela. */}
                   {canCreate && !isOrphanSection && (
                     <InlineTaskComposer
+                  project={composerProject}
                       workspaceId={workspaceId}
                       // Sem disciplina não existe status detalhado real: gravar
                       // o rótulo da seção ("A fazer") inventaria um status que

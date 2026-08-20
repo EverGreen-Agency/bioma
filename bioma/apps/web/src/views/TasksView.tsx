@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useWorkspaceTasks, useCreateWorkspaceTask, useWorkspaceProjects } from "../hooks/useBiomaApi";
 import { TaskBoard } from "../components/tasks/TaskBoard";
 import { TaskListView } from "../components/tasks/TaskListView";
@@ -6,6 +7,8 @@ import { TaskCalendarView } from "../components/tasks/TaskCalendarView";
 import { TaskGanttView } from "../components/tasks/TaskGanttView";
 import { EmptyState, SectionHeader } from "../components/shared";
 import { buildTaskPredicate, quickFiltersForFrente } from "../lib/task-filters";
+import { resolveComposerProject } from "../lib/task-composer";
+import { api } from "../lib/api";
 import { LayoutDashboard, Kanban, List, Calendar, ChartGantt } from "lucide-react";
 
 type TasksViewProps = {
@@ -33,6 +36,20 @@ export function TasksView({ workspaceId }: TasksViewProps) {
     projectFilter || undefined,
   );
   const { data: projects = [] } = useWorkspaceProjects(workspaceId);
+
+  // Decisao 13: tarefa de cliente exige projeto; na Operacao EG e opcional.
+  // A regra mora em `resolveComposerProject` porque e regra, nao renderizacao —
+  // e porque precisa ser a MESMA nas quatro visoes.
+  const { data: workspaces = [] } = useQuery({ queryKey: ["workspaces"], queryFn: api.workspaces });
+  const composerProject = useMemo(
+    () =>
+      resolveComposerProject({
+        kind: workspaces.find((workspace) => workspace.id === workspaceId)?.kind ?? "agency_internal",
+        projects: projects.map((project) => ({ id: project.id, name: project.name })),
+        projectFilter,
+      }),
+    [projectFilter, projects, workspaceId, workspaces],
+  );
 
   if (isLoading) {
     return <EmptyState text="Carregando tarefas..." />;
@@ -158,8 +175,8 @@ export function TasksView({ workspaceId }: TasksViewProps) {
             taskFilter,
             discipline: discipline || undefined,
           } as const;
-          if (viewMode === "board") return <TaskBoard {...shared} />;
-          if (viewMode === "list") return <TaskListView {...shared} />;
+          if (viewMode === "board") return <TaskBoard {...shared} composerProject={composerProject} />;
+          if (viewMode === "list") return <TaskListView {...shared} composerProject={composerProject} />;
           if (viewMode === "calendar") return <TaskCalendarView {...shared} />;
           return <TaskGanttView {...shared} />;
         })()}

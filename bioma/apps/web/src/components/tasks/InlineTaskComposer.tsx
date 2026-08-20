@@ -3,6 +3,7 @@ import { Loader2, Plus, TriangleAlert } from "lucide-react";
 
 import { useCreateWorkspaceTask } from "../../hooks/useBiomaApi";
 import type { Discipline, TaskGroupStatus } from "../../lib/api";
+import type { ComposerProjectState } from "../../lib/task-composer";
 
 /**
  * Criação de tarefa em uma linha: digita o título, Enter, pronto.
@@ -17,12 +18,18 @@ import type { Discipline, TaskGroupStatus } from "../../lib/api";
  * cada item recria o atrito que este componente existe para remover. Os
  * detalhes (responsável, prazo, definição de pronto) entram depois, abrindo a
  * tarefa — e aí o formulário completo faz sentido.
+ *
+ * `project` chega resolvido de cima (`resolveComposerProject`). Quando a regra
+ * da decisão 13 não consegue decidir sozinha, o campo não aparece: no lugar dele
+ * vem o que fazer. Deixar digitar para depois responder 422 ensina a regra do
+ * jeito mais caro possível — o texto já digitado some e a pessoa não sabe por quê.
  */
 export function InlineTaskComposer({
   workspaceId,
   status,
   groupStatus,
   discipline,
+  project,
   placeholder = "Escreva o título e tecle Enter",
   autoFocus = false,
   onCancel,
@@ -32,6 +39,8 @@ export function InlineTaskComposer({
   status: string;
   groupStatus: TaskGroupStatus;
   discipline?: Discipline;
+  /** Projeto resolvido pela regra da decisão 13, ou o motivo de não dar. */
+  project: ComposerProjectState;
   placeholder?: string;
   autoFocus?: boolean;
   onCancel?: () => void;
@@ -57,6 +66,7 @@ export function InlineTaskComposer({
           status,
           group_status: groupStatus,
           discipline: discipline ?? null,
+          project_id: project.ready ? project.projectId : null,
           recurrence: "none",
           custom_fields: [],
           dependencies: [],
@@ -72,6 +82,14 @@ export function InlineTaskComposer({
         // escreveu junto do motivo e corrige sem perder o texto.
         onError: (err: Error) => setError(err.message || "Não foi possível criar a tarefa."),
       },
+    );
+  }
+
+  if (!project.ready) {
+    return (
+      <p className="inline-task-composer-blocked">
+        <TriangleAlert size={12} aria-hidden /> {project.message}
+      </p>
     );
   }
 
