@@ -20,8 +20,9 @@ import shutil
 import subprocess
 import sys
 
-ROOT = Path(__file__).resolve().parents[1]
-REPO = ROOT.parents[1]
+ROOT = Path(__file__).resolve().parents[1]          # bioma/apps/api
+BIOMA = ROOT.parents[1]                             # bioma
+RUN_SMOKES = BIOMA / "scripts" / "run_smokes.py"
 def limpar() -> None:
     """Apaga dados de execucoes anteriores.
 
@@ -29,7 +30,12 @@ def limpar() -> None:
     sem limpar, uma rodada nova soma com a antiga e a cobertura so sobe — o que
     e pior que nao medir, porque parece progresso.
     """
-    for resto in ROOT.glob(".coverage*"):
+    # Os dois padroes SEPARADOS, nunca `.coverage*`: aquele glob casa com
+    # `.coveragerc` e o script apagava a propria configuracao. A rodada
+    # seguinte morria com "Couldn't read '.coveragerc' as a config file" —
+    # um erro que aponta para arquivo corrompido quando ele nem existe mais.
+    alvos = [ROOT / ".coverage", *ROOT.glob(".coverage.*")]
+    for resto in alvos:
         if resto.is_file():
             resto.unlink()
 
@@ -46,6 +52,10 @@ def ambiente_com_subprocesso() -> dict:
     """
     env = dict(os.environ)
     env["COVERAGE_PROCESS_START"] = str(ROOT / ".coveragerc")
+    # Absoluto e apontando para ROOT: os smokes rodam com OUTRO cwd, e sem isto
+    # os arquivos de dados caem na pasta deles enquanto o `combine` procura
+    # aqui. O smoke era medido e o resultado, descartado.
+    env["COVERAGE_FILE"] = str(ROOT / ".coverage")
     return env
 
 
@@ -73,28 +83,43 @@ def main() -> None:
     python = sys.executable
     pth = instalar_hook_de_subprocesso() if args.smokes else None
 
-    print("== testes puros ==")
-    subprocess.run(
+    print("== testes puros ==", flush=True)
+    puros = subprocess.run(
         [python, "-m", "coverage", "run", "--rcfile", str(ROOT / ".coveragerc"), "-m", "pytest", "-q"],
         cwd=ROOT, env=env, check=False,
     )
 
+    smokes = None
     if args.smokes:
-        print("\n== smokes (Postgres real) ==")
-        subprocess.run(
-            [python, str(REPO / "bioma" / "scripts" / "run_smokes.py")],
-            cwd=REPO, env=env, check=False,
+        # Conferir ANTES de rodar. A versao anterior apontava para um caminho
+        # inexistente e `check=False` engolia a falha: o cabecalho aparecia, os
+        # smokes nao rodavam, e o numero final saia igual ao dos testes puros
+        # parecendo legitimo.
+        if not RUN_SMOKES.exists():
+            raise SystemExit(f"ERRO: nao encontrei o runner de smokes em {RUN_SMOKES}")
+        print("\n== smokes (Postgres real) ==", flush=True)
+        smokes = subprocess.run(
+            [python, str(RUN_SMOKES)],
+            cwd=BIOMA, env=env, check=False,
         )
 
     if pth and pth.exists():
         pth.unlink()  # o hook e temporario: deixar ligado mede tudo, sempre
 
     subprocess.run([python, "-m", "coverage", "combine"], cwd=ROOT, env=env, check=False)
-    print("\n== cobertura ==")
+    print("\n== cobertura ==", flush=True)
     subprocess.run(
         [python, "-m", "coverage", "report", "--rcfile", str(ROOT / ".coveragerc")],
         cwd=ROOT, env=env, check=False,
     )
+
+    # O numero so vale se as duas etapas rodaram. Dizer a cobertura sem avisar
+    # que uma delas falhou seria reportar um resultado que nao existe.
+    if puros.returncode != 0:
+        print("\nATENCAO: os testes puros FALHARAM — a cobertura acima esta incompleta.", flush=True)
+    if smokes is not None and smokes.returncode != 0:
+        print("\nATENCAO: os smokes FALHARAM — a cobertura acima esta incompleta.", flush=True)
+
     print(
         "\nLembrete: cobertura mede LINHA EXECUTADA, nao comportamento verificado.\n"
         "Os bugs desta semana (claim_next_sync sem workspace_id, feature key\n"
