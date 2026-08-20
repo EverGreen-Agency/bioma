@@ -68,3 +68,8 @@ cc-exports/
 
 .vercel
 .env*
+
+# Cobertura de testes (dados brutos e relatórios; o número vive na CI, não no git)
+.coverage
+.coverage.*
+bioma/apps/web/coverage/
