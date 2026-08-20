@@ -316,7 +316,7 @@ Fase 3 entrar sem quebrar contrato e sem ninguém achar que houve busca híbrida
 consultáveis no hub dela) ou da **EG** (políticas, processos, contratos-modelo)?
 Muda quem enxerga por padrão, e a decisão errada aqui é cara de desfazer.
 
-`RESPOSTA (começar pela base da EG ou do cliente?):`
+`RESPOSTA (começar pela base da EG ou do cliente?):`Faça para ambos.
 
 ---
 
@@ -472,7 +472,20 @@ E não entendi sua pergunta. Mas prefiro implementar novos modelos pois parece q
 
 ---
 
-## 13. Tarefa ligada a projeto, e disciplina como estrutura (decidido, parcialmente implementado)
+## 13. Tarefa ligada a projeto, e disciplina como estrutura (IMPLEMENTADO)
+
+> **Estado em 2026-08-11.** Fechado, back e front.
+>
+> Ao escrever o primeiro teste da regra descobri que ela estava **morta**: o
+> guard existia e nunca recusou nada, porque nenhuma query de contexto
+> selecionava `workspaces.kind` e dois dos tres caminhos de escrita nem
+> passavam o contexto. Corrigido de forma estrutural — `context` perdeu o valor
+> padrao e o tipo e lido por colchete, entao faltar o dado agora explode em vez
+> de liberar calado.
+>
+> No front, `resolveComposerProject` decide o projeto sem perguntar quando da
+> (filtro ativo manda; um projeto so, escolhe sozinho) e, quando nao da, o campo
+> de titulo nem aparece: no lugar dele vem o caminho. Ninguem mais leva 422.
 
 Levantado pelo Eduardo em 2026-08-08, e ele está certo em dois pontos que eu
 tinha respondido errado antes. São **dois problemas distintos** que vieram
@@ -572,7 +585,24 @@ convém escolher a disciplina.
 
 ---
 
-## 14. CMS — publicar artigo no WordPress do cliente (e da EG)
+## 14. CMS — publicar artigo no WordPress do cliente (e da EG) (parcial)
+
+> **Estado em 2026-08-11.** Suas tres respostas foram implementadas ate onde
+> da para provar sem um WordPress real na mao.
+>
+> **Pronto:** o score SEO/GEO (`bioma_api/content_quality.py` + painel no
+> Estudio) e a camada pura de publicacao (`bioma_api/cms.py`), com o contrato
+> do WP verificado na documentacao oficial. O configuravel rascunho-vs-direto
+> tem duas travas: padrao rascunho, e `direct` nao vence falta de aprovacao.
+>
+> **Falta:** o envio HTTP em si, o vinculo com o cofre de credenciais e o botao
+> na tela. Essa parte so se prova contra um site real — quando tiver um
+> WordPress de teste (o da EG serve), fechamos.
+>
+> **Sua oferta de projetos open source de SEO continua de pe e util** — o que
+> tenho hoje e checklist do proprio texto, e nao substitui dado de volume de
+> busca, concorrencia de termo ou backlink, que e onde essas ferramentas
+> entram.
 
 Levantado em 2026-08-11. Necessidade real e imediata: gerenciar e publicar
 artigos no blog da EG (SEO/GEO) e no de pelo menos um cliente. Hoje isso é
@@ -621,11 +651,11 @@ Se for fazer, primeiro se define o que se mede.
 provedores diferentes (Mailchimp, Brevo, Resend) e o risco é oposto — post
 errado se despublica, e-mail enviado não volta.
 
-`RESPOSTA (WordPress primeiro, ou já contemplar outros CMS?):`
+`RESPOSTA (WordPress primeiro, ou já contemplar outros CMS?):`Pode ser por enqaunto wordpress mas já deixe planejado outros conhecidos do mercado.
 
-`RESPOSTA (publicar como rascunho sempre, ou permitir publicar direto?):`
+`RESPOSTA (publicar como rascunho sempre, ou permitir publicar direto?):`Ter como configurar as duasopções.
 
-`RESPOSTA (score de SEO/GEO entra agora ou fica para depois?):`
+`RESPOSTA (score de SEO/GEO entra agora ou fica para depois?):`Gostaria que entrasse agora. E se precisar, eu achei projetos open source de SEO. Se precisar lhe trago!
 
 ---
 
