@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type StudioArtifactStatus } from "../../lib/api";
+import { api, type PublishOptions, type StudioArtifactStatus } from "../../lib/api";
 
 /** Decisão 8 — a vista do Estúdio: o que a conversa produziu, organizado. */
 export function useStudioArtifacts(
@@ -95,4 +95,56 @@ export function useSaveArtifactFromRun() {
       api.saveArtifactFromRun(runId, payload),
     (vars) => vars.artifact_id ?? undefined,
   );
+}
+
+/** Decisao 14 — alvos de CMS e publicacao. */
+export function useCmsTargets(workspaceId: string | null) {
+  return useQuery({
+    queryKey: ["cms-targets", workspaceId],
+    queryFn: () => api.cmsTargets(workspaceId as string),
+    enabled: Boolean(workspaceId),
+  });
+}
+
+export function useArtifactPublications(workspaceId: string | null, artifactId: string | null) {
+  return useQuery({
+    queryKey: ["artifact-publications", workspaceId, artifactId],
+    queryFn: () => api.artifactPublications(workspaceId as string, artifactId as string),
+    enabled: Boolean(workspaceId && artifactId),
+  });
+}
+
+/** A previa e `useQuery` e nao mutation: POST so porque o corpo carrega as
+ *  opcoes, mas nao ha efeito colateral nenhum. Trocar de alvo recalcula. */
+export function usePublishPreview(
+  workspaceId: string | null,
+  artifactId: string | null,
+  options: PublishOptions | null,
+) {
+  return useQuery({
+    queryKey: ["publish-preview", workspaceId, artifactId, options],
+    queryFn: () => api.publishPreview(workspaceId as string, artifactId as string, options as PublishOptions),
+    enabled: Boolean(workspaceId && artifactId && options?.target_id),
+  });
+}
+
+export function useCheckCmsTarget(workspaceId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (targetId: string) => api.checkCmsTarget(workspaceId, targetId),
+    // Invalida sempre, inclusive quando o teste falha: o erro tambem e
+    // resultado e precisa aparecer na lista.
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["cms-targets", workspaceId] }),
+  });
+}
+
+export function usePublishArtifact(workspaceId: string, artifactId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (options: PublishOptions) => api.publishArtifact(workspaceId, artifactId, options),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["artifact-publications", workspaceId, artifactId] });
+      queryClient.invalidateQueries({ queryKey: ["studio-artifact", artifactId] });
+    },
+  });
 }

@@ -10,6 +10,7 @@ from bioma_api.routers import (
     ai_routing,
     analytics,
     artifacts,
+    cms,
     auth,
     benchmark,
     briefing,
@@ -108,6 +109,7 @@ app.include_router(projects.workspace_router)
 app.include_router(analytics.router)
 app.include_router(artifacts.router)
 app.include_router(artifacts.workspace_router)
+app.include_router(cms.workspace_router)
 app.include_router(files.router)
 app.include_router(files.workspace_router)
 app.include_router(integrations.router)

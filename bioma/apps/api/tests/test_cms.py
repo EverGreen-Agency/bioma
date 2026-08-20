@@ -14,6 +14,8 @@ import pytest
 
 from bioma_api.cms import (
     build_post_payload,
+    capability_for_status,
+    explain_publish_status,
     markdown_to_html,
     resolve_publish_status,
     slugify,
@@ -153,3 +155,43 @@ class TestPayload:
         payload = build_post_payload(self.ARTEFATO, mode="draft")
         assert "author" not in payload
         assert "date" not in payload
+
+
+class TestMotivoDoRebaixamento:
+    """A tela precisa dizer POR QUE saiu rascunho quando o alvo diz "direto".
+
+    Sem o motivo, a pessoa configura direto, clica publicar, ve "rascunho" e
+    conclui que a configuracao nao funciona.
+    """
+
+    def test_direto_com_peca_aprovada_nao_tem_rebaixamento(self):
+        status, motivo = explain_publish_status(artifact_status="approved", mode="direct")
+        assert status == "publish"
+        assert motivo is None
+
+    def test_rascunho_pedido_nao_e_rebaixamento(self):
+        """Pediu rascunho, saiu rascunho: nada foi rebaixado, e inventar um
+        aviso aqui treinaria a pessoa a ignorar avisos."""
+        status, motivo = explain_publish_status(artifact_status="approved", mode="draft")
+        assert status == "draft"
+        assert motivo is None
+
+    def test_direto_com_peca_nao_aprovada_explica(self):
+        status, motivo = explain_publish_status(artifact_status="draft", mode="direct")
+        assert status == "draft"
+        assert motivo is not None
+        assert "aprova" in motivo.lower()
+
+
+class TestPermissaoAtreladaAoRisco:
+    """Publicar rascunho e publicar no ar sao atos diferentes.
+
+    Amarrar a permissao ao BOTAO trataria os dois igual. Amarrar ao RESULTADO
+    deixa um operador rascunhar a vontade e exige aprovador so para ir ao ar.
+    """
+
+    def test_rascunho_exige_apenas_tocar_no_trabalho(self):
+        assert capability_for_status("draft") == "manage_work"
+
+    def test_ir_ao_ar_exige_aprovacao(self):
+        assert capability_for_status("publish") == "approve"

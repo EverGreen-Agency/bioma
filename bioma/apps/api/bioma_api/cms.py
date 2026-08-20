@@ -71,9 +71,43 @@ def resolve_publish_status(*, artifact_status: str, mode: PublishMode | None) ->
     uma vez transformaria todo rascunho futuro em publicação automática — o
     oposto de uma configuração, que é uma escolha que continua sendo revista.
     """
+    return explain_publish_status(artifact_status=artifact_status, mode=mode)[0]
+
+
+def explain_publish_status(
+    *, artifact_status: str, mode: PublishMode | None
+) -> tuple[WordPressStatus, str | None]:
+    """O status resolvido e, quando houve rebaixamento, o motivo.
+
+    A tela precisa dizer POR QUE saiu rascunho num alvo configurado para
+    publicar direto. Sem o motivo, a pessoa configura "direto", clica publicar,
+    vê "rascunho" e conclui que a configuração está quebrada.
+
+    Pedir rascunho e receber rascunho NÃO é rebaixamento — inventar um aviso aí
+    treinaria a pessoa a ignorar avisos, que é como um aviso morre.
+    """
     if mode != "direct":
-        return "draft"
-    return "publish" if artifact_status in _LIBERADOS_PARA_PUBLICAR else "draft"
+        return "draft", None
+    if artifact_status in _LIBERADOS_PARA_PUBLICAR:
+        return "publish", None
+    return "draft", (
+        "O alvo está configurado para publicar direto, mas a peça ainda não foi "
+        "aprovada no Bioma. Foi enviada como rascunho. Aprove a peça e publique "
+        "de novo para ela ir ao ar."
+    )
+
+
+def capability_for_status(resulting_status: WordPressStatus) -> str:
+    """Permissão exigida, atrelada ao RISCO e não ao botão.
+
+    Publicar rascunho e publicar no ar são atos diferentes: o primeiro é
+    reversível e invisível, o segundo aparece no site do cliente. Amarrar a
+    permissão ao botão trataria os dois igual e obrigaria a escolher entre
+    travar o rascunho ou liberar a publicação.
+
+    Assim um operador rascunha à vontade e só quem aprova coloca no ar.
+    """
+    return "approve" if resulting_status == "publish" else "manage_work"
 
 
 def markdown_to_html(text: str) -> str:

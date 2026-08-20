@@ -10,6 +10,7 @@ import {
   Server,
   Briefcase,
 } from "lucide-react";
+import { CmsTargetsManager } from "./CmsTargetsManager";
 import { useUiStore } from "../store/uiStore";
 import {
   useClients,
@@ -899,6 +900,10 @@ export function IntegrationsTab({
         </div>
       </section>
       )}
+
+      {/* Decisao 14: onde as pecas do Estudio podem ser publicadas. O id
+          aqui ja e o do workspace — a rota de conexoes usa o mesmo. */}
+      {selectedClientId && <CmsTargetsManager workspaceId={selectedClientId} />}
     </div>
   );
 }

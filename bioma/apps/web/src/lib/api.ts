@@ -1281,6 +1281,57 @@ export type StudioArtifactDetail = StudioArtifact & { versions: StudioArtifactVe
 
 export type StudioArtifactKindCount = { kind: string; total: number };
 
+export type CmsTarget = {
+  id: string;
+  workspace_id: string;
+  label: string;
+  kind: "wordpress";
+  site_url: string;
+  credential_id: string;
+  credential_label: string;
+  publish_mode: "draft" | "direct";
+  is_active: boolean;
+  last_checked_at: string | null;
+  /** Guardado inclusive quando falhou — ver "verificado" num alvo quebrado e pior que nao ver nada. */
+  last_check_error: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type CmsTargetCheck = { ok: boolean; detail: string };
+
+/** O que SERIA enviado, sem enviar. O destino e o site do cliente. */
+export type PublicationPreview = {
+  target_id: string;
+  artifact_id: string;
+  version: number;
+  resulting_status: string;
+  /** Preenchido quando o alvo dizia "direto" e o resultado saiu rascunho. */
+  downgrade_reason: string | null;
+  payload: Record<string, unknown>;
+};
+
+export type ArtifactPublication = {
+  id: string;
+  artifact_id: string;
+  version: number;
+  target_id: string;
+  target_label: string;
+  site_url: string;
+  external_id: string;
+  external_url: string | null;
+  external_status: string | null;
+  published_at: string;
+};
+
+export type PublishOptions = {
+  target_id: string;
+  version?: number | null;
+  slug?: string | null;
+  categories?: number[] | null;
+  tags?: number[] | null;
+};
+
 export type ContentQualityCheck = {
   id: string;
   family: "seo" | "geo";
@@ -2842,6 +2893,20 @@ export const api = {
   },
   studioArtifactKinds: (workspaceId: string) =>
     request<StudioArtifactKindCount[]>(`/workspaces/${workspaceId}/studio/kinds`),
+  cmsTargets: (workspaceId: string) =>
+    request<CmsTarget[]>(`/workspaces/${workspaceId}/studio/cms-targets`),
+  createCmsTarget: (workspaceId: string, payload: { label: string; site_url: string; credential_id: string; publish_mode?: "draft" | "direct" }) =>
+    request<CmsTarget>(`/workspaces/${workspaceId}/studio/cms-targets`, { method: "POST", body: JSON.stringify(payload) }),
+  updateCmsTarget: (workspaceId: string, targetId: string, payload: { label?: string; credential_id?: string; publish_mode?: "draft" | "direct"; is_active?: boolean }) =>
+    request<CmsTarget>(`/workspaces/${workspaceId}/studio/cms-targets/${targetId}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  checkCmsTarget: (workspaceId: string, targetId: string) =>
+    request<CmsTargetCheck>(`/workspaces/${workspaceId}/studio/cms-targets/${targetId}/check`, { method: "POST" }),
+  publishPreview: (workspaceId: string, artifactId: string, payload: PublishOptions) =>
+    request<PublicationPreview>(`/workspaces/${workspaceId}/studio/artifacts/${artifactId}/publish-preview`, { method: "POST", body: JSON.stringify(payload) }),
+  publishArtifact: (workspaceId: string, artifactId: string, payload: PublishOptions) =>
+    request<ArtifactPublication>(`/workspaces/${workspaceId}/studio/artifacts/${artifactId}/publish`, { method: "POST", body: JSON.stringify(payload) }),
+  artifactPublications: (workspaceId: string, artifactId: string) =>
+    request<ArtifactPublication[]>(`/workspaces/${workspaceId}/studio/artifacts/${artifactId}/publications`),
   contentQuality: (workspaceId: string, payload: { title?: string; content: string; keyword?: string | null }) =>
     request<ContentQualityReport>(`/workspaces/${workspaceId}/studio/content-quality`, {
       method: "POST",

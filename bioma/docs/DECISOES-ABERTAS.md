@@ -590,14 +590,26 @@ convém escolher a disciplina.
 > **Estado em 2026-08-11.** Suas tres respostas foram implementadas ate onde
 > da para provar sem um WordPress real na mao.
 >
-> **Pronto:** o score SEO/GEO (`bioma_api/content_quality.py` + painel no
-> Estudio) e a camada pura de publicacao (`bioma_api/cms.py`), com o contrato
-> do WP verificado na documentacao oficial. O configuravel rascunho-vs-direto
-> tem duas travas: padrao rascunho, e `direct` nao vence falta de aprovacao.
+> **Pronto (fluxo inteiro, menos o envio real):** score SEO/GEO
+> (`content_quality.py` + painel), camada pura (`cms.py`), cliente REST
+> (`integrations/wordpress.py`), migracao 0094 (`cms_targets` +
+> `artifact_publications`), servico, rotas, tela de conectar site em
+> Integracoes e painel de publicar no Estudio — com PREVIA obrigatoria: o botao
+> nao aparece antes de a pessoa poder ver o que vai ser enviado.
 >
-> **Falta:** o envio HTTP em si, o vinculo com o cofre de credenciais e o botao
-> na tela. Essa parte so se prova contra um site real — quando tiver um
-> WordPress de teste (o da EG serve), fechamos.
+> Duas regras que ficaram travadas por teste: `direct` nao vence falta de
+> aprovacao, e a PERMISSAO E ATRELADA AO RISCO — rascunho exige `manage_work`,
+> ir ao ar exige `approve`. Um operador rascunha a vontade; so quem aprova
+> coloca no site do cliente.
+>
+> A publicacao registra a VERSAO, nao a peca: a v1 pode estar no ar enquanto a
+> v3 e rascunho, e sem isso "esta peca esta publicada?" nao tem resposta
+> honesta.
+>
+> **Falta:** um envio real de ponta a ponta. Preciso de uma Application
+> Password do `cms.evergreenmkt.com.br` cadastrada no cofre — gerada em
+> Usuarios > Perfil > Senhas de aplicativo. **Nao colar em chat**, vai pela
+> tela de Acessos.
 >
 > **Sua oferta de projetos open source de SEO continua de pe e util** — o que
 > tenho hoje e checklist do proprio texto, e nao substitui dado de volume de

@@ -9,6 +9,7 @@ import {
 import type { StudioArtifact, StudioArtifactStatus } from "../lib/api";
 import { EmptyState } from "./shared";
 import { ContentQualityPanel } from "./ContentQualityPanel";
+import { PublishToCmsPanel } from "./PublishToCmsPanel";
 
 const statusLabel: Record<StudioArtifactStatus, string> = {
   draft: "Rascunho",
@@ -94,6 +95,15 @@ function ArtifactPanel({ artifactId, workspaceId }: { artifactId: string; worksp
         workspaceId={workspaceId}
         title={artifact.title}
         content={shown?.content ?? artifact.content ?? ""}
+      />
+
+      {/* Publica a versao EXIBIDA. Voltar para a v2 e o caso real de
+          republicar; sem isso a unica saida seria criar uma v4 copiando a v2,
+          poluindo o historico com uma mudanca que nao houve. */}
+      <PublishToCmsPanel
+        workspaceId={workspaceId}
+        artifactId={artifactId}
+        version={shown?.version ?? artifact.current_version}
       />
 
       <div>

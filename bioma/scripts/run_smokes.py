@@ -34,6 +34,7 @@ MUTABLE = {
     # Estes recusam rodar fora de banco _smoke/_test (guarda no próprio script):
     "smoke_ai_operations",
     "smoke_ai_control_plane",
+    "smoke_cms_publish",
 }
 
 # Exclusões conscientes. Cada linha é uma decisão, não um esquecimento.

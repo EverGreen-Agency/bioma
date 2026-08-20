@@ -5811,6 +5811,119 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workspaces/{workspace_id}/studio/artifacts/{artifact_id}/publications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Publications */
+        get: operations["list_publications_workspaces__workspace_id__studio_artifacts__artifact_id__publications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspace_id}/studio/artifacts/{artifact_id}/publish": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Publish */
+        post: operations["publish_workspaces__workspace_id__studio_artifacts__artifact_id__publish_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspace_id}/studio/artifacts/{artifact_id}/publish-preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview
+         * @description O que seria enviado, sem enviar. POST porque o corpo carrega as opções.
+         */
+        post: operations["preview_workspaces__workspace_id__studio_artifacts__artifact_id__publish_preview_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspace_id}/studio/cms-targets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Targets */
+        get: operations["list_targets_workspaces__workspace_id__studio_cms_targets_get"];
+        put?: never;
+        /** Create Target */
+        post: operations["create_target_workspaces__workspace_id__studio_cms_targets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspace_id}/studio/cms-targets/{target_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Target */
+        patch: operations["update_target_workspaces__workspace_id__studio_cms_targets__target_id__patch"];
+        trace?: never;
+    };
+    "/workspaces/{workspace_id}/studio/cms-targets/{target_id}/check": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check Target
+         * @description Testa a credencial contra o site sem escrever nada lá.
+         *
+         *     Devolve 200 mesmo quando a credencial é inválida: falhar o teste não é erro
+         *     da requisição, é o resultado dela. `ok=false` com o motivo é mais útil que
+         *     um 4xx que a tela teria que destrinchar.
+         */
+        post: operations["check_target_workspaces__workspace_id__studio_cms_targets__target_id__check_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workspaces/{workspace_id}/studio/content-quality": {
         parameters: {
             query?: never;
@@ -6855,6 +6968,41 @@ export interface components {
              */
             visibility: "internal" | "client";
         };
+        /** ArtifactPublication */
+        ArtifactPublication: {
+            /**
+             * Artifact Id
+             * Format: uuid
+             */
+            artifact_id: string;
+            /** External Id */
+            external_id: string;
+            /** External Status */
+            external_status?: string | null;
+            /** External Url */
+            external_url?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Published At
+             * Format: date-time
+             */
+            published_at: string;
+            /** Site Url */
+            site_url: string;
+            /**
+             * Target Id
+             * Format: uuid
+             */
+            target_id: string;
+            /** Target Label */
+            target_label: string;
+            /** Version */
+            version: number;
+        };
         /** ArtifactSummary */
         ArtifactSummary: {
             /** Content */
@@ -7438,6 +7586,102 @@ export interface components {
             responsible_name?: string | null;
             /** Status */
             status?: ("onboarding" | "active" | "paused" | "completed" | "archived") | null;
+        };
+        /** CmsTarget */
+        CmsTarget: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Credential Id
+             * Format: uuid
+             */
+            credential_id: string;
+            /** Credential Label */
+            credential_label: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Active */
+            is_active: boolean;
+            /**
+             * Kind
+             * @constant
+             */
+            kind: "wordpress";
+            /** Label */
+            label: string;
+            /** Last Check Error */
+            last_check_error?: string | null;
+            /** Last Checked At */
+            last_checked_at?: string | null;
+            /**
+             * Publish Mode
+             * @enum {string}
+             */
+            publish_mode: "draft" | "direct";
+            /** Site Url */
+            site_url: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
+        };
+        /**
+         * CmsTargetCheck
+         * @description Resultado do teste de conexão. `ok=False` vem com o motivo, não com um
+         *     código.
+         */
+        CmsTargetCheck: {
+            /** Detail */
+            detail: string;
+            /** Ok */
+            ok: boolean;
+        };
+        /** CmsTargetCreate */
+        CmsTargetCreate: {
+            /**
+             * Credential Id
+             * Format: uuid
+             */
+            credential_id: string;
+            /**
+             * Kind
+             * @default wordpress
+             * @constant
+             */
+            kind: "wordpress";
+            /** Label */
+            label: string;
+            /**
+             * Publish Mode
+             * @default draft
+             * @enum {string}
+             */
+            publish_mode: "draft" | "direct";
+            /** Site Url */
+            site_url: string;
+        };
+        /** CmsTargetUpdate */
+        CmsTargetUpdate: {
+            /** Credential Id */
+            credential_id?: string | null;
+            /** Is Active */
+            is_active?: boolean | null;
+            /** Label */
+            label?: string | null;
+            /** Publish Mode */
+            publish_mode?: ("draft" | "direct") | null;
         };
         /** CockpitOverdueItem */
         CockpitOverdueItem: {
@@ -13205,6 +13449,51 @@ export interface components {
             scope_offer?: string | null;
             /** Target Niche */
             target_niche?: string | null;
+        };
+        /**
+         * PublicationPreview
+         * @description Exatamente o que seria enviado — sem enviar.
+         *
+         *     Existe porque o destino é o site do CLIENTE. Ver antes não é conforto: é o
+         *     que separa um erro corrigível de um post publicado em nome dele.
+         */
+        PublicationPreview: {
+            /**
+             * Artifact Id
+             * Format: uuid
+             */
+            artifact_id: string;
+            /** Downgrade Reason */
+            downgrade_reason?: string | null;
+            /** Payload */
+            payload: {
+                [key: string]: unknown;
+            };
+            /** Resulting Status */
+            resulting_status: string;
+            /**
+             * Target Id
+             * Format: uuid
+             */
+            target_id: string;
+            /** Version */
+            version: number;
+        };
+        /** PublishRequest */
+        PublishRequest: {
+            /** Categories */
+            categories?: number[] | null;
+            /** Slug */
+            slug?: string | null;
+            /** Tags */
+            tags?: number[] | null;
+            /**
+             * Target Id
+             * Format: uuid
+             */
+            target_id: string;
+            /** Version */
+            version?: number | null;
         };
         /** QuotaBucketCreate */
         QuotaBucketCreate: {
@@ -29374,6 +29663,244 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudioArtifactDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_publications_workspaces__workspace_id__studio_artifacts__artifact_id__publications_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtifactPublication"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    publish_workspaces__workspace_id__studio_artifacts__artifact_id__publish_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublishRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ArtifactPublication"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_workspaces__workspace_id__studio_artifacts__artifact_id__publish_preview_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                artifact_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PublishRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PublicationPreview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_targets_workspaces__workspace_id__studio_cms_targets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsTarget"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_target_workspaces__workspace_id__studio_cms_targets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CmsTargetCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsTarget"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_target_workspaces__workspace_id__studio_cms_targets__target_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CmsTargetUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsTarget"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_target_workspaces__workspace_id__studio_cms_targets__target_id__check_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsTargetCheck"];
                 };
             };
             /** @description Validation Error */
