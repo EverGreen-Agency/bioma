@@ -14,8 +14,8 @@ Este documento existe para responder três coisas: **o que já existe**, **por q
 
 **Cobertura medida:**
 
-- backend, só testes puros: **23%** (14.498 statements)
-- backend, incluindo smokes: **não medido ainda** — ver abaixo
+- backend, só testes puros: **23%** (14.6 mil statements)
+- backend, **incluindo smokes: 71%** — medido em 2026-08-20
 - frontend, camada `lib`: **9,4%**
 
 Tamanho do que existe: **35.490 linhas** de Python e **63.103** de TypeScript.
@@ -31,6 +31,11 @@ possível — gente escrevendo teste unitário para código que **já tem smoke*
 para levantar um número que ignorava o smoke.
 
 `scripts/coverage_report.py --smokes` monta a medição correta. Exige Postgres.
+
+**Medido em 2026-08-20: 23% → 71%.** A diferença inteira eram os smokes, que
+não estavam sendo contados. Quem tivesse olhado os 23% concluiria que esta base
+é praticamente não testada — e teria escrito dezenas de testes unitários para
+código que já tinha smoke.
 
 ## Por que 100% é a meta errada
 
@@ -139,9 +144,28 @@ não a fecha: o teste também é código, e escrito com a mesma confiança. Por 
 os testes aqui têm nome em português e asserção óbvia — a revisão humana do
 teste é o que fecha essa última brecha.
 
+## O script de medir também estava quebrado
+
+Registrado porque é o caso mais constrangedor e o mais instrutivo. Ao rodar a
+medição pela primeira vez, o próprio `coverage_report.py` tinha três bugs:
+
+1. `limpar()` usava o glob `.coverage*`, que casa com `.coveragerc` — **o script
+   apagava a própria configuração**.
+2. O caminho do runner de smokes tinha `bioma` duplicado: inexistente.
+3. `check=False` **engolia essa falha em silêncio**. O script imprimia
+   `== smokes (Postgres real) ==`, não rodava smoke nenhum, e reportava 23% com
+   cara de legítimo.
+
+O terceiro é exatamente a classe de bug que este documento cita — o botão de
+sync que dizia sucesso, o PDF afirmando ROI positivo. A ferramenta feita para
+medir honestidade reproduzia o problema que ela existe para expor.
+
+Agora o caminho é conferido antes de rodar e o código de saída de cada etapa
+vira aviso explícito de cobertura incompleta.
+
 ## O que ainda não foi feito
 
-- A medição com smokes **não foi executada** — o Docker caiu durante a
-  configuração. O caminho está montado e não foi provado.
 - Não há gate de cobertura na CI.
 - Não há teste de componente nem Playwright configurado no fluxo.
+- `smoke_proposal_translation` falhou uma vez na suíte cheia (401, sessão) e
+  passou sozinho — instabilidade não investigada.
