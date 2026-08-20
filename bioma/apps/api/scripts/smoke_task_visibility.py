@@ -34,10 +34,16 @@ def assert_status(response, expected: int, label: str) -> None:
         raise AssertionError(f"{label}: esperado {expected}, recebido {response.status_code}: {response.text}")
 
 
+# Decisao 13: tarefa de CLIENTE exige projeto, e o workspace de smoke e de
+# cliente. Preenchido em main() com o projeto padrao do workspace.
+PROJECT_ID = None
+
+
 def task_payload(title: str, **extra) -> dict:
     payload = {
         "title": title,
         "description": "smoke",
+        "project_id": PROJECT_ID,
         "status": "pending",
         "group_status": "NOT_STARTED",
         "recurrence": "none",
@@ -51,6 +57,8 @@ def task_payload(title: str, **extra) -> dict:
 
 def main() -> None:
     workspace = create_smoke_workspace("VISIBILITY")
+    global PROJECT_ID
+    PROJECT_ID = str(workspace.project_id)
     client_user_id = upsert_smoke_user(CLIENT_EMAIL, "Visibility Client Smoke", PASSWORD)
     grant_client_user(workspace, client_user_id)
 

@@ -85,3 +85,33 @@ def test_toda_query_de_contexto_carrega_o_tipo_do_workspace(consulta):
     faltava nas três. Um smoke cobre o resto contra Postgres de verdade."""
     sql = inspect.getsource(getattr(tasks_repo, consulta))
     assert "workspace_kind" in sql, f"{consulta} não devolve o tipo do workspace"
+
+
+class TestAtualizacaoParcial:
+    """PATCH sem `project_id` quer dizer "nao mexe no projeto".
+
+    A primeira versao da regra tratava ausente e nulo como a mesma coisa, e o
+    resultado foi que editar QUALQUER campo de uma tarefa de cliente passou a
+    ser recusado — mudar o titulo exigia reenviar o projeto. Quem pegou foi o
+    smoke_tasks, nao o teste puro: o caminho de update so aparece com banco.
+    """
+
+    def test_campo_ausente_nao_dispara_a_exigencia(self):
+        tasks_service._validate_project(
+            None, "w-cli", {"title": "novo titulo"}, CLIENTE, partial=True
+        )
+
+    def test_projeto_explicitamente_nulo_ainda_e_recusado(self):
+        """Mandar `project_id: null` de proposito E tentar desvincular, e isso
+        continua proibido em cliente."""
+        with pytest.raises(HTTPException) as erro:
+            tasks_service._validate_project(
+                None, "w-cli", {"project_id": None}, CLIENTE, partial=True
+            )
+        assert erro.value.status_code == 422
+
+    def test_na_criacao_ausente_continua_sendo_recusado(self):
+        """Criar sem projeto e criar orfao — o caso que a decisao 13 existe
+        para impedir. `partial` nao pode afrouxar isso."""
+        with pytest.raises(HTTPException):
+            tasks_service._validate_project(None, "w-cli", {"title": "x"}, CLIENTE)

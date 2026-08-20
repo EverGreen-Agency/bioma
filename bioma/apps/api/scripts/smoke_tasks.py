@@ -42,10 +42,16 @@ def assign(workspace_id, user_id, role: str) -> None:
         )
 
 
+# Decisao 13: tarefa de CLIENTE exige projeto, e o workspace de smoke e de
+# cliente. Preenchido em main() com o projeto padrao do workspace.
+PROJECT_ID = None
+
+
 def task_payload(title: str, **updates) -> dict:
     payload = {
         "title": title,
         "description": "Smoke tasks",
+        "project_id": PROJECT_ID,
         "status": "pending",
         "group_status": "NOT_STARTED",
         "recurrence": "none",
@@ -59,6 +65,8 @@ def task_payload(title: str, **updates) -> dict:
 
 def main() -> None:
     workspace_a = create_smoke_workspace("Tasks A")
+    global PROJECT_ID
+    PROJECT_ID = str(workspace_a.project_id)
     workspace_b = create_smoke_workspace("Tasks B")
     emails = [OPERATOR_EMAIL, VIEWER_EMAIL, CLIENT_EMAIL, B_ONLY_EMAIL]
     operator_id = upsert_smoke_user(OPERATOR_EMAIL, "Tasks Operator", PASSWORD)
@@ -164,7 +172,12 @@ def main() -> None:
             422,
             "owner outside workspace rejected",
         )
-        other_task = admin.post(f"/task-lists/{list_b_id}/tasks", json=task_payload("B task"))
+        # Projeto do workspace B, nao o global: a tarefa e de outro workspace,
+        # e o guard de projeto cruzado recusa (corretamente) o projeto de A.
+        other_task = admin.post(
+            f"/task-lists/{list_b_id}/tasks",
+            json=task_payload("B task", project_id=str(workspace_b.project_id)),
+        )
         assert_status(other_task, 201, "admin creates B task")
         assert_status(
             operator.patch(

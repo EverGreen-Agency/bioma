@@ -52,6 +52,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 from bioma_api.auth import current_user_from_request
 from bioma_api.schemas.auth import CurrentUserResponse
 from bioma_api.schemas.tasks import TaskCommentCreate, TaskCreate, TaskUpdate
+from bioma_api.services import projects as projects_service
 from bioma_api.services import tasks as tasks_service
 from bioma_api.services import workspaces as workspaces_service
 
@@ -112,6 +113,13 @@ TOOLS = [
         ["workspace_id"],
     ),
     _tool(
+        "bioma_list_projects",
+        "Lista os projetos de um workspace. Em workspace de CLIENTE a tarefa "
+        "precisa de um projeto (decisao 13), entao chame isto antes de criar.",
+        {"workspace_id": {"type": "string", "description": "UUID do workspace"}},
+        ["workspace_id"],
+    ),
+    _tool(
         "bioma_create_task",
         "Cria uma tarefa no Bioma. Requer permissão de gestão no workspace — se "
         "não tiver, a chamada falha com o motivo.",
@@ -134,6 +142,13 @@ TOOLS = [
             "client_visible": {
                 "type": "boolean",
                 "description": "Falso esconde a tarefa do usuário do cliente. Padrão: true",
+            },
+            "project_id": {
+                "type": "string",
+                "description": (
+                    "UUID do projeto. OBRIGATÓRIO em workspace de cliente e opcional "
+                    "na Operação EG (decisão 13). Use bioma_list_projects para achar."
+                ),
             },
         },
         ["workspace_id", "title"],
@@ -275,6 +290,15 @@ def _call_tool(name: str, args: dict[str, Any], user: CurrentUserResponse) -> di
             ]
         }
 
+    if name == "bioma_list_projects":
+        projetos = projects_service.list_projects(UUID(args["workspace_id"]), user)
+        return {
+            "projects": [
+                {"id": str(p.id), "name": p.name, "status": p.status, "type": p.project_type}
+                for p in projetos
+            ]
+        }
+
     if name == "bioma_create_task":
         payload = TaskCreate(
             title=args["title"],
@@ -287,6 +311,7 @@ def _call_tool(name: str, args: dict[str, Any], user: CurrentUserResponse) -> di
             discipline=args.get("discipline"),
             due_date=args.get("due_date"),
             client_visible=args.get("client_visible", True),
+            project_id=args.get("project_id"),
         )
         task = tasks_service.create_workspace_task(UUID(args["workspace_id"]), payload, user)
         return {"id": str(task.id), "title": task.title, "url": _task_url(task), "status": "created"}

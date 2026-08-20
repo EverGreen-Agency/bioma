@@ -98,8 +98,18 @@ def main() -> None:
         print(f"handshake ok; {len(tool_names)} ferramentas, incluindo search/fetch OK")
 
         # 3) Criar tarefa pelo MCP, como o ChatGPT faria.
+        # Decisao 13: workspace de cliente exige projeto. O agente descobre
+        # qual pela ferramenta — parametro obrigatorio e indescobrivel seria
+        # ferramenta morta.
+        projetos = call_tool(admin_session, admin_token, "bioma_list_projects", {
+            "workspace_id": workspace_id,
+        })
+        project_id = projetos["structuredContent"]["projects"][0]["id"]
+        print(f"listar projetos pelo MCP OK ({len(projetos['structuredContent']['projects'])})")
+
         created = call_tool(admin_session, admin_token, "bioma_create_task", {
             "workspace_id": workspace_id,
+            "project_id": project_id,
             "title": "Tarefa criada pelo MCP (smoke)",
             "description": "Definição de pronto do smoke.",
             "priority": "Alta",
@@ -136,6 +146,7 @@ def main() -> None:
         # vazar por nenhuma das duas ferramentas de leitura.
         internal = call_tool(admin_session, admin_token, "bioma_create_task", {
             "workspace_id": workspace_id,
+            "project_id": project_id,
             "title": "Interna do MCP (nao deve vazar)",
             "client_visible": False,
         })
@@ -157,6 +168,7 @@ def main() -> None:
         # manage_work: precisa voltar isError com o motivo, não sucesso mudo.
         denied = call_tool(client_session, client_token, "bioma_create_task", {
             "workspace_id": workspace_id,
+            "project_id": project_id,
             "title": "Cliente tentando criar",
         })
         assert denied.get("isError") is True, f"cliente não pode criar tarefa: {denied}"

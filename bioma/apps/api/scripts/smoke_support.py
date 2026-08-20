@@ -21,6 +21,10 @@ class SmokeWorkspace:
     workspace_id: UUID
     name: str
     slug: str
+    # Decisao 13: tarefa de CLIENTE exige projeto, e todo workspace de smoke e
+    # de cliente. Um projeto padrao vem junto porque a alternativa seria cada
+    # smoke criar o seu — ou, pior, a regra ser afrouxada para o teste passar.
+    project_id: UUID | None = None
 
 
 def create_smoke_workspace(label: str) -> SmokeWorkspace:
@@ -60,7 +64,17 @@ def create_smoke_workspace(label: str) -> SmokeWorkspace:
             """,
             (tenant["id"], organization_id, name, slug),
         ).fetchone()["id"]
-    return SmokeWorkspace(tenant["id"], organization_id, client_id, workspace_id, name, slug)
+        project_id = conn.execute(
+            """
+            insert into projects (
+              tenant_organization_id, workspace_id, organization_id, name, status
+            ) values (%s, %s, %s, %s, 'active') returning id
+            """,
+            (tenant["id"], workspace_id, organization_id, f"Projeto {name}"),
+        ).fetchone()["id"]
+    return SmokeWorkspace(
+        tenant["id"], organization_id, client_id, workspace_id, name, slug, project_id
+    )
 
 
 def upsert_smoke_user(email: str, name: str, password: str) -> UUID:

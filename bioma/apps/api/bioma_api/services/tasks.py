@@ -75,7 +75,9 @@ def _validate_dates(conn, values: dict, task_id: UUID | None = None) -> None:
         )
 
 
-def _validate_project(conn, workspace_id: UUID, values: dict, context: dict) -> None:
+def _validate_project(
+    conn, workspace_id: UUID, values: dict, context: dict, *, partial: bool = False
+) -> None:
     """Projeto tem que ser do mesmo workspace — e, em CLIENTE, é obrigatório.
 
     Decisão 13 (2026-08-08). Tarefa de cliente sem projeto perde o contexto que
@@ -88,12 +90,20 @@ def _validate_project(conn, workspace_id: UUID, values: dict, context: dict) -> 
     ali obrigaria a inventar um projeto "diversos", que polui exatamente o
     contexto que esta regra existe para melhorar.
 
+    `partial=True` no PATCH: campo AUSENTE quer dizer "nao mexe no projeto",
+    enquanto `project_id: null` explicito quer dizer "desvincula" — e esse
+    continua proibido em cliente. Tratar os dois como a mesma coisa fez editar
+    o titulo de uma tarefa de cliente exigir reenviar o projeto.
+
     `context` NAO tem valor padrao e o tipo e lido por colchete, de proposito.
     A primeira versao aceitava `context=None` e usava `.get()`: dois dos tres
     caminhos de escrita nao passavam contexto, e as queries de contexto nem
     selecionavam `w.kind` — a regra ficou MORTA, liberando tudo, sem erro
     nenhum. Faltando o dado agora, explode.
     """
+    if partial and "project_id" not in values:
+        return
+
     project_id = values.get("project_id")
 
     if project_id is None:
@@ -291,7 +301,7 @@ def update_task(task_id: UUID, data: TaskUpdate, user: CurrentUserResponse) -> T
         _require_local_task(context)
         _validate_people(conn, context["workspace_id"], updates)
         _validate_dates(conn, updates, task_id)
-        _validate_project(conn, context["workspace_id"], updates, context)
+        _validate_project(conn, context["workspace_id"], updates, context, partial=True)
         _validate_parent(conn, context["workspace_id"], updates, task_id)
         if dependencies is not None:
             _validate_dependencies(conn, context["workspace_id"], dependencies, task_id)

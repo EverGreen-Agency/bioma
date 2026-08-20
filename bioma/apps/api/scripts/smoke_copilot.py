@@ -106,6 +106,7 @@ def main() -> None:
         f"/task-lists/{list_id}/tasks",
         json={
             "title": "Tarefa do smoke do copiloto",
+            "project_id": str(workspace.project_id),
             "status": "pending",
             "group_status": "NOT_STARTED",
             "recurrence": "none",
