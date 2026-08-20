@@ -261,7 +261,13 @@ def main() -> None:
         assert_status(client_a.get(f"/projects/{hidden_id}"), 404, "client cannot read internal project")
         client_list = client_a.get(f"/workspaces/{workspace_a.workspace_id}/projects")
         assert_status(client_list, 200, "client lists projects")
-        assert {row["id"] for row in client_list.json()} == {project_id, tech_project_id}
+        # Igualdade e nao superset, de proposito: a assercao existe para
+        # provar que o projeto INTERNO nao vaza, e `>=` deixaria de provar
+        # isso. O terceiro id e o projeto padrao que create_smoke_workspace
+        # passou a criar (decisao 13: tarefa de cliente exige projeto).
+        assert {row["id"] for row in client_list.json()} == {
+            project_id, tech_project_id, str(workspace_a.project_id)
+        }
 
         hidden_contract = admin.post(
             f"/projects/{hidden_id}/contracts",
