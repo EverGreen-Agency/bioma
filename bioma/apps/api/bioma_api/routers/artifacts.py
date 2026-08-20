@@ -4,6 +4,8 @@ from fastapi import APIRouter, Depends, Query
 
 from bioma_api.auth import current_user_from_request
 from bioma_api.schemas.artifacts import (
+    ContentQualityReport,
+    ContentQualityRequest,
     StudioArtifactCreate,
     StudioArtifactFromRun,
     StudioArtifactDetail,
@@ -52,6 +54,20 @@ def create_artifact(
     user: CurrentUserResponse = Depends(current_user_from_request),
 ) -> StudioArtifactDetail:
     return service.create_artifact(workspace_id, payload, user)
+
+
+@workspace_router.post("/content-quality", response_model=ContentQualityReport)
+def evaluate_quality(
+    workspace_id: UUID,
+    payload: ContentQualityRequest,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> ContentQualityReport:
+    """Avalia prontidao SEO/GEO de um texto — inclusive de rascunho nao salvo.
+
+    POST porque o texto vai no corpo (query string tem limite), nao porque
+    grava algo: a rota e um calculo puro e nao tem efeito colateral.
+    """
+    return service.evaluate_quality(workspace_id, payload, user)
 
 
 @router.post("/from-run/{run_id}", response_model=StudioArtifactDetail, status_code=201)

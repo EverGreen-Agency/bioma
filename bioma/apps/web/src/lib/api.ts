@@ -1281,6 +1281,27 @@ export type StudioArtifactDetail = StudioArtifact & { versions: StudioArtifactVe
 
 export type StudioArtifactKindCount = { kind: string; total: number };
 
+export type ContentQualityCheck = {
+  id: string;
+  family: "seo" | "geo";
+  label: string;
+  passed: boolean;
+  /** false = nao ha o que avaliar (texto sem imagem). Fica fora do score. */
+  applicable: boolean;
+  weight: number;
+  hint: string;
+};
+
+/** Prontidao para publicar. NAO e previsao de posicao no Google — todo sinal
+ *  sai do proprio texto. */
+export type ContentQualityReport = {
+  score: number;
+  seo_score: number;
+  geo_score: number;
+  words: number;
+  checks: ContentQualityCheck[];
+};
+
 export type CopilotPlanStatus =
   | "pending_approval" | "approved" | "running" | "completed" | "failed" | "rejected" | "cancelled";
 
@@ -2821,6 +2842,11 @@ export const api = {
   },
   studioArtifactKinds: (workspaceId: string) =>
     request<StudioArtifactKindCount[]>(`/workspaces/${workspaceId}/studio/kinds`),
+  contentQuality: (workspaceId: string, payload: { title?: string; content: string; keyword?: string | null }) =>
+    request<ContentQualityReport>(`/workspaces/${workspaceId}/studio/content-quality`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
   studioArtifact: (artifactId: string) => request<StudioArtifactDetail>(`/artifacts/${artifactId}`),
   createStudioArtifact: (workspaceId: string, payload: { title: string; kind: string; content?: string | null; visibility?: "internal" | "client"; change_note?: string | null }) =>
     request<StudioArtifactDetail>(`/workspaces/${workspaceId}/studio`, { method: "POST", body: JSON.stringify(payload) }),

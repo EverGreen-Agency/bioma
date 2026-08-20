@@ -4529,6 +4529,120 @@
         "title": "CommercialScoreSummary",
         "type": "object"
       },
+      "ContentQualityCheck": {
+        "properties": {
+          "applicable": {
+            "title": "Applicable",
+            "type": "boolean"
+          },
+          "family": {
+            "enum": [
+              "seo",
+              "geo"
+            ],
+            "title": "Family",
+            "type": "string"
+          },
+          "hint": {
+            "title": "Hint",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "passed": {
+            "title": "Passed",
+            "type": "boolean"
+          },
+          "weight": {
+            "title": "Weight",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "family",
+          "label",
+          "passed",
+          "applicable",
+          "weight",
+          "hint"
+        ],
+        "title": "ContentQualityCheck",
+        "type": "object"
+      },
+      "ContentQualityReport": {
+        "description": "Prontidao para publicar. NAO e previsao de posicao no Google.\n\nTodo sinal aqui sai do proprio texto; autoridade de dominio, backlinks e\nconcorrencia do termo nao entram na conta e nao ha como estimar ranking\nsem eles.",
+        "properties": {
+          "checks": {
+            "items": {
+              "$ref": "#/components/schemas/ContentQualityCheck"
+            },
+            "title": "Checks",
+            "type": "array"
+          },
+          "geo_score": {
+            "title": "Geo Score",
+            "type": "integer"
+          },
+          "score": {
+            "title": "Score",
+            "type": "integer"
+          },
+          "seo_score": {
+            "title": "Seo Score",
+            "type": "integer"
+          },
+          "words": {
+            "title": "Words",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "score",
+          "seo_score",
+          "geo_score",
+          "words",
+          "checks"
+        ],
+        "title": "ContentQualityReport",
+        "type": "object"
+      },
+      "ContentQualityRequest": {
+        "properties": {
+          "content": {
+            "default": "",
+            "maxLength": 200000,
+            "title": "Content",
+            "type": "string"
+          },
+          "keyword": {
+            "anyOf": [
+              {
+                "maxLength": 120,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Keyword"
+          },
+          "title": {
+            "default": "",
+            "maxLength": 240,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "title": "ContentQualityRequest",
+        "type": "object"
+      },
       "ContentRetrospectiveSummary": {
         "properties": {
           "created_at": {
@@ -48733,6 +48847,60 @@
           }
         },
         "summary": "Create Artifact",
+        "tags": [
+          "artifacts"
+        ]
+      }
+    },
+    "/workspaces/{workspace_id}/studio/content-quality": {
+      "post": {
+        "description": "Avalia prontidao SEO/GEO de um texto — inclusive de rascunho nao salvo.\n\nPOST porque o texto vai no corpo (query string tem limite), nao porque\ngrava algo: a rota e um calculo puro e nao tem efeito colateral.",
+        "operationId": "evaluate_quality_workspaces__workspace_id__studio_content_quality_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ContentQualityRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ContentQualityReport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Evaluate Quality",
         "tags": [
           "artifacts"
         ]

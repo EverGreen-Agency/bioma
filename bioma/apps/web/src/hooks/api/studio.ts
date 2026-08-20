@@ -21,6 +21,24 @@ export function useStudioArtifactKinds(workspaceId: string | null) {
   });
 }
 
+/** Decisao 14 — checklist SEO/GEO do texto.
+ *
+ * `useQuery` e nao mutation: a rota e POST so porque o texto vai no corpo, mas
+ * nao tem efeito colateral nenhum. Chaveada pelo proprio conteudo, entao trocar
+ * de versao ou de peca recalcula sozinho e voltar reaproveita o cache. */
+export function useContentQuality(
+  workspaceId: string | null,
+  input: { title?: string; content: string; keyword?: string | null },
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["content-quality", workspaceId, input.title ?? "", input.content, input.keyword ?? null],
+    queryFn: () => api.contentQuality(workspaceId as string, input),
+    enabled: Boolean(workspaceId) && enabled && input.content.trim().length > 0,
+    staleTime: Infinity,
+  });
+}
+
 export function useStudioArtifact(artifactId: string | null) {
   return useQuery({
     queryKey: ["studio-artifact", artifactId],

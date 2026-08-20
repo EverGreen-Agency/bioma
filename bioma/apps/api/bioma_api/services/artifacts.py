@@ -17,7 +17,10 @@ from bioma_api.db import connect
 from bioma_api.repositories import artifacts as repo
 from bioma_api.repositories import client_hub as client_hub_repo
 from bioma_api.repositories import copilot_traces as copilot_repo
+from bioma_api import content_quality
 from bioma_api.schemas.artifacts import (
+    ContentQualityReport,
+    ContentQualityRequest,
     StudioArtifactCreate,
     StudioArtifactFromRun,
     StudioArtifactDetail,
@@ -42,6 +45,31 @@ def _accessible_artifact(conn, artifact_id: UUID, user: CurrentUserResponse, cap
     # 404 e não 403: não se confirma a existência do que não é seu.
     resolve_accessible_client(conn, artifact["workspace_id"], user, capability=capability)
     return artifact
+
+
+def evaluate_quality(
+    workspace_id: UUID,
+    payload: ContentQualityRequest,
+    user: CurrentUserResponse,
+) -> ContentQualityReport:
+    """Checklist SEO/GEO do texto — sem gravar nada.
+
+    Nao persiste de proposito. A funcao e pura e deterministica: recalcular
+    custa nada, e score guardado envelhece calado enquanto o texto muda.
+    Assim tambem vale para rascunho que ainda nem virou artefato.
+
+    Passa por `resolve_accessible_client` mesmo sem tocar em dado do
+    workspace: quem nao tem acesso ao workspace nao usa a ferramenta dele.
+    """
+    with connect() as conn:
+        resolve_accessible_client(conn, workspace_id, user)
+    return ContentQualityReport(
+        **content_quality.evaluate_content(
+            payload.content,
+            title=payload.title,
+            keyword=payload.keyword,
+        )
+    )
 
 
 def list_artifacts(

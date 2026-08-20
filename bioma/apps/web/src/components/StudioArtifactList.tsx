@@ -8,6 +8,7 @@ import {
 } from "../hooks/useBiomaApi";
 import type { StudioArtifact, StudioArtifactStatus } from "../lib/api";
 import { EmptyState } from "./shared";
+import { ContentQualityPanel } from "./ContentQualityPanel";
 
 const statusLabel: Record<StudioArtifactStatus, string> = {
   draft: "Rascunho",
@@ -28,7 +29,7 @@ function statusColor(status: StudioArtifactStatus): string {
  * O histórico é o ponto inteiro da decisão 8 — sem ele, "muda o gancho" apaga
  * o gancho anterior e não há como comparar. Cada versão mostra se saiu do
  * copiloto (tem execução) ou de uma edição à mão. */
-function ArtifactPanel({ artifactId }: { artifactId: string }) {
+function ArtifactPanel({ artifactId, workspaceId }: { artifactId: string; workspaceId: string }) {
   const { data: artifact, isLoading } = useStudioArtifact(artifactId);
   const setStatus = useSetStudioArtifactStatus();
   const [openVersion, setOpenVersion] = useState<number | null>(null);
@@ -86,6 +87,14 @@ function ArtifactPanel({ artifactId }: { artifactId: string }) {
           {shown?.content ?? artifact.content ?? "Sem conteúdo."}
         </p>
       </div>
+
+      {/* Avalia a versao EXIBIDA, nao a corrente: abrir uma versao antiga e
+          querer comparar, e um score preso na atual nao compararia nada. */}
+      <ContentQualityPanel
+        workspaceId={workspaceId}
+        title={artifact.title}
+        content={shown?.content ?? artifact.content ?? ""}
+      />
 
       <div>
         <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, textTransform: "uppercase", letterSpacing: "0.06em", color: "var(--text-faint)", marginBottom: 8 }}>
@@ -206,7 +215,7 @@ export function StudioArtifactList({ workspaceId }: { workspaceId: string }) {
             ))}
           </div>
 
-          <div>{current && <ArtifactPanel artifactId={current} />}</div>
+          <div>{current && <ArtifactPanel artifactId={current} workspaceId={workspaceId} />}</div>
         </div>
       )}
     </article>

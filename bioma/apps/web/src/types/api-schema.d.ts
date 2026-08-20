@@ -5811,6 +5811,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workspaces/{workspace_id}/studio/content-quality": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Evaluate Quality
+         * @description Avalia prontidao SEO/GEO de um texto — inclusive de rascunho nao salvo.
+         *
+         *     POST porque o texto vai no corpo (query string tem limite), nao porque
+         *     grava algo: a rota e um calculo puro e nao tem efeito colateral.
+         */
+        post: operations["evaluate_quality_workspaces__workspace_id__studio_content_quality_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workspaces/{workspace_id}/studio/kinds": {
         parameters: {
             query?: never;
@@ -7576,6 +7599,61 @@ export interface components {
              * Format: uuid
              */
             workspace_id: string;
+        };
+        /** ContentQualityCheck */
+        ContentQualityCheck: {
+            /** Applicable */
+            applicable: boolean;
+            /**
+             * Family
+             * @enum {string}
+             */
+            family: "seo" | "geo";
+            /** Hint */
+            hint: string;
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /** Passed */
+            passed: boolean;
+            /** Weight */
+            weight: number;
+        };
+        /**
+         * ContentQualityReport
+         * @description Prontidao para publicar. NAO e previsao de posicao no Google.
+         *
+         *     Todo sinal aqui sai do proprio texto; autoridade de dominio, backlinks e
+         *     concorrencia do termo nao entram na conta e nao ha como estimar ranking
+         *     sem eles.
+         */
+        ContentQualityReport: {
+            /** Checks */
+            checks: components["schemas"]["ContentQualityCheck"][];
+            /** Geo Score */
+            geo_score: number;
+            /** Score */
+            score: number;
+            /** Seo Score */
+            seo_score: number;
+            /** Words */
+            words: number;
+        };
+        /** ContentQualityRequest */
+        ContentQualityRequest: {
+            /**
+             * Content
+             * @default
+             */
+            content: string;
+            /** Keyword */
+            keyword?: string | null;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
         };
         /** ContentRetrospectiveSummary */
         ContentRetrospectiveSummary: {
@@ -29296,6 +29374,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["StudioArtifactDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    evaluate_quality_workspaces__workspace_id__studio_content_quality_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ContentQualityRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ContentQualityReport"];
                 };
             };
             /** @description Validation Error */

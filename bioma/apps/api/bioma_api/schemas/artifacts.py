@@ -102,3 +102,37 @@ class StudioArtifactStatusUpdate(BaseModel):
 class StudioArtifactKindCount(BaseModel):
     kind: str
     total: int
+
+
+class ContentQualityCheck(BaseModel):
+    id: str
+    family: Literal["seo", "geo"]
+    label: str
+    passed: bool
+    # False = nao ha o que avaliar (texto sem imagem, por exemplo). Sai do
+    # denominador do score em vez de virar aprovacao de graca.
+    applicable: bool
+    weight: int
+    hint: str
+
+
+class ContentQualityRequest(BaseModel):
+    title: str = Field(default="", max_length=240)
+    content: str = Field(default="", max_length=200_000)
+    # Opcional de proposito: reprovar por uma palavra-chave que ninguem
+    # informou seria punir o texto por uma escolha que nao foi feita.
+    keyword: str | None = Field(default=None, max_length=120)
+
+
+class ContentQualityReport(BaseModel):
+    """Prontidao para publicar. NAO e previsao de posicao no Google.
+
+    Todo sinal aqui sai do proprio texto; autoridade de dominio, backlinks e
+    concorrencia do termo nao entram na conta e nao ha como estimar ranking
+    sem eles."""
+
+    score: int
+    seo_score: int
+    geo_score: int
+    words: int
+    checks: list[ContentQualityCheck]
