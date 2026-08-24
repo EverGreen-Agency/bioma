@@ -39,7 +39,10 @@ export function PublishToCmsPanel({
   const publicar = usePublishArtifact(workspaceId, artifactId);
 
   const ativos = targets.filter((target) => target.is_active);
-  const jaPublicada = publicacoes.find((p) => p.version === version && p.target_id === targetId);
+  // Um artigo e UM post por destino: a busca e por ALVO, nao por versao.
+  // Antes era pelos dois, o que fazia a tela achar que uma versao nova ia
+  // virar um post novo — que era exatamente o bug.
+  const jaPublicada = publicacoes.find((p) => p.target_id === targetId);
 
   if (carregandoAlvos) return <EmptyState text="Carregando destinos..." />;
 
@@ -148,9 +151,9 @@ export function PublishToCmsPanel({
 
           {jaPublicada && (
             <p style={{ fontSize: 11, color: "var(--text-faint)", margin: 0 }}>
-              Esta versão já foi para este destino em{" "}
+              Já publicado neste destino (v{jaPublicada.version}) em{" "}
               {new Date(jaPublicada.published_at).toLocaleString("pt-BR")}. Publicar de novo
-              atualiza o mesmo post.
+              atualiza esse mesmo post — não cria outro.
             </p>
           )}
 

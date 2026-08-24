@@ -3,10 +3,15 @@
 Cobre tudo que dá para provar SEM rede: cadastro do alvo, isolamento entre
 workspaces, e a prévia — que é onde moram as regras de rascunho-vs-direto.
 
-**Não chama o WordPress.** O envio de verdade exige um site real e uma
-Application Password; o cliente HTTP em si tem 18 testes puros com
-`httpx.MockTransport`. Fingir aqui um sucesso de publicação seria exatamente o
-tipo de verde falso que este repo já pagou caro para aprender a evitar.
+**Não chama o WordPress de verdade.** O envio real exige um site e uma
+Application Password; o cliente HTTP tem 25 testes puros com
+`httpx.MockTransport`. Fingir aqui que a integração inteira funciona seria o
+verde falso que este repo já pagou caro para aprender a evitar.
+
+O último bloco substitui a rede por um espião (`WordPressFalso`) — e a
+distinção importa: ele não finge que publicar funciona, ele registra QUAL
+método o serviço escolheu. É a única forma de provar a decisão criar-vs-atualizar,
+que é onde estava o bug de post duplicado.
 """
 
 import os
@@ -33,6 +38,7 @@ sys.path.insert(0, str(ROOT))
 from fastapi.testclient import TestClient  # noqa: E402
 
 from bioma_api.main import app  # noqa: E402
+from bioma_api.services import cms as cms_service  # noqa: E402
 from smoke_support import cleanup_smoke_data, create_smoke_workspace, upsert_smoke_user  # noqa: E402
 
 
@@ -46,6 +52,31 @@ CONTEUDO = (
     "- Defina o CPC alvo pelo ticket medio\n"
     "- Reserve 30% para testes\n"
 )
+
+
+class WordPressFalso:
+    """Substitui SO a rede. O que se prova aqui e a decisao do Bioma entre
+    CRIAR e ATUALIZAR — que e onde estava o bug: `create_post` era chamado
+    sempre, gerando post duplicado no site do cliente a cada republicacao.
+
+    Nao e um WordPress de mentira para fingir que a integracao funciona; e um
+    espiao para registrar qual metodo o servico escolheu."""
+
+    chamadas: list[tuple[str, object]] = []
+
+    def __init__(self, site_url, username, app_password, http_client=None):
+        pass
+
+    def close(self):
+        pass
+
+    def create_post(self, payload):
+        WordPressFalso.chamadas.append(("create", None))
+        return {"id": 101, "link": "https://cms.exemplo.com/?p=101", "status": payload.get("status")}
+
+    def update_post(self, post_id, payload):
+        WordPressFalso.chamadas.append(("update", str(post_id)))
+        return {"id": post_id, "link": "https://cms.exemplo.com/?p=101", "status": payload.get("status")}
 
 
 def assert_status(response, expected: int, label: str) -> None:
@@ -197,6 +228,33 @@ def main() -> None:
             )
             assert_status(recusa, 422, "alvo desativado nao publica")
             print("alvo desativado recusa publicacao OK")
+
+            # --- republicar NAO pode duplicar ---------------------------------
+            assert_status(
+                admin.patch(f"{base}/cms-targets/{target_id}", json={"is_active": True}),
+                200,
+                "reativar alvo",
+            )
+            original = cms_service.WordPressClient
+            cms_service.WordPressClient = WordPressFalso
+            try:
+                WordPressFalso.chamadas = []
+                primeira = admin.post(f"{base}/artifacts/{artifact_id}/publish", json={"target_id": target_id})
+                assert_status(primeira, 201, "primeira publicacao")
+                assert WordPressFalso.chamadas == [("create", None)], WordPressFalso.chamadas
+
+                segunda = admin.post(f"{base}/artifacts/{artifact_id}/publish", json={"target_id": target_id})
+                assert_status(segunda, 201, "republicacao")
+                assert WordPressFalso.chamadas[1] == ("update", "101"), (
+                    f"republicar tem que ATUALIZAR o post 101, nao criar outro: {WordPressFalso.chamadas}"
+                )
+
+                publicacoes = admin.get(f"{base}/artifacts/{artifact_id}/publications").json()
+                assert len(publicacoes) == 1, f"um artigo e UM post por alvo: {publicacoes}"
+                assert publicacoes[0]["external_id"] == "101", publicacoes
+            finally:
+                cms_service.WordPressClient = original
+            print("republicar ATUALIZA o mesmo post, nao duplica OK")
 
         print("limpeza OK - smoke_cms_publish passou")
     finally:

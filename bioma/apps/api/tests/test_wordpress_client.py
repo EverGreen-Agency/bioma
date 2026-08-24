@@ -190,3 +190,112 @@ class TestPublicacao:
 
         with pytest.raises(WordPressError, match="sem identificar o post"):
             _cliente(handler).create_post({"title": "Oi"})
+
+
+class TestAtualizacao:
+    """WordPress atualiza com POST /posts/{id}, nao PUT (doc oficial)."""
+
+    def test_atualiza_o_post_existente(self):
+        visto = {}
+
+        def handler(request):
+            visto["metodo"] = request.method
+            visto["url"] = str(request.url)
+            return httpx.Response(200, json={"id": 42, "link": "https://ex.com/?p=42", "status": "publish"})
+
+        resultado = _cliente(handler).update_post(42, {"title": "Novo titulo"})
+        assert visto["metodo"] == "POST"
+        assert visto["url"].endswith("/wp-json/wp/v2/posts/42")
+        assert resultado["id"] == 42
+
+    def test_post_que_sumiu_do_site_da_erro_legivel(self):
+        """Alguem apagou o post pelo painel do WordPress. A mensagem tem que
+        dizer isso, nao devolver 404 cru."""
+
+        def handler(_request):
+            return httpx.Response(404, json={"code": "rest_post_invalid_id"})
+
+        with pytest.raises(WordPressError, match="nao foi encontrado|não foi encontrado"):
+            _cliente(handler).update_post(42, {"title": "x"})
+
+
+class TestListagem:
+    def test_lista_pedindo_todos_os_status(self):
+        """O padrao do WordPress e listar SO `publish`. Gerenciar o blog de
+        dentro do Bioma sem ver rascunho e agendado seria ver metade."""
+        visto = {}
+
+        def handler(request):
+            visto["url"] = str(request.url)
+            return httpx.Response(200, json=[{"id": 1, "title": {"rendered": "Um"}}])
+
+        _cliente(handler).list_posts()
+        assert "status=publish%2Cfuture%2Cdraft%2Cpending%2Cprivate" in visto["url"]
+        assert "context=edit" in visto["url"]
+
+    def test_repassa_busca_e_pagina(self):
+        visto = {}
+
+        def handler(request):
+            visto["url"] = str(request.url)
+            return httpx.Response(200, json=[])
+
+        _cliente(handler).list_posts(search="google ads", page=3, per_page=50)
+        assert "search=google+ads" in visto["url"] or "search=google%20ads" in visto["url"]
+        assert "page=3" in visto["url"]
+        assert "per_page=50" in visto["url"]
+
+    def test_achata_os_campos_renderizados(self):
+        """WordPress devolve title/excerpt como {"rendered": "..."}. Deixar o
+        dicionario cru vazaria a forma do WP para dentro do Bioma e para a tela."""
+
+        def handler(_request):
+            return httpx.Response(
+                200,
+                json=[{
+                    "id": 7,
+                    "title": {"rendered": "Quanto custa"},
+                    "excerpt": {"rendered": "<p>resumo</p>"},
+                    "status": "draft",
+                    "link": "https://ex.com/?p=7",
+                    "date_gmt": "2026-08-20T10:00:00",
+                    "modified_gmt": "2026-08-21T10:00:00",
+                }],
+                headers={"X-WP-Total": "31", "X-WP-TotalPages": "4"},
+            )
+
+        resultado = _cliente(handler).list_posts()
+        item = resultado["items"][0]
+        assert item["title"] == "Quanto custa"
+        assert item["excerpt"] == "resumo", "o HTML do resumo tem que sair"
+        assert item["status"] == "draft"
+        assert resultado["total"] == 31
+        assert resultado["total_pages"] == 4
+
+    def test_sem_cabecalho_de_total_nao_inventa_numero(self):
+        """Cache e proxy as vezes comem o X-WP-Total. Chutar o total faria a
+        paginacao mentir; None diz 'nao sei', que e verdade."""
+
+        def handler(_request):
+            return httpx.Response(200, json=[{"id": 1, "title": {"rendered": "Um"}}])
+
+        resultado = _cliente(handler).list_posts()
+        assert resultado["total"] is None
+        assert resultado["total_pages"] is None
+
+
+class TestLixeira:
+    def test_manda_para_a_lixeira_sem_forcar(self):
+        """Sem `force`: o post vai para a lixeira e da para restaurar pelo
+        painel. Apagar de vez o conteudo do CLIENTE nao e decisao nossa."""
+        visto = {}
+
+        def handler(request):
+            visto["metodo"] = request.method
+            visto["url"] = str(request.url)
+            return httpx.Response(200, json={"deleted": True, "previous": {"id": 42}})
+
+        _cliente(handler).trash_post(42)
+        assert visto["metodo"] == "DELETE"
+        assert visto["url"].endswith("/wp-json/wp/v2/posts/42")
+        assert "force" not in visto["url"], "forcar apagaria sem volta"

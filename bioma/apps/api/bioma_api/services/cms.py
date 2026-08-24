@@ -26,6 +26,10 @@ from bioma_api.repositories import vault as vault_repo
 from bioma_api.schemas.auth import CurrentUserResponse
 from bioma_api.schemas.cms import (
     ArtifactPublication,
+    CmsPost,
+    CmsPostAction,
+    CmsPostPage,
+    CmsPostUpdate,
     CmsTarget,
     CmsTargetCheck,
     CmsTargetCreate,
@@ -145,10 +149,19 @@ def publish(
             context, user, cms_rules.capability_for_status(preview.resulting_status)
         )
 
+        # JÁ PUBLICADO NESTE ALVO -> ATUALIZA. A primeira versão só sabia criar,
+        # então republicar gerava post DUPLICADO no site do cliente enquanto o
+        # banco sobrescrevia o `external_id` em silêncio — e a tela afirmava, em
+        # texto, que republicar atualizava o mesmo post.
+        ja_publicado = repo.find_publication(conn, artifact_id, target["id"])
+
         usuario, senha = _credencial(conn, target)
         cliente = WordPressClient(target["site_url"], usuario, senha)
         try:
-            resultado = cliente.create_post(preview.payload)
+            if ja_publicado:
+                resultado = cliente.update_post(ja_publicado["external_id"], preview.payload)
+            else:
+                resultado = cliente.create_post(preview.payload)
         except WordPressError as erro:
             raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(erro)) from None
         finally:
@@ -160,7 +173,7 @@ def publish(
         vault_repo.write_audit(
             conn,
             user.id,
-            context["subject_organization_id"],
+            context["organization_id"],
             "cms.published",
             {
                 "workspace_id": str(context["workspace_id"]),
@@ -170,6 +183,7 @@ def publish(
                 "version": versao["version"],
                 "resulting_status": preview.resulting_status,
                 "external_id": str(resultado["id"]),
+                "operation": "update" if ja_publicado else "create",
             },
         )
         linha = repo.record_publication(
@@ -185,6 +199,163 @@ def list_publications(workspace_id: UUID, artifact_id: UUID, user: CurrentUserRe
         _artefato_do_workspace(conn, artifact_id, context)
         rows = repo.list_publications(conn, artifact_id)
     return [ArtifactPublication(**row) for row in rows]
+
+
+def list_posts(
+    workspace_id: UUID,
+    target_id: UUID,
+    user: CurrentUserResponse,
+    page: int = 1,
+    per_page: int = 20,
+    search: str | None = None,
+) -> CmsPostPage:
+    """O que existe no blog — inclusive o que não nasceu no Bioma.
+
+    Sem isto, o Bioma só enxerga o que ele mesmo publicou, e "gerenciar o blog"
+    viraria "gerenciar a metade que passou por aqui". A lista vem do site, ao
+    vivo: é a única fonte que não mente sobre o que está no ar.
+    """
+    require_encryption_configured()
+    with connect() as conn:
+        context = resolve_accessible_client(conn, workspace_id, user)
+        target = _target_do_workspace(conn, context, target_id)
+        conhecidos = {
+            str(linha["external_id"]): linha
+            for linha in repo.list_publications_for_target(conn, target_id)
+        }
+        usuario, senha = _credencial(conn, target)
+
+    cliente = WordPressClient(target["site_url"], usuario, senha)
+    try:
+        pagina = cliente.list_posts(page=page, per_page=per_page, search=search)
+    except WordPressError as erro:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(erro)) from None
+    finally:
+        cliente.close()
+
+    itens = []
+    for item in pagina["items"]:
+        vinculo = conhecidos.get(str(item.get("id")))
+        itens.append(
+            CmsPost(
+                **item,
+                artifact_id=vinculo["artifact_id"] if vinculo else None,
+                artifact_version=vinculo["version"] if vinculo else None,
+            )
+        )
+    return CmsPostPage(
+        target_id=target_id,
+        page=page,
+        total=pagina["total"],
+        total_pages=pagina["total_pages"],
+        items=itens,
+    )
+
+
+def update_post(
+    workspace_id: UUID,
+    target_id: UUID,
+    post_id: str,
+    payload: CmsPostUpdate,
+    user: CurrentUserResponse,
+) -> CmsPost:
+    """Muda status, agendamento, título ou slug de um post direto no CMS.
+
+    A permissão sai do RESULTADO, como em `publish`: mandar para rascunho exige
+    `manage_work`; colocar no ar exige `approve`. **Agendar conta como ir ao
+    ar** — é publicação, só que depois, e ninguém está lá na hora para revisar.
+    """
+    require_encryption_configured()
+    mudancas = payload.model_dump(exclude_none=True)
+    if not mudancas:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Informe ao menos um campo para alterar.",
+        )
+    if mudancas.get("status") == "future" and not mudancas.get("date"):
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Agendar exige a data de publicação — sem data o WordPress publica na hora.",
+        )
+
+    with connect() as conn:
+        context = resolve_accessible_client(conn, workspace_id, user)
+        target = _target_do_workspace(conn, context, target_id)
+
+        vai_ao_ar = mudancas.get("status") in {"publish", "future"}
+        require_workspace_capability(
+            context, user, cms_rules.capability_for_status("publish" if vai_ao_ar else "draft")
+        )
+
+        usuario, senha = _credencial(conn, target)
+        cliente = WordPressClient(target["site_url"], usuario, senha)
+        try:
+            cliente.update_post(post_id, mudancas)
+            # Relê do site em vez de confiar no que mandamos: o WordPress pode
+            # rebaixar o status conforme o papel do usuário, e devolver a nossa
+            # intenção faria a tela mentir.
+            atualizado = cliente.get_post(post_id)
+        except WordPressError as erro:
+            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(erro)) from None
+        finally:
+            cliente.close()
+
+        vault_repo.write_audit(
+            conn,
+            user.id,
+            context["organization_id"],
+            "cms.post_updated",
+            {
+                "workspace_id": str(context["workspace_id"]),
+                "target_id": str(target_id),
+                "external_id": str(post_id),
+                "changes": sorted(mudancas.keys()),
+                "resulting_status": atualizado.get("status"),
+            },
+        )
+        repo.sync_publication_status(conn, target_id, str(post_id), atualizado.get("status"))
+
+    return CmsPost(**atualizado, artifact_id=None, artifact_version=None)
+
+
+def trash_post(
+    workspace_id: UUID, target_id: UUID, post_id: str, user: CurrentUserResponse
+) -> CmsPostAction:
+    """Manda o post para a LIXEIRA do WordPress — nunca apaga de vez.
+
+    Tirar do ar é reversível; apagar o conteúdo do cliente definitivamente não é
+    decisão que o Bioma deva tomar por ele. Exige `approve` porque mexe no que
+    está publicado no site dele.
+    """
+    require_encryption_configured()
+    with connect() as conn:
+        context = resolve_accessible_client(conn, workspace_id, user, capability="approve")
+        target = _target_do_workspace(conn, context, target_id)
+        usuario, senha = _credencial(conn, target)
+        cliente = WordPressClient(target["site_url"], usuario, senha)
+        try:
+            cliente.trash_post(post_id)
+        except WordPressError as erro:
+            raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(erro)) from None
+        finally:
+            cliente.close()
+
+        vault_repo.write_audit(
+            conn,
+            user.id,
+            context["organization_id"],
+            "cms.post_trashed",
+            {
+                "workspace_id": str(context["workspace_id"]),
+                "target_id": str(target_id),
+                "external_id": str(post_id),
+            },
+        )
+        repo.sync_publication_status(conn, target_id, str(post_id), "trash")
+    return CmsPostAction(
+        ok=True,
+        detail="Post movido para a lixeira do WordPress. Dá para restaurar pelo painel do site.",
+    )
 
 
 # ---------------------------------------------------------------------- interno

@@ -18,11 +18,19 @@ Duas regras que atravessam o arquivo inteiro:
    histórico ao mesmo tempo — um segredo que vaza por ali vaza para os três.
 """
 
+import re
 from typing import Any
 
 import httpx
 
 TIMEOUT_SEGUNDOS = 20
+
+# Listar sem `status` traz SO `publish` (padrao do WordPress). Gerenciar o blog
+# de dentro do Bioma sem enxergar rascunho e agendado seria ver metade do que
+# esta la — e concluir que o resto nao existe.
+TODOS_OS_STATUS = "publish,future,draft,pending,private"
+
+_TAGS_HTML = re.compile(r"<[^>]+>")
 _SUFIXOS_CONHECIDOS = ("/wp-json/wp/v2", "/wp-json", "")
 
 
@@ -77,9 +85,76 @@ class WordPressClient:
             "status": resposta.get("status"),
         }
 
+    def update_post(self, post_id: int | str, payload: dict[str, Any]) -> dict[str, Any]:
+        """Atualiza um post existente.
+
+        `POST /posts/{id}`, nao PUT — e o que a documentacao oficial define.
+        Esta funcao existe porque a primeira versao so tinha `create_post`, e a
+        tela prometia que republicar "atualiza o mesmo post" enquanto o codigo
+        criava um post NOVO a cada envio: duplicata no site do cliente.
+        """
+        resposta = self._request("POST", f"/posts/{post_id}", json=payload)
+        return {
+            "id": resposta.get("id", post_id),
+            "link": resposta.get("link"),
+            "status": resposta.get("status"),
+        }
+
+    def get_post(self, post_id: int | str) -> dict[str, Any]:
+        return _achatar(self._request("GET", f"/posts/{post_id}", params={"context": "edit"}))
+
+    def list_posts(
+        self,
+        *,
+        page: int = 1,
+        per_page: int = 20,
+        search: str | None = None,
+        status: str = TODOS_OS_STATUS,
+    ) -> dict[str, Any]:
+        """Os posts do site, do mais recente para o mais antigo.
+
+        `context=edit` porque so esse contexto devolve rascunho e agendado — e
+        porque confirma, de passagem, que a credencial tem permissao de edicao.
+        """
+        params: dict[str, Any] = {
+            "page": page,
+            "per_page": per_page,
+            "status": status,
+            "context": "edit",
+            "orderby": "modified",
+            "order": "desc",
+        }
+        if search:
+            params["search"] = search
+
+        resposta = self._raw("GET", "/posts", params=params)
+        corpo = self._json(resposta)
+        itens = corpo.get("data", corpo) if isinstance(corpo, dict) else corpo
+        if not isinstance(itens, list):
+            itens = []
+        return {
+            "items": [_achatar(item) for item in itens],
+            # Sem o cabecalho, `None` — cache e proxy as vezes o comem, e chutar
+            # o total faria a paginacao mentir.
+            "total": _inteiro(resposta.headers.get("X-WP-Total")),
+            "total_pages": _inteiro(resposta.headers.get("X-WP-TotalPages")),
+        }
+
+    def trash_post(self, post_id: int | str) -> dict[str, Any]:
+        """Manda para a LIXEIRA, sem `force`.
+
+        Com `force=true` o WordPress apaga sem volta. Apagar definitivamente o
+        conteudo do CLIENTE nao e decisao que o Bioma deva tomar por ele — da
+        lixeira ele restaura pelo proprio painel.
+        """
+        return self._request("DELETE", f"/posts/{post_id}")
+
     # ------------------------------------------------------------------ interno
 
     def _request(self, method: str, path: str, **kwargs) -> dict[str, Any]:
+        return self._json(self._raw(method, path, **kwargs))
+
+    def _raw(self, method: str, path: str, **kwargs) -> httpx.Response:
         try:
             resposta = self._client.request(
                 method,
@@ -101,7 +176,7 @@ class WordPressClient:
         if resposta.status_code >= 400:
             raise WordPressError(self._explicar(resposta))
 
-        return self._json(resposta)
+        return resposta
 
     def _json(self, resposta: httpx.Response) -> dict[str, Any]:
         try:
@@ -129,6 +204,16 @@ class WordPressClient:
                 "site. Use uma conta com papel de Autor ou acima."
             )
         if codigo == 404:
+            # 404 com codigo do WP e post que sumiu; 404 sem, e a rota que nao
+            # existe. Sao problemas diferentes e a mensagem tem que separar.
+            try:
+                if str(resposta.json().get("code", "")).startswith("rest_post_invalid"):
+                    return (
+                        "O post não foi encontrado no site. Ele pode ter sido "
+                        "apagado pelo painel do WordPress."
+                    )
+            except ValueError:
+                pass
             return (
                 "A REST API do WordPress não foi encontrada neste endereço. "
                 "Confira a URL do site e se algum plugin de segurança não está "
@@ -170,3 +255,35 @@ def _normalizar(site_url: str) -> str:
             limpo = limpo[: -len(sufixo)]
             break
     return f"{limpo}/wp-json/wp/v2"
+
+
+def _achatar(item: dict[str, Any]) -> dict[str, Any]:
+    """WordPress devolve title/excerpt/content como {"rendered": "..."}.
+
+    Deixar o dicionario cru vazaria a forma do WP para dentro do Bioma e para a
+    tela — e o dia que entrar um segundo CMS, cada tela precisaria saber de qual
+    formato veio.
+    """
+    return {
+        "id": item.get("id"),
+        "title": _texto(item.get("title")),
+        "excerpt": _TAGS_HTML.sub("", _texto(item.get("excerpt"))).strip(),
+        "status": item.get("status"),
+        "link": item.get("link"),
+        "slug": item.get("slug"),
+        "date": item.get("date_gmt") or item.get("date"),
+        "modified": item.get("modified_gmt") or item.get("modified"),
+    }
+
+
+def _texto(valor: Any) -> str:
+    if isinstance(valor, dict):
+        return str(valor.get("rendered") or valor.get("raw") or "")
+    return str(valor or "")
+
+
+def _inteiro(valor: str | None) -> int | None:
+    try:
+        return int(valor) if valor is not None else None
+    except (TypeError, ValueError):
+        return None

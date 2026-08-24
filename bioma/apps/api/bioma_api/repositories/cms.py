@@ -126,7 +126,8 @@ def record_publication(
           external_status, published_by
         )
         values (%s, %s, %s, %s, %s, %s, %s)
-        on conflict (artifact_id, version, target_id) do update set
+        on conflict (artifact_id, target_id) do update set
+          version = excluded.version,
           external_id = excluded.external_id,
           external_url = excluded.external_url,
           external_status = excluded.external_status,
@@ -147,6 +148,23 @@ def record_publication(
     ).fetchone()
 
 
+def find_publication(conn, artifact_id: UUID, target_id: UUID) -> dict[str, Any] | None:
+    """A publicacao deste artigo NESTE alvo, se existir.
+
+    E o que decide entre criar e atualizar no CMS. Sem esta consulta, publicar
+    de novo criava post duplicado no site do cliente.
+    """
+    return conn.execute(
+        """
+        select id, artifact_id, version, target_id, external_id, external_url,
+               external_status, published_at
+        from artifact_publications
+        where artifact_id = %s and target_id = %s
+        """,
+        (artifact_id, target_id),
+    ).fetchone()
+
+
 def list_publications(conn, artifact_id: UUID) -> list[dict[str, Any]]:
     return conn.execute(
         """
@@ -160,3 +178,39 @@ def list_publications(conn, artifact_id: UUID) -> list[dict[str, Any]]:
         """,
         (artifact_id,),
     ).fetchall()
+
+
+def list_publications_for_target(conn, target_id: UUID) -> list[dict[str, Any]]:
+    """O que o Bioma publicou NESTE alvo.
+
+    Serve para cruzar com a listagem vinda do site e dizer quais posts têm
+    artefato por trás. Post escrito direto no WordPress fica sem vínculo, e isso
+    é informação sobre a origem — não um buraco.
+    """
+    return conn.execute(
+        """
+        select artifact_id, version, external_id
+        from artifact_publications
+        where target_id = %s
+        """,
+        (target_id,),
+    ).fetchall()
+
+
+def sync_publication_status(conn, target_id: UUID, external_id: str, novo_status: str | None) -> None:
+    """Espelha no Bioma o status que o post tem AGORA no CMS.
+
+    Sem isso, tirar um post do ar pela tela do Bioma deixaria o registro daqui
+    dizendo "publicado" para sempre — a divergência silenciosa entre as duas
+    pontas que a integração existe para evitar.
+    """
+    if not novo_status:
+        return
+    conn.execute(
+        """
+        update artifact_publications
+        set external_status = %s
+        where target_id = %s and external_id = %s
+        """,
+        (novo_status, target_id, external_id),
+    )
