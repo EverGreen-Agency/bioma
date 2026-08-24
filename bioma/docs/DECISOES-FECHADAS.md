@@ -1,0 +1,330 @@
+# Decisões fechadas — implementadas
+
+Movido de DECISOES-ABERTAS.md em 2026-08-24.
+
+**Nada aqui precisa voltar.** Cada uma foi decidida e construída; o texto fica
+porque o RACIOCÍNIO é o que se perde primeiro — daqui a seis meses ninguém
+lembra por que a preferência nunca concede permissão, e a alternativa a este
+arquivo é redescobrir na marra.
+
+---
+
+## Fechadas — implementadas, não precisam voltar
+
+- **8. Estúdio IA como artefatos do copiloto** — implementado em 2026-08-08
+  (migração 0089). Estendeu a tabela `artifacts` que já existia em vez de criar
+  outra; procedência (`thread_id`/`run_id`) deduzida no servidor; versão nunca
+  sobrescreve; `/artifacts/from-run/{id}` salva a resposta do copiloto e, com
+  `artifact_id`, vira a próxima versão. Proposta e briefing ficaram nas casas
+  próprias. Estúdio virou a vista; o formulário virou "Geração direta".
+- **11. Ocultar módulos que a EG não usa** — implementado em 2026-08-06
+  (migração 0086), com os 4 níveis: organização, equipe, usuário e preferência.
+  "Preferência nunca concede" virou `check (hidden)` no banco. `allowed` e
+  `visible` são campos separados, e é isso que faz esconder não quebrar link
+  salvo. Papel `eg_member` (0090) veio depois, para convite ao time deixar de
+  criar administrador sempre.
+
+- **S3**: já configurado na Railway. Os 2 binários (`Manual de Marca.pdf`,
+  `Proposta_EverGreen_HM_Conexoes_Poderosas_v3.pdf`) foram enviados por você.
+  **Faltava só anexá-los pela tela do Wiki EG** (upload direto no S3 não
+  registra `storage_key` no Postgres — quem cria essa referência é a própria
+  rota de anexo). `_opensquad/`, `squads/`, `skills/` e `scratch/` foram
+  apagados em 2026-08-05, junto com o comando `/opensquad` (que existia
+  triplicado em `.agent/`, `.agents/` e `.claude/`) e o config do Playwright
+  MCP, que apontava para dentro de `_opensquad/` e foi movido para
+  `infra/mcp/playwright.config.json`.
+- **Painel do copiloto**: painel lateral colapsável + `Ctrl+K`, conversa
+  acompanha a troca de tela, fechado no primeiro acesso e depois lembra o
+  estado. Implementado.
+- **Follow-up**: resumo diário único, sem push por evento. (Canal na decisão 3.)
+- **Score de fit**: removido. Nulo até "Avaliar com IA".
+- **Inventário de gaps**: Tech Radar + inventário comercial + projetos
+  concluídos, cada item com sua evidência.
+- **Ações do copiloto**: reversível executa com dica de desfazer; visível ao
+  cliente sempre pede confirmação.
+- **Busca na web**: permitida, sempre com fonte — inclusive quando o dado é do
+  Bioma (cita tabela/tela).
+- **Escopo do copiloto**: só EG.
+- **Skill proposta pelo agente**: só vale depois de aprovação humana.
+- **Flexibilidade**: configuração sim, composição sim, definição não.
+- **Guia de integração**: virou modal; o "PDF" quebrado (que imprimia a
+  aplicação inteira) foi removido.
+- **Memória por natureza**: preferência é pessoal, fato/diretriz são
+  compartilhados. Corrigível quando o copiloto classificar errado.
+- **Custo por cota**: execução roteada por assinatura mostra a cota real da
+  conta, nunca preço por token inventado. Falta cadastrar as contas para
+  ganhar vida.
+
+
+---
+
+## As decisões em texto completo
+
+## 4. Custo de IA — preço vem de onde
+
+**Contexto.** Você perguntou se não existe endpoint para puxar preço de modelo.
+
+A resposta separada em duas partes, porque são coisas diferentes:
+
+- **Preço por token: não existe API pública.** OpenAI, Anthropic e Google
+  publicam preço em página web, não em endpoint versionado. Qualquer coisa que
+  "puxe preço automaticamente" estaria raspando uma página de marketing — que
+  muda de layout sem aviso e quebraria calado, gravando custo errado no banco.
+  Por isso a tabela está em `bioma_api/model_pricing.py`, versionada em git: o
+  histórico de preço fica auditável junto com o código, e atualizar é um commit
+  de uma linha.
+
+- **Gasto real: existe, sim.** A OpenAI tem a Costs API
+  (`GET https://api.openai.com/v1/organization/costs`), que devolve o gasto
+  diário — o número da fatura, não uma conta nossa. Duas pegadinhas: exige uma
+  **chave de admin da organização**, diferente da chave de projeto que o Bioma
+  usa hoje; e só um **Organization Owner** consegue criar essa chave.
+  ([referência da API](https://developers.openai.com/api/reference/resources/admin/subresources/organization/subresources/usage/methods/costs),
+  [cookbook](https://developers.openai.com/cookbook/examples/completions_usage_api),
+  verificado em 2026-08-02)
+
+Isso abre uma terceira opção melhor que as duas anteriores:
+
+| Opção | Como é |
+|---|---|
+| A. Manter como está | preço em código; modelo desconhecido fica sem custo |
+| B. Estimar pela família | número aproximado, marcado como tal |
+| **C. Reconciliar com a fatura** | mantém A **e** puxa o gasto real da Usage API, mostrando os dois lado a lado |
+
+**Recomendo C**, mas em duas etapas: A já está no ar e funciona; C entra quando
+você gerar a chave de admin. O valor de C não é o custo por execução — é
+descobrir que a soma do que o Bioma achou que gastou não bate com a fatura, que
+é exatamente o erro que ninguém percebe sozinho.
+
+`RESPOSTA (fico em A por enquanto, ou já quer C?):`Podemos ir para C porém uma coisa, esqueci mas não estamos usando o cobrança por subscrição/cota das assinaturas? Então basicaemnte não seria ver nossa assintatura, quantidade usada da cota por requisição e calcular a combase no que pagamos de assinatura?
+
+**Resposta (2026-08-04).** Você está certo, e isso derruba a premissa das três
+opções acima. Elas assumiam cobrança por token, que é o modelo da chave de API.
+Com assinatura, **o token não custa nada na margem** — você já pagou o mês. O
+que custa é a **cota**, que é finita e não acumula.
+
+Então a pergunta certa não é "quanto essa execução custou", é **"quanto dessa
+cota essa execução consumiu, e quanto sobrou até o reset"**. São coisas
+diferentes: a primeira é contabilidade, a segunda é operação. Estourar a cota na
+terça-feira para pela metade da semana; um relatório de custo não avisa isso.
+
+O modelo certo, então:
+
+| Camada | O quê |
+|---|---|
+| **Custo de referência** | `preço da assinatura ÷ cota do período` = quanto vale uma unidade. Serve para comparar execuções entre si e responder "vale a pena rodar isso 200 vezes?" |
+| **Cota restante** | o número que importa no dia a dia — quanto sobrou e quando reseta |
+| **Chave de API** | só aí o custo é dinheiro de verdade, e a tabela de preços vale |
+
+Duas coisas que a infraestrutura já tem e ninguém está usando:
+`ai_provider_subscriptions` (com o valor pago) e `ai_quota_buckets` (com
+`remaining_percent` e `resets_at`, alimentado por `quota_collectors.py`).
+
+O que falta é ligar: registrar as unidades consumidas por execução no bucket, e
+derivar o custo de referência. Com isso o painel deixa de mostrar "US$ 0,0032" —
+que é ficção quando a cobrança é assinatura — e passa a mostrar "3% da cota
+semanal do Claude Code, reseta quinta".
+
+**Implementado em 2026-08-04.** `copilot_runs` liga cada execução à conta que
+respondeu; a trilha lê a cota ATUAL dessa conta (`ai_quota_buckets`, que já
+integra com o contrato oficial `account/rateLimits/read` do Codex — reportado
+pelo próprio provedor, não estimativa). `/copilot/usage` mostra `routed_runs` e
+`routed_accounts` com a cota de cada uma. Não implementei o "custo de
+referência" (preço da assinatura ÷ cota do período) que eu tinha sugerido: sem
+um número confiável de unidades-por-dólar publicado pelo provedor, seria outro
+número inventado — melhor mostrar a cota real, que existe de verdade, do que
+uma conversão para dólar que não existe. A Costs API da OpenAI (opção C)
+continua valendo só para o que roda por chave de API, não por assinatura.
+
+De quebra, achei e corrigi um bug: execução roteada por assinatura podia
+ganhar um custo em dólar FALSO quando o `model_id` da conta coincidia por acaso
+com um nome precificado na tabela. Corrigido — execução de assinatura nunca
+aplica preço por token.
+
+Falta só você registrar as contas (Operação EG → IA) para isso ganhar vida —
+hoje `ai_provider_accounts` está vazia, então o painel não mostra nada ainda.
+
+---
+
+## 5. Memória e alma do agente — escopo e personalização
+
+**Contexto.** Sua pergunta: como a memória (`memory.md`) e a identidade
+(`soul.md`) do agente são gerenciadas, e como ele se comporta por
+local/workspace/cliente e por usuário.
+
+**O que já existe hoje** (tabela `agent_memories`, migração 0070):
+
+- **Memória global** (`workspace_id = NULL`) — vale em toda a EG. É o mais
+  próximo de `soul.md`: tom de voz, princípios, o que nunca fazer.
+- **Memória de workspace** — vale só naquele cliente. "A Univet prefere reunião
+  na sexta" não deve vazar para outro cliente, e não vaza (tem smoke provando).
+- **Toda escrita gera revisão** (`agent_memory_revisions`) — dá para ver o que
+  mudou e quando.
+- **Habilidades** (`agent_skills`) — procedimento aprendido, com o mesmo escopo,
+  e que **só entra em uso depois de aprovação humana**.
+
+**O que NÃO existe, e é a sua pergunta de verdade: memória por usuário.** Hoje a
+memória é da EG e do cliente, nunca sua. Se você e outra pessoa da EG usarem o
+copiloto, os dois recebem o mesmo dossiê.
+
+| Opção | Como é | A favor | Contra |
+|---|---|---|---|
+| **A. Três escopos: global + workspace + usuário** | acrescenta `user_id` na memória | ele aprende seu jeito sem impor aos outros | uma pessoa pode "ensinar errado" e ninguém vê |
+| B. Manter dois escopos | como está | tudo é auditável por todos | ele nunca personaliza para você |
+| C. Escopo de usuário só para preferência | fato e diretriz continuam coletivos | separa "como falar comigo" de "o que é verdade" | mais um conceito para entender |
+
+**Recomendo C.** A distinção que importa não é quem escreveu, é **o que é
+preferência e o que é fato**. "Prefiro resposta curta, sem introdução" é seu.
+"O contrato da Univet vence em março" é da EG, e não pode depender de quem
+perguntou. C dá personalização sem fragmentar a verdade.
+
+Sobre `soul.md`: hoje a identidade está em código (as instruções do modelo, em
+`bioma_worker/copilot.py`). Movê-la para memória global editável te deixaria
+ajustar o tom sem deploy — mas também deixaria alguém quebrar o copiloto por
+acidente. Recomendo **manter em código** e usar memória global para o que é
+ajuste fino.
+
+`RESPOSTA (escopo de memória, e soul.md em código ou editável?):`pode manter o soul em código por enquanto. E o escopo da memória, não entendi bem a diferença de A para C. Acho interessante saber o que cada usuário fez com o copiloto também, mas acho que independente dessas opções, é rastreável.
+
+**Resposta (2026-08-04).** A diferença é **o que pode ser privado**, e o exemplo
+deixa claro. Suponha que você diga ao copiloto: *"a Univet vence o contrato em
+março, e me responda sempre sem introdução"*. São duas coisas numa frase.
+
+**Opção A — escopo por usuário, sem distinção.** As duas viram memória sua. O
+copiloto passa a responder curto **para você** (certo) e a saber do vencimento
+**só quando você pergunta** (errado). Outra pessoa da EG abre a mesma tela e o
+copiloto não sabe do contrato. Um fato da empresa virou segredo pessoal por
+acidente — porque quem digitou foi você.
+
+**Opção C — separa por natureza.** "Responda sem introdução" é preferência e
+fica sua. "A Univet vence em março" é fato e vai para a memória do workspace,
+que todo mundo enxerga. O critério não é **quem escreveu**, é **o que é**.
+
+Concordo com sua observação de que rastreabilidade é ortogonal: a trilha já
+registra quem rodou o quê, com qual memória, em `copilot_runs` — e isso vale nas
+duas opções. Não é argumento para nenhuma.
+
+Fica **C**, então, salvo objeção sua. Implicação prática: a memória ganha um
+campo de escopo pessoal, e o copiloto classifica ao gravar — com você podendo
+corrigir a classificação, porque ele vai errar às vezes.
+
+**Implementado em 2026-08-04.** `agent_memories` ganhou `owner_user_id`
+(banco recusa em qualquer categoria que não seja `preference` — não confia só
+no código). O dossiê de cada pessoa traz fato/diretriz sempre, e preferência só
+a dela; a listagem administrativa continua mostrando tudo, com selo de quem é
+o dono — rastreabilidade não é a mesma coisa que vazar no dossiê de outra
+pessoa. Tem botão pra corrigir a classificação quando o copiloto errar.
+
+---
+
+## 13. Tarefa ligada a projeto, e disciplina como estrutura (IMPLEMENTADO)
+
+> **Estado em 2026-08-11.** Fechado, back e front.
+>
+> Ao escrever o primeiro teste da regra descobri que ela estava **morta**: o
+> guard existia e nunca recusou nada, porque nenhuma query de contexto
+> selecionava `workspaces.kind` e dois dos tres caminhos de escrita nem
+> passavam o contexto. Corrigido de forma estrutural — `context` perdeu o valor
+> padrao e o tipo e lido por colchete, entao faltar o dado agora explode em vez
+> de liberar calado.
+>
+> No front, `resolveComposerProject` decide o projeto sem perguntar quando da
+> (filtro ativo manda; um projeto so, escolhe sozinho) e, quando nao da, o campo
+> de titulo nem aparece: no lugar dele vem o caminho. Ninguem mais leva 422.
+
+Levantado pelo Eduardo em 2026-08-08, e ele está certo em dois pontos que eu
+tinha respondido errado antes. São **dois problemas distintos** que vieram
+juntos na conversa; separá-los é o que torna os dois resolvíveis.
+
+### Problema A — disciplina não é filtro, é vocabulário
+
+Eu disse que Growth/Tech eram "só um filtro". Não são. Cada frente tem o
+**próprio conjunto de status** (`lib/task-frentes.ts`), e o mesmo nome muda de
+significado entre elas:
+
+| Status | Growth | Tech |
+|---|---|---|
+| `Backlog` | **ACTIVE** | **NOT_STARTED** |
+
+Growth vai de Brain a Finalizado; Tech tem `To Do (Sprint)`, `Code review`,
+`QA / testes`, `Pronto p/ release`, `Implantado`; Social tem `Roteirização`,
+`Aprovação cliente`, `Publicado`. São vocabulários operacionais diferentes, não
+rótulos.
+
+Consequência, que é o que o Eduardo chamou de "de-para": a aba **Todas as
+disciplinas** não é a matriz nem a visão canônica. Ela agrupa por
+`group_status`, então funciona — mas coloca lado a lado dois cards escritos
+`Backlog` em colunas diferentes, e quem lê não tem como saber por quê. A visão
+combinada é uma tradução, e hoje ela não se anuncia como tal.
+
+### Problema B — tarefa sem projeto perde o contexto
+
+A proposta: tarefa se liga a projeto, e as abas de disciplina só se destravam
+quando existe projeto no workspace (com mensagem dizendo "crie um projeto para
+vincular").
+
+O argumento não é organização — é **contexto acumulado**. Projeto como o nó que
+amarra comunicação (WhatsApp, e-mail), planejamento, documento, proposta e
+artefato. Isso alimenta, nesta ordem de valor:
+
+1. o copiloto saber o que já aconteceu naquele projeto;
+2. o benchmark da EG (o que funcionou, em que tipo de projeto);
+3. a identificação de gaps quando se procura projeto ou vaga;
+4. a geração de conteúdo — nossa e do cliente — com contexto real.
+
+### Onde eu concordo
+
+- **Disciplina é estrutural.** A aba combinada precisa se declarar como
+  tradução, ou some.
+- **Ligar tarefa a projeto vale.** E vale AGORA: cada tarefa e artefato que
+  nasce sem `project_id` é histórico órfão que fica caro de retrofitar. Os
+  artefatos (0089) já carregam `thread_id`/`run_id`; dar-lhes `project_id`
+  fecha metade do desenho.
+
+### Onde eu faria diferente
+
+**Destravar a aba ≠ tornar o vínculo obrigatório.** São coisas diferentes, e a
+segunda quebra um caso real: a Operação EG tem demanda interna legítima sem
+projeto — treinamento, hackathon, social da casa. Forçar projeto ali obrigaria
+a inventar um projeto "diversos", que é pior que o vínculo nulo porque polui o
+contexto que a mudança existe para melhorar.
+
+O próprio Eduardo disse: *"não estou falando que tem que prender tudo e tornar
+chumbado o sistema"*. Então a regra que eu proporia:
+
+| Workspace | Vínculo com projeto |
+|---|---|
+| **Cliente** | obrigatório — toda tarefa pertence a um projeto contratado |
+| **Operação EG** | opcional — demanda interna existe sem projeto |
+
+Isso entrega o contexto onde ele importa (cliente, benchmark, conteúdo) sem
+engessar a casa.
+
+`RESPOSTA (vínculo obrigatório só em cliente, ou em todos os workspaces?):` Só para cliente.
+
+**Implementado em 2026-08-08 (backend).** `_validate_project` passa a exigir
+`project_id` quando `workspace_kind = 'client'`, com mensagem dizendo onde
+criar o projeto. Operação EG segue opcional. Não precisou de migração:
+`eg_tasks.project_id` já existia desde a 0065, nulável.
+
+**Falta (frontend):** a tela de tarefas do cliente ainda não bloqueia a criação
+antes de existir projeto — hoje a pessoa preenche e leva 422. O certo é a aba
+mostrar "crie um projeto para vincular" e o formulário exigir o campo.
+
+**Correção de uma afirmação minha:** eu disse que as abas de disciplina eram
+fixas. Não são — `TasksView` já as filtra por disciplina que tenha projeto ou
+tarefa, e só mostra ambas quando não há nada cadastrado.
+
+`RESPOSTA (a aba combinada some, ou fica declarada como tradução?):` Fica declarada como tradução.
+
+**Concordo.** Sumir com ela custaria a única visão de "tudo que está aberto
+neste cliente", que é o que se quer no início do dia. O problema nunca foi a
+existência da aba — foi ela se apresentar como matriz. Declarada, ela vira o
+que sempre deveria ter sido: um panorama que avisa que os nomes de status
+pertencem a vocabulários diferentes, e que a coluna vem de `group_status`, não
+do nome.
+
+**Implementado em 2026-08-08.** A visão combinada agora traz uma linha dizendo
+que as colunas vêm do agrupamento, não do nome do status, e que para trabalhar
+convém escolher a disciplina.
+
