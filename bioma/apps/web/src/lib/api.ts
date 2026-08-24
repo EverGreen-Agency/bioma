@@ -1300,6 +1300,38 @@ export type CmsTarget = {
 
 export type CmsTargetCheck = { ok: boolean; detail: string };
 
+/** Um post COMO ELE ESTA NO SITE — inclusive os que nao nasceram no Bioma. */
+export type CmsPost = {
+  id: number | string;
+  title: string;
+  excerpt: string;
+  status: string;
+  link: string | null;
+  slug: string | null;
+  date: string | null;
+  modified: string | null;
+  /** Nulo quando o post foi escrito direto no WordPress. E informacao, nao falha. */
+  artifact_id: string | null;
+  artifact_version: number | null;
+};
+
+export type CmsPostPage = {
+  target_id: string;
+  page: number;
+  /** Nulo quando o site nao devolveu o cabecalho de total. Chutar mentiria. */
+  total: number | null;
+  total_pages: number | null;
+  items: CmsPost[];
+};
+
+export type CmsPostUpdate = {
+  status?: "publish" | "future" | "draft" | "pending" | "private" | "trash";
+  title?: string;
+  /** ISO 8601. Obrigatorio quando status = future. */
+  date?: string;
+  slug?: string;
+};
+
 /** O que SERIA enviado, sem enviar. O destino e o site do cliente. */
 export type PublicationPreview = {
   target_id: string;
@@ -2901,6 +2933,26 @@ export const api = {
     request<CmsTarget>(`/workspaces/${workspaceId}/studio/cms-targets/${targetId}`, { method: "PATCH", body: JSON.stringify(payload) }),
   checkCmsTarget: (workspaceId: string, targetId: string) =>
     request<CmsTargetCheck>(`/workspaces/${workspaceId}/studio/cms-targets/${targetId}/check`, { method: "POST" }),
+  cmsPosts: (workspaceId: string, targetId: string, params?: { page?: number; per_page?: number; search?: string }) => {
+    const qs = new URLSearchParams();
+    if (params?.page) qs.set("page", String(params.page));
+    if (params?.per_page) qs.set("per_page", String(params.per_page));
+    if (params?.search) qs.set("search", params.search);
+    const sufixo = qs.toString();
+    return request<CmsPostPage>(
+      `/workspaces/${workspaceId}/studio/cms-targets/${targetId}/posts${sufixo ? `?${sufixo}` : ""}`,
+    );
+  },
+  updateCmsPost: (workspaceId: string, targetId: string, postId: string, payload: CmsPostUpdate) =>
+    request<CmsPost>(`/workspaces/${workspaceId}/studio/cms-targets/${targetId}/posts/${postId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
+  trashCmsPost: (workspaceId: string, targetId: string, postId: string) =>
+    request<{ ok: boolean; detail: string }>(
+      `/workspaces/${workspaceId}/studio/cms-targets/${targetId}/posts/${postId}`,
+      { method: "DELETE" },
+    ),
   publishPreview: (workspaceId: string, artifactId: string, payload: PublishOptions) =>
     request<PublicationPreview>(`/workspaces/${workspaceId}/studio/artifacts/${artifactId}/publish-preview`, { method: "POST", body: JSON.stringify(payload) }),
   publishArtifact: (workspaceId: string, artifactId: string, payload: PublishOptions) =>

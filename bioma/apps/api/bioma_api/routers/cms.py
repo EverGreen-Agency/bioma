@@ -1,11 +1,15 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 
 from bioma_api.auth import current_user_from_request
 from bioma_api.schemas.auth import CurrentUserResponse
 from bioma_api.schemas.cms import (
     ArtifactPublication,
+    CmsPost,
+    CmsPostAction,
+    CmsPostPage,
+    CmsPostUpdate,
     CmsTarget,
     CmsTargetCheck,
     CmsTargetCreate,
@@ -91,3 +95,46 @@ def list_publications(
     user: CurrentUserResponse = Depends(current_user_from_request),
 ) -> list[ArtifactPublication]:
     return service.list_publications(workspace_id, artifact_id, user)
+
+
+# ------------------------------------------------------------------- gestão
+# Gerenciar o blog de dentro do Bioma, sem abrir o CMS de cada cliente.
+
+
+@workspace_router.get("/cms-targets/{target_id}/posts", response_model=CmsPostPage)
+def list_posts(
+    workspace_id: UUID,
+    target_id: UUID,
+    page: int = Query(default=1, ge=1),
+    per_page: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None),
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> CmsPostPage:
+    """Os posts que existem no site — inclusive os que não nasceram no Bioma.
+
+    A lista vem do CMS ao vivo, não do nosso banco: é a única fonte que não
+    mente sobre o que está no ar agora.
+    """
+    return service.list_posts(workspace_id, target_id, user, page, per_page, search)
+
+
+@workspace_router.patch("/cms-targets/{target_id}/posts/{post_id}", response_model=CmsPost)
+def update_post(
+    workspace_id: UUID,
+    target_id: UUID,
+    post_id: str,
+    payload: CmsPostUpdate,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> CmsPost:
+    return service.update_post(workspace_id, target_id, post_id, payload, user)
+
+
+@workspace_router.delete("/cms-targets/{target_id}/posts/{post_id}", response_model=CmsPostAction)
+def trash_post(
+    workspace_id: UUID,
+    target_id: UUID,
+    post_id: str,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> CmsPostAction:
+    """Move para a LIXEIRA do WordPress. Não apaga de vez — de propósito."""
+    return service.trash_post(workspace_id, target_id, post_id, user)

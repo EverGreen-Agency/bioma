@@ -14,6 +14,7 @@ import {
   Plus,
   Send,
   Sparkles,
+  Globe,
   WandSparkles,
   TrendingUp,
 } from "lucide-react";
@@ -26,6 +27,7 @@ import {
   type ContentScriptSummary,
 } from "../lib/api";
 import { StudioArtifactList } from "./StudioArtifactList";
+import { CmsPostsManager } from "./CmsPostsManager";
 import {
   useBrandBook,
   useSaveBrandBook,
@@ -45,7 +47,7 @@ import {
 import { EmptyState, SectionHeader } from "./shared";
 import { StatusPill } from "./StatusPill";
 
-type MainTab = "artifacts" | "studio" | "brand_book" | "calendar" | "retrospective";
+type MainTab = "artifacts" | "blog" | "studio" | "brand_book" | "calendar" | "retrospective";
 type ContentType = "social_posts" | "image_generation" | "video_scripts";
 type ImageProvider = "dalle_3" | "flux" | "higgsfield" | "custom";
 
@@ -705,6 +707,16 @@ export function AiContentStudio({ workspaceId }: { workspaceId: string }) {
         >
           <Sparkles size={15} /> Estúdio
         </button>
+        {/* Decisao 14: gerenciar o blog SEM abrir o CMS de cada cliente.
+            Fica ao lado do Estudio porque e a outra ponta do mesmo fluxo — o
+            Estudio produz, o Blog e onde o produzido vive. */}
+        <button
+          className={mainTab === "blog" ? "performance-tab active" : "performance-tab"}
+          type="button"
+          onClick={() => setMainTab("blog")}
+        >
+          <Globe size={15} /> Blog do site
+        </button>
         <button
           className={mainTab === "studio" ? "performance-tab active" : "performance-tab"}
           type="button"
@@ -736,6 +748,7 @@ export function AiContentStudio({ workspaceId }: { workspaceId: string }) {
       </div>
 
       {mainTab === "artifacts" && <StudioArtifactList workspaceId={workspaceId} />}
+      {mainTab === "blog" && <CmsPostsManager workspaceId={workspaceId} />}
       {mainTab === "brand_book" && <BrandBookSection workspaceId={workspaceId} />}
       {mainTab === "calendar" && <CalendarSection workspaceId={workspaceId} />}
       {mainTab === "retrospective" && <RetrospectiveSection workspaceId={workspaceId} />}

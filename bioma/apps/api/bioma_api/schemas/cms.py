@@ -103,3 +103,51 @@ class PublishRequest(BaseModel):
     slug: str | None = Field(default=None, max_length=200)
     categories: list[int] | None = None
     tags: list[int] | None = None
+
+
+# --------------------------------------------------------------------- gestão
+# Gerenciar o blog de dentro do Bioma, sem abrir o CMS de cada cliente.
+# Estes modelos descrevem o post COMO ELE ESTÁ NO SITE — inclusive os que não
+# nasceram aqui. Enxergar só o que o Bioma publicou faria "gerenciar o blog"
+# significar "gerenciar a metade que passou por aqui".
+
+CmsPostStatus = Literal["publish", "future", "draft", "pending", "private", "trash"]
+
+
+class CmsPost(BaseModel):
+    id: int | str
+    title: str
+    excerpt: str = ""
+    status: str
+    link: str | None = None
+    slug: str | None = None
+    date: str | None = None
+    modified: str | None = None
+    # Nulo quando o post foi escrito direto no WordPress. Isso é informação
+    # (de onde veio), não falha — e é o que permite ver a mistura real do blog.
+    artifact_id: UUID | None = None
+    artifact_version: int | None = None
+
+
+class CmsPostPage(BaseModel):
+    target_id: UUID
+    page: int
+    # `None` quando o site não devolveu o cabeçalho de total (cache e proxy
+    # às vezes comem). Chutar faria a paginação mentir.
+    total: int | None = None
+    total_pages: int | None = None
+    items: list[CmsPost] = Field(default_factory=list)
+
+
+class CmsPostUpdate(BaseModel):
+    status: CmsPostStatus | None = None
+    title: str | None = Field(default=None, max_length=240)
+    # ISO 8601. Obrigatório quando `status = future` — agendar sem data não
+    # agenda nada, o WordPress publicaria na hora.
+    date: str | None = None
+    slug: str | None = Field(default=None, max_length=200)
+
+
+class CmsPostAction(BaseModel):
+    ok: bool
+    detail: str

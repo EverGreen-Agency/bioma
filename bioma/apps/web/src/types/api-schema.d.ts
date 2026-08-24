@@ -5924,6 +5924,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workspaces/{workspace_id}/studio/cms-targets/{target_id}/posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Posts
+         * @description Os posts que existem no site — inclusive os que não nasceram no Bioma.
+         *
+         *     A lista vem do CMS ao vivo, não do nosso banco: é a única fonte que não
+         *     mente sobre o que está no ar agora.
+         */
+        get: operations["list_posts_workspaces__workspace_id__studio_cms_targets__target_id__posts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspace_id}/studio/cms-targets/{target_id}/posts/{post_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Trash Post
+         * @description Move para a LIXEIRA do WordPress. Não apaga de vez — de propósito.
+         */
+        delete: operations["trash_post_workspaces__workspace_id__studio_cms_targets__target_id__posts__post_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Post */
+        patch: operations["update_post_workspaces__workspace_id__studio_cms_targets__target_id__posts__post_id__patch"];
+        trace?: never;
+    };
     "/workspaces/{workspace_id}/studio/content-quality": {
         parameters: {
             query?: never;
@@ -7586,6 +7630,66 @@ export interface components {
             responsible_name?: string | null;
             /** Status */
             status?: ("onboarding" | "active" | "paused" | "completed" | "archived") | null;
+        };
+        /** CmsPost */
+        CmsPost: {
+            /** Artifact Id */
+            artifact_id?: string | null;
+            /** Artifact Version */
+            artifact_version?: number | null;
+            /** Date */
+            date?: string | null;
+            /**
+             * Excerpt
+             * @default
+             */
+            excerpt: string;
+            /** Id */
+            id: number | string;
+            /** Link */
+            link?: string | null;
+            /** Modified */
+            modified?: string | null;
+            /** Slug */
+            slug?: string | null;
+            /** Status */
+            status: string;
+            /** Title */
+            title: string;
+        };
+        /** CmsPostAction */
+        CmsPostAction: {
+            /** Detail */
+            detail: string;
+            /** Ok */
+            ok: boolean;
+        };
+        /** CmsPostPage */
+        CmsPostPage: {
+            /** Items */
+            items?: components["schemas"]["CmsPost"][];
+            /** Page */
+            page: number;
+            /**
+             * Target Id
+             * Format: uuid
+             */
+            target_id: string;
+            /** Total */
+            total?: number | null;
+            /** Total Pages */
+            total_pages?: number | null;
+        };
+        /** CmsPostUpdate */
+        CmsPostUpdate: {
+            /** Date */
+            date?: string | null;
+            /** Slug */
+            slug?: string | null;
+            /** Status */
+            status?: ("publish" | "future" | "draft" | "pending" | "private" | "trash") | null;
+            /** Title */
+            title?: string | null;
         };
         /** CmsTarget */
         CmsTarget: {
@@ -29901,6 +30005,112 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CmsTargetCheck"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_posts_workspaces__workspace_id__studio_cms_targets__target_id__posts_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                per_page?: number;
+                search?: string | null;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+                target_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsPostPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trash_post_workspaces__workspace_id__studio_cms_targets__target_id__posts__post_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                target_id: string;
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsPostAction"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_post_workspaces__workspace_id__studio_cms_targets__target_id__posts__post_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                target_id: string;
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CmsPostUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CmsPost"];
                 };
             };
             /** @description Validation Error */

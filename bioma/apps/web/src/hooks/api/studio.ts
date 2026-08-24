@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, type PublishOptions, type StudioArtifactStatus } from "../../lib/api";
+import { api, type CmsPostUpdate, type PublishOptions, type StudioArtifactStatus } from "../../lib/api";
 
 /** Decisão 8 — a vista do Estúdio: o que a conversa produziu, organizado. */
 export function useStudioArtifacts(
@@ -146,5 +146,35 @@ export function usePublishArtifact(workspaceId: string, artifactId: string) {
       queryClient.invalidateQueries({ queryKey: ["artifact-publications", workspaceId, artifactId] });
       queryClient.invalidateQueries({ queryKey: ["studio-artifact", artifactId] });
     },
+  });
+}
+
+/** Os posts que existem no site — vem do CMS ao vivo, nao do nosso banco. */
+export function useCmsPosts(
+  workspaceId: string | null,
+  targetId: string | null,
+  params?: { page?: number; search?: string },
+) {
+  return useQuery({
+    queryKey: ["cms-posts", workspaceId, targetId, params?.page ?? 1, params?.search ?? ""],
+    queryFn: () => api.cmsPosts(workspaceId as string, targetId as string, params),
+    enabled: Boolean(workspaceId && targetId),
+  });
+}
+
+export function useUpdateCmsPost(workspaceId: string, targetId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ postId, payload }: { postId: string; payload: CmsPostUpdate }) =>
+      api.updateCmsPost(workspaceId, targetId, postId, payload),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["cms-posts", workspaceId, targetId] }),
+  });
+}
+
+export function useTrashCmsPost(workspaceId: string, targetId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (postId: string) => api.trashCmsPost(workspaceId, targetId, postId),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["cms-posts", workspaceId, targetId] }),
   });
 }
