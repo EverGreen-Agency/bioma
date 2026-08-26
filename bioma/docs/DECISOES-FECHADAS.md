@@ -527,3 +527,63 @@ projetos. Não mudei isso porque não sei se acontece na EG — se acontecer, me
 diga que a alteração é pequena.
 
 
+
+---
+
+## 7. Context Engine — por onde começar
+
+> **Implementado em 2026-08-24 — Fase 1, corte vertical.** Base por WORKSPACE
+> (a resposta "faca para ambos"). Percurso completo: criar base, enviar texto,
+> fragmentar, inspecionar, desativar fragmento, buscar e ABRIR A CITACAO NA
+> ORIGEM. Superficie `eg-conhecimento`; a do cliente aparece no hub dele.
+>
+> A propriedade que sustenta tudo e `original[char_start:char_end] == content`
+> — sem ela a citacao vira "confie em mim". Por isso o conteudo nunca e
+> normalizado.
+>
+> Sem embeddings, e a API declara isso (`mode_actually_used: "lexical"`,
+> `capabilities.dense: "unavailable"`) para a Fase 3 entrar sem quebrar
+> contrato — e para ninguem culpar a busca semantica por um resultado fraco
+> antes de ela existir.
+>
+> **Falta (Fases 2-4):** upload de arquivo (hoje e texto colado), OCR de PDF
+> escaneado, embeddings e reranker, e o ledger de runs proprio.
+
+
+**Contexto.** `EG_CONTEXT_ENGINE_FEATURE_HANDOFF.md` define a feature inteira em
+4 fases. Não comecei porque construir metade dela é pior que não começar: uma
+base de conhecimento que responde sem citar direito, ou que vaza entre
+organizações, destrói a confiança em tudo que ela devolver depois.
+
+**O que o Bioma já tem, e que encurta bastante a Fase 1:**
+
+| Peça do contrato | O que já existe |
+|---|---|
+| object storage | `services/storage.py` (S3, configurado na Railway) |
+| extração de texto | `attachment_text.py` — txt, md, csv, json, PDF via pypdf |
+| índice lexical | Postgres full-text, nativo |
+| ledger de runs | o padrão de `copilot_runs` (etapas, tokens, duração, fontes) |
+| tenancy | `organization_id`/`workspace_id` em todo o esquema |
+| adaptadores de modelo | plano de roteamento com cota de assinatura |
+
+Falta, de verdade: `knowledge_bases` / `documents` / `versions` / `chunks`, o
+chunking que respeita estrutura, a busca com citação que abre na origem, e a
+tela de inspeção de fragmentos.
+
+**O corte vertical que proponho** (Fase 1 do handoff, sem Fase 2-4):
+
+1. criar base → 2. enviar Markdown/PDF → 3. extrair e fragmentar → 4. inspecionar
+e desativar fragmento → 5. buscar por texto → 6. abrir a citação na origem →
+7. run registrado.
+
+Sem embeddings, sem persona, sem reranker — e a API já devolvendo
+`modeActuallyUsed: "lexical"` com `capabilities.dense: "unavailable"`, para a
+Fase 3 entrar sem quebrar contrato e sem ninguém achar que houve busca híbrida.
+
+**A pergunta que trava:** a primeira base é do **cliente** (documentos da Univet,
+consultáveis no hub dela) ou da **EG** (políticas, processos, contratos-modelo)?
+Muda quem enxerga por padrão, e a decisão errada aqui é cara de desfazer.
+
+`RESPOSTA (começar pela base da EG ou do cliente?):`Faça para ambos.
+
+
