@@ -2271,6 +2271,84 @@ export type GitHubCompletionSuggestions = {
   suggestions: GitHubCompletionSuggestion[];
 };
 
+/** Decisao 7, Fase 1 — base de conhecimento por workspace. */
+export type KnowledgeBase = {
+  id: string;
+  workspace_id: string;
+  name: string;
+  description: string | null;
+  status: "active" | "archived";
+  documents_total: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type KnowledgeDocument = {
+  id: string;
+  base_id: string;
+  title: string;
+  source_kind: "upload" | "text";
+  mime_type: string | null;
+  size_bytes: number | null;
+  status: "pending" | "indexed" | "failed";
+  /** Preenchido quando a extracao falhou — o documento fica visivel com o motivo. */
+  failure_reason: string | null;
+  current_version: number;
+  chunks_total: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type KnowledgeChunk = {
+  id: string;
+  document_id: string;
+  version: number;
+  position: number;
+  content: string;
+  heading_path: string[];
+  /** Offsets no texto extraido — e o que abre a citacao no ponto exato. */
+  char_start: number;
+  char_end: number;
+  is_active: boolean;
+};
+
+export type SearchHit = {
+  chunk_id: string;
+  document_id: string;
+  document_title: string;
+  base_id: string;
+  base_name: string;
+  version: number;
+  position: number;
+  content: string;
+  heading_path: string[];
+  char_start: number;
+  char_end: number;
+  rank: number;
+};
+
+export type KnowledgeSearchResponse = {
+  query: string;
+  /** Sempre "lexical" na Fase 1. Sem isto, resultado fraco viraria "a busca
+   *  semantica esta ruim" — e ela nem existe ainda. */
+  mode_actually_used: "lexical";
+  capabilities: { dense: "unavailable" | "available"; lexical: "available" };
+  hits: SearchHit[];
+};
+
+export type ChunkOrigin = {
+  chunk_id: string;
+  document_id: string;
+  document_title: string;
+  version: number;
+  heading_path: string[];
+  char_start: number;
+  char_end: number;
+  before: string;
+  content: string;
+  after: string;
+};
+
 export type ClientProfilePayload = {
   sector?: string | null;
   primary_offer?: string | null;
@@ -3582,6 +3660,34 @@ export const api = {
   /** Decisao 9: entregas cuja issue fechou no GitHub e que seguem abertas aqui.
    *  Calculado na hora, nao guardado — a pergunta "esta issue esta fechada?"
    *  tem dono, e e o GitHub. */
+  knowledgeBases: (workspaceId: string) =>
+    request<KnowledgeBase[]>(`/workspaces/${workspaceId}/knowledge/bases`),
+  createKnowledgeBase: (workspaceId: string, payload: { name: string; description?: string }) =>
+    request<KnowledgeBase>(`/workspaces/${workspaceId}/knowledge/bases`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  knowledgeDocuments: (workspaceId: string, baseId: string) =>
+    request<KnowledgeDocument[]>(`/workspaces/${workspaceId}/knowledge/bases/${baseId}/documents`),
+  addKnowledgeDocument: (workspaceId: string, baseId: string, payload: { title: string; content: string }) =>
+    request<KnowledgeDocument>(`/workspaces/${workspaceId}/knowledge/bases/${baseId}/documents`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  knowledgeChunks: (workspaceId: string, documentId: string) =>
+    request<KnowledgeChunk[]>(`/workspaces/${workspaceId}/knowledge/documents/${documentId}/chunks`),
+  setKnowledgeChunkActive: (workspaceId: string, chunkId: string, isActive: boolean) =>
+    request<KnowledgeChunk>(`/workspaces/${workspaceId}/knowledge/chunks/${chunkId}`, {
+      method: "PATCH",
+      body: JSON.stringify({ is_active: isActive }),
+    }),
+  knowledgeChunkOrigin: (workspaceId: string, chunkId: string) =>
+    request<ChunkOrigin>(`/workspaces/${workspaceId}/knowledge/chunks/${chunkId}/origin`),
+  knowledgeSearch: (workspaceId: string, q: string, baseId?: string | null) => {
+    const qs = new URLSearchParams({ q });
+    if (baseId) qs.set("base_id", baseId);
+    return request<KnowledgeSearchResponse>(`/workspaces/${workspaceId}/knowledge/search?${qs}`);
+  },
   dailyBrief: () => request<DailyBrief>("/backoffice/daily-brief"),
   githubCompletionSuggestions: (projectId: string) =>
     request<GitHubCompletionSuggestions>(`/integrations/github/projects/${projectId}/completion-suggestions`),

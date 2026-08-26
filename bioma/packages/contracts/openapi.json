@@ -3454,6 +3454,82 @@
         "title": "CertificationUpdateRequest",
         "type": "object"
       },
+      "ChunkOrigin": {
+        "description": "O fragmento no contexto do texto de origem — a citação verificável.\n\n`before` e `after` vêm do MESMO texto de onde o fragmento saiu, recortados\npelos offsets guardados. Sem isso, \"abrir na origem\" seria um scroll\naproximado e a citação viraria um pedido de confiança.",
+        "properties": {
+          "after": {
+            "title": "After",
+            "type": "string"
+          },
+          "before": {
+            "title": "Before",
+            "type": "string"
+          },
+          "char_end": {
+            "title": "Char End",
+            "type": "integer"
+          },
+          "char_start": {
+            "title": "Char Start",
+            "type": "integer"
+          },
+          "chunk_id": {
+            "format": "uuid",
+            "title": "Chunk Id",
+            "type": "string"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "document_title": {
+            "title": "Document Title",
+            "type": "string"
+          },
+          "heading_path": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Heading Path",
+            "type": "array"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "chunk_id",
+          "document_id",
+          "document_title",
+          "version",
+          "char_start",
+          "char_end",
+          "before",
+          "content",
+          "after"
+        ],
+        "title": "ChunkOrigin",
+        "type": "object"
+      },
+      "ChunkToggle": {
+        "properties": {
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "is_active"
+        ],
+        "title": "ChunkToggle",
+        "type": "object"
+      },
       "ClientCreateRequest": {
         "properties": {
           "name": {
@@ -10567,6 +10643,273 @@
           "updated_at"
         ],
         "title": "KitShipmentSummary",
+        "type": "object"
+      },
+      "KnowledgeBase": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "documents_total": {
+            "default": 0,
+            "title": "Documents Total",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "archived"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "workspace_id": {
+            "format": "uuid",
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "name",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "KnowledgeBase",
+        "type": "object"
+      },
+      "KnowledgeBaseCreate": {
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 1000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "name": {
+            "maxLength": 120,
+            "minLength": 2,
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "KnowledgeBaseCreate",
+        "type": "object"
+      },
+      "KnowledgeChunk": {
+        "properties": {
+          "char_end": {
+            "title": "Char End",
+            "type": "integer"
+          },
+          "char_start": {
+            "title": "Char Start",
+            "type": "integer"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "heading_path": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Heading Path",
+            "type": "array"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_active": {
+            "title": "Is Active",
+            "type": "boolean"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "document_id",
+          "version",
+          "position",
+          "content",
+          "char_start",
+          "char_end",
+          "is_active"
+        ],
+        "title": "KnowledgeChunk",
+        "type": "object"
+      },
+      "KnowledgeDocument": {
+        "properties": {
+          "base_id": {
+            "format": "uuid",
+            "title": "Base Id",
+            "type": "string"
+          },
+          "chunks_total": {
+            "title": "Chunks Total",
+            "type": "integer"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "current_version": {
+            "title": "Current Version",
+            "type": "integer"
+          },
+          "failure_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure Reason"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "mime_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mime Type"
+          },
+          "size_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Bytes"
+          },
+          "source_kind": {
+            "enum": [
+              "upload",
+              "text"
+            ],
+            "title": "Source Kind",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "indexed",
+              "failed"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "base_id",
+          "title",
+          "source_kind",
+          "status",
+          "current_version",
+          "chunks_total",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "KnowledgeDocument",
+        "type": "object"
+      },
+      "KnowledgeDocumentCreate": {
+        "properties": {
+          "content": {
+            "maxLength": 2000000,
+            "minLength": 1,
+            "title": "Content",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 240,
+            "minLength": 2,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "content"
+        ],
+        "title": "KnowledgeDocumentCreate",
         "type": "object"
       },
       "KommoConfigInput": {
@@ -24568,6 +24911,130 @@
           }
         },
         "title": "ScriptUpdateRequest",
+        "type": "object"
+      },
+      "SearchCapabilities": {
+        "description": "O que a busca REALMENTE fez.\n\nDeclarado no contrato desde a Fase 1 (decisão 7) para que a Fase 3 entre\nsem quebrar ninguém — e, principalmente, para que ninguém olhe um resultado\nfraco e conclua que a busca semântica está ruim quando ela nem existe.",
+        "properties": {
+          "dense": {
+            "default": "unavailable",
+            "enum": [
+              "unavailable",
+              "available"
+            ],
+            "title": "Dense",
+            "type": "string"
+          },
+          "lexical": {
+            "const": "available",
+            "default": "available",
+            "title": "Lexical",
+            "type": "string"
+          }
+        },
+        "title": "SearchCapabilities",
+        "type": "object"
+      },
+      "SearchHit": {
+        "properties": {
+          "base_id": {
+            "format": "uuid",
+            "title": "Base Id",
+            "type": "string"
+          },
+          "base_name": {
+            "title": "Base Name",
+            "type": "string"
+          },
+          "char_end": {
+            "title": "Char End",
+            "type": "integer"
+          },
+          "char_start": {
+            "title": "Char Start",
+            "type": "integer"
+          },
+          "chunk_id": {
+            "format": "uuid",
+            "title": "Chunk Id",
+            "type": "string"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "document_id": {
+            "format": "uuid",
+            "title": "Document Id",
+            "type": "string"
+          },
+          "document_title": {
+            "title": "Document Title",
+            "type": "string"
+          },
+          "heading_path": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Heading Path",
+            "type": "array"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "rank": {
+            "title": "Rank",
+            "type": "number"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "chunk_id",
+          "document_id",
+          "document_title",
+          "base_id",
+          "base_name",
+          "version",
+          "position",
+          "content",
+          "char_start",
+          "char_end",
+          "rank"
+        ],
+        "title": "SearchHit",
+        "type": "object"
+      },
+      "SearchResponse": {
+        "properties": {
+          "capabilities": {
+            "$ref": "#/components/schemas/SearchCapabilities"
+          },
+          "hits": {
+            "items": {
+              "$ref": "#/components/schemas/SearchHit"
+            },
+            "title": "Hits",
+            "type": "array"
+          },
+          "mode_actually_used": {
+            "const": "lexical",
+            "default": "lexical",
+            "title": "Mode Actually Used",
+            "type": "string"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "SearchResponse",
         "type": "object"
       },
       "SocialDailyMetric": {
@@ -48777,6 +49244,482 @@
         "summary": "Favorite Workspace",
         "tags": [
           "workspaces"
+        ]
+      }
+    },
+    "/workspaces/{workspace_id}/knowledge/bases": {
+      "get": {
+        "operationId": "list_bases_workspaces__workspace_id__knowledge_bases_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/KnowledgeBase"
+                  },
+                  "title": "Response List Bases Workspaces  Workspace Id  Knowledge Bases Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Bases",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "post": {
+        "operationId": "create_base_workspaces__workspace_id__knowledge_bases_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeBaseCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeBase"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Base",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/workspaces/{workspace_id}/knowledge/bases/{base_id}/documents": {
+      "get": {
+        "operationId": "list_documents_workspaces__workspace_id__knowledge_bases__base_id__documents_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "base_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Base Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/KnowledgeDocument"
+                  },
+                  "title": "Response List Documents Workspaces  Workspace Id  Knowledge Bases  Base Id  Documents Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Documents",
+        "tags": [
+          "knowledge"
+        ]
+      },
+      "post": {
+        "description": "Adiciona texto à base: grava, fragmenta e indexa de uma vez.\n\nDevolve 201 mesmo quando a extração não gerou fragmento: o documento existe\ne fica visível com `status: failed` e o motivo. Recusar com 4xx apagaria o\nrastro do que a pessoa tentou enviar.",
+        "operationId": "add_document_workspaces__workspace_id__knowledge_bases__base_id__documents_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "base_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Base Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KnowledgeDocumentCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeDocument"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Document",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/workspaces/{workspace_id}/knowledge/chunks/{chunk_id}": {
+      "patch": {
+        "description": "Tira o fragmento da busca sem apagar — desativar é reversível.",
+        "operationId": "set_chunk_active_workspaces__workspace_id__knowledge_chunks__chunk_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "chunk_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Chunk Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChunkToggle"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KnowledgeChunk"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Set Chunk Active",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/workspaces/{workspace_id}/knowledge/chunks/{chunk_id}/origin": {
+      "get": {
+        "description": "O trecho com o que vem antes e depois, recortado do texto de origem.",
+        "operationId": "chunk_origin_workspaces__workspace_id__knowledge_chunks__chunk_id__origin_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "chunk_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Chunk Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChunkOrigin"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Chunk Origin",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/workspaces/{workspace_id}/knowledge/documents/{document_id}/chunks": {
+      "get": {
+        "description": "Como o documento foi partido. Quando a base responde mal, a pergunta é\nsempre \"o que ela leu?\" — esta rota é a resposta.",
+        "operationId": "list_chunks_workspaces__workspace_id__knowledge_documents__document_id__chunks_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "document_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Document Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/KnowledgeChunk"
+                  },
+                  "title": "Response List Chunks Workspaces  Workspace Id  Knowledge Documents  Document Id  Chunks Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Chunks",
+        "tags": [
+          "knowledge"
+        ]
+      }
+    },
+    "/workspaces/{workspace_id}/knowledge/search": {
+      "get": {
+        "description": "Busca LEXICAL (Fase 1).\n\nA resposta declara `mode_actually_used` e `capabilities.dense` de propósito:\nsem isso, alguém olharia um resultado fraco e concluiria que a busca\nsemântica está ruim — quando ela ainda nem existe.",
+        "operationId": "search_workspaces__workspace_id__knowledge_search_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "q",
+            "required": true,
+            "schema": {
+              "minLength": 1,
+              "title": "Q",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "base_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Base Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Search",
+        "tags": [
+          "knowledge"
         ]
       }
     },

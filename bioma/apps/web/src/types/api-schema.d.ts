@@ -5635,6 +5635,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workspaces/{workspace_id}/knowledge/bases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Bases */
+        get: operations["list_bases_workspaces__workspace_id__knowledge_bases_get"];
+        put?: never;
+        /** Create Base */
+        post: operations["create_base_workspaces__workspace_id__knowledge_bases_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspace_id}/knowledge/bases/{base_id}/documents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Documents */
+        get: operations["list_documents_workspaces__workspace_id__knowledge_bases__base_id__documents_get"];
+        put?: never;
+        /**
+         * Add Document
+         * @description Adiciona texto à base: grava, fragmenta e indexa de uma vez.
+         *
+         *     Devolve 201 mesmo quando a extração não gerou fragmento: o documento existe
+         *     e fica visível com `status: failed` e o motivo. Recusar com 4xx apagaria o
+         *     rastro do que a pessoa tentou enviar.
+         */
+        post: operations["add_document_workspaces__workspace_id__knowledge_bases__base_id__documents_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspace_id}/knowledge/chunks/{chunk_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Set Chunk Active
+         * @description Tira o fragmento da busca sem apagar — desativar é reversível.
+         */
+        patch: operations["set_chunk_active_workspaces__workspace_id__knowledge_chunks__chunk_id__patch"];
+        trace?: never;
+    };
+    "/workspaces/{workspace_id}/knowledge/chunks/{chunk_id}/origin": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Chunk Origin
+         * @description O trecho com o que vem antes e depois, recortado do texto de origem.
+         */
+        get: operations["chunk_origin_workspaces__workspace_id__knowledge_chunks__chunk_id__origin_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspace_id}/knowledge/documents/{document_id}/chunks": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Chunks
+         * @description Como o documento foi partido. Quando a base responde mal, a pergunta é
+         *     sempre "o que ela leu?" — esta rota é a resposta.
+         */
+        get: operations["list_chunks_workspaces__workspace_id__knowledge_documents__document_id__chunks_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspace_id}/knowledge/search": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Search
+         * @description Busca LEXICAL (Fase 1).
+         *
+         *     A resposta declara `mode_actually_used` e `capabilities.dense` de propósito:
+         *     sem isso, alguém olharia um resultado fraco e concluiria que a busca
+         *     semântica está ruim — quando ela ainda nem existe.
+         */
+        get: operations["search_workspaces__workspace_id__knowledge_search_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workspaces/{workspace_id}/market-research": {
         parameters: {
             query?: never;
@@ -7440,6 +7568,47 @@ export interface components {
             provider?: string | null;
             /** Verification Url */
             verification_url?: string | null;
+        };
+        /**
+         * ChunkOrigin
+         * @description O fragmento no contexto do texto de origem — a citação verificável.
+         *
+         *     `before` e `after` vêm do MESMO texto de onde o fragmento saiu, recortados
+         *     pelos offsets guardados. Sem isso, "abrir na origem" seria um scroll
+         *     aproximado e a citação viraria um pedido de confiança.
+         */
+        ChunkOrigin: {
+            /** After */
+            after: string;
+            /** Before */
+            before: string;
+            /** Char End */
+            char_end: number;
+            /** Char Start */
+            char_start: number;
+            /**
+             * Chunk Id
+             * Format: uuid
+             */
+            chunk_id: string;
+            /** Content */
+            content: string;
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /** Document Title */
+            document_title: string;
+            /** Heading Path */
+            heading_path?: string[];
+            /** Version */
+            version: number;
+        };
+        /** ChunkToggle */
+        ChunkToggle: {
+            /** Is Active */
+            is_active: boolean;
         };
         /** ClientCreateRequest */
         ClientCreateRequest: {
@@ -10060,6 +10229,129 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+        };
+        /** KnowledgeBase */
+        KnowledgeBase: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Description */
+            description?: string | null;
+            /**
+             * Documents Total
+             * @default 0
+             */
+            documents_total: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "archived";
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
+        };
+        /** KnowledgeBaseCreate */
+        KnowledgeBaseCreate: {
+            /** Description */
+            description?: string | null;
+            /** Name */
+            name: string;
+        };
+        /** KnowledgeChunk */
+        KnowledgeChunk: {
+            /** Char End */
+            char_end: number;
+            /** Char Start */
+            char_start: number;
+            /** Content */
+            content: string;
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /** Heading Path */
+            heading_path?: string[];
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Position */
+            position: number;
+            /** Version */
+            version: number;
+        };
+        /** KnowledgeDocument */
+        KnowledgeDocument: {
+            /**
+             * Base Id
+             * Format: uuid
+             */
+            base_id: string;
+            /** Chunks Total */
+            chunks_total: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Current Version */
+            current_version: number;
+            /** Failure Reason */
+            failure_reason?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Mime Type */
+            mime_type?: string | null;
+            /** Size Bytes */
+            size_bytes?: number | null;
+            /**
+             * Source Kind
+             * @enum {string}
+             */
+            source_kind: "upload" | "text";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "indexed" | "failed";
+            /** Title */
+            title: string;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** KnowledgeDocumentCreate */
+        KnowledgeDocumentCreate: {
+            /** Content */
+            content: string;
+            /** Title */
+            title: string;
         };
         /** KommoConfigInput */
         KommoConfigInput: {
@@ -14903,6 +15195,78 @@ export interface components {
             scheduled_for?: string | null;
             /** Status */
             status?: ("suggested" | "approved" | "scheduled" | "recorded" | "published" | "discarded") | null;
+        };
+        /**
+         * SearchCapabilities
+         * @description O que a busca REALMENTE fez.
+         *
+         *     Declarado no contrato desde a Fase 1 (decisão 7) para que a Fase 3 entre
+         *     sem quebrar ninguém — e, principalmente, para que ninguém olhe um resultado
+         *     fraco e conclua que a busca semântica está ruim quando ela nem existe.
+         */
+        SearchCapabilities: {
+            /**
+             * Dense
+             * @default unavailable
+             * @enum {string}
+             */
+            dense: "unavailable" | "available";
+            /**
+             * Lexical
+             * @default available
+             * @constant
+             */
+            lexical: "available";
+        };
+        /** SearchHit */
+        SearchHit: {
+            /**
+             * Base Id
+             * Format: uuid
+             */
+            base_id: string;
+            /** Base Name */
+            base_name: string;
+            /** Char End */
+            char_end: number;
+            /** Char Start */
+            char_start: number;
+            /**
+             * Chunk Id
+             * Format: uuid
+             */
+            chunk_id: string;
+            /** Content */
+            content: string;
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /** Document Title */
+            document_title: string;
+            /** Heading Path */
+            heading_path?: string[];
+            /** Position */
+            position: number;
+            /** Rank */
+            rank: number;
+            /** Version */
+            version: number;
+        };
+        /** SearchResponse */
+        SearchResponse: {
+            capabilities?: components["schemas"]["SearchCapabilities"];
+            /** Hits */
+            hits?: components["schemas"]["SearchHit"][];
+            /**
+             * Mode Actually Used
+             * @default lexical
+             * @constant
+             */
+            mode_actually_used: "lexical";
+            /** Query */
+            query: string;
         };
         /** SocialDailyMetric */
         SocialDailyMetric: {
@@ -29350,6 +29714,275 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WorkspaceSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_bases_workspaces__workspace_id__knowledge_bases_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeBase"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_base_workspaces__workspace_id__knowledge_bases_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KnowledgeBaseCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeBase"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_documents_workspaces__workspace_id__knowledge_bases__base_id__documents_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                base_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeDocument"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_document_workspaces__workspace_id__knowledge_bases__base_id__documents_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                base_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KnowledgeDocumentCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeDocument"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    set_chunk_active_workspaces__workspace_id__knowledge_chunks__chunk_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                chunk_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChunkToggle"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeChunk"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chunk_origin_workspaces__workspace_id__knowledge_chunks__chunk_id__origin_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                chunk_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ChunkOrigin"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_chunks_workspaces__workspace_id__knowledge_documents__document_id__chunks_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                document_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeChunk"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_workspaces__workspace_id__knowledge_search_get: {
+        parameters: {
+            query: {
+                q: string;
+                base_id?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SearchResponse"];
                 };
             };
             /** @description Validation Error */

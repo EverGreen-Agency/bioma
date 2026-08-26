@@ -34,6 +34,7 @@ import {
 
 const ClientsView = lazy(() => import("./views/ClientsView").then((module) => ({ default: module.ClientsView })));
 const ClientHubView = lazy(() => import("./views/ClientHubView").then((module) => ({ default: module.ClientHubView })));
+const KnowledgeBaseView = lazy(() => import("./views/admin/KnowledgeBaseView").then((module) => ({ default: module.KnowledgeBaseView })));
 const WikiEgView = lazy(() => import("./views/admin/WikiEgView").then((module) => ({ default: module.WikiEgView })));
 const EngineeringView = lazy(() => import("./views/EngineeringView").then((module) => ({ default: module.EngineeringView })));
 const AgencyWorkspaceView = lazy(() => import("./views/AgencyWorkspaceView").then((module) => ({ default: module.AgencyWorkspaceView })));
@@ -378,6 +379,13 @@ export function App() {
           )} />
 
           {/* Rotas Administrativas EG */}
+          {/* Decisao 7, Fase 1: base da EG. A do cliente entra pelo hub dele,
+              porque a base pende do WORKSPACE — foi o "faca para ambos". */}
+          <Route path="/eg-conhecimento" element={guardSurface("eg-conhecimento",
+            <Suspense fallback={<ViewLoadingFallback />}>
+              <KnowledgeBaseView />
+            </Suspense>,
+          )} />
           <Route path="/eg-wiki" element={guardSurface("eg-wiki",
             <Suspense fallback={<ViewLoadingFallback />}>
               <WikiEgView />

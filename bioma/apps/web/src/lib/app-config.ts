@@ -10,6 +10,7 @@ export type ViewId =
   | "finance"
   | "engenharia"
   | "analytics"
+  | "eg-conhecimento"
   | "eg-wiki"
   | "eg-ideas"
   | "eg-tech"
@@ -29,6 +30,7 @@ export const navItems: Array<{ id: ViewId; label: string; icon: LucideIcon }> = 
   
   // Rotas internas EG. Módulos de cliente vivem na navegação do próprio Hub.
   { id: "engenharia", label: "Engenharia", icon: FileText },
+  { id: "eg-conhecimento", label: "Base de Conhecimento", icon: BookOpen },
   { id: "eg-wiki", label: "Wiki EG", icon: BookOpen },
   { id: "eg-ideas", label: "Banco de Ideias", icon: BookOpen },
   { id: "eg-tech", label: "Banco de Stack", icon: GitBranch },
@@ -119,6 +121,7 @@ export const viewModule: Record<ViewId, ClientModule> = {
   // Rotas internas não devem depender de módulos de cliente,
   // mas para obedecer à tipagem sem erro, colocamos hub.
   // A proteção real se dará no App.tsx com isEgAdmin.
+  "eg-conhecimento": "hub",
   "eg-wiki": "hub",
   "eg-ideas": "hub",
   "eg-tech": "hub",
