@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { Bug, FileText, FlaskConical, Github, GitPullRequest, ListChecks, Rocket, Send } from "lucide-react";
+import { GitHubCompletionSuggestions } from "./GitHubCompletionSuggestions";
 
 import { api, type ProjectDetail, type ProjectDocument, type ProjectPhaseStatus, type WorkspaceSummary } from "../lib/api";
 
@@ -124,6 +125,12 @@ export function TechProjectTracking({ project, accessRole, onChanged }: {
           <article className="tech-phase internal_testing"><div><strong>{githubActivity.data.pull_requests.length} pull requests</strong><span><GitPullRequest size={13} /> Revisões</span></div>{githubActivity.data.pull_requests.slice(0, 3).map((pull) => <a key={pull.number} href={pull.url} target="_blank" rel="noreferrer">#{pull.number} {pull.title}</a>)}</article>
           <article className="tech-phase released"><div><strong>{githubActivity.data.commits.length} commits recentes</strong><span>Branch</span></div>{githubActivity.data.commits.slice(0, 3).map((commit) => <a key={commit.sha} href={commit.url} target="_blank" rel="noreferrer">{commit.sha.slice(0, 7)} {commit.message}</a>)}</article>
         </div>}
+        {/* Decisao 9: issue fechada la, entrega aberta aqui. Sem botao de
+            concluir — concluir entrega tem aceite separado, de proposito. */}
+        <GitHubCompletionSuggestions
+          projectId={project.id}
+          enabled={githubConnection.isSuccess && githubConnection.data?.status === "active"}
+        />
         {githubActivity.data && canManage && (
           <button
             className="mini-button"

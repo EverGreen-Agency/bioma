@@ -15,6 +15,7 @@ from bioma_api.schemas.client_hub import (
     ClientSummary,
     ClientUpdateRequest,
     CockpitPortfolioSummary,
+    DailyBrief,
     MonthlyTargetRequest,
     PortfolioPerformanceRow,
     DeliverableCreateRequest,
@@ -41,6 +42,15 @@ backoffice_router = APIRouter(tags=["client-hub-backoffice"])
 @router.get("/deliverables/me", response_model=list[GlobalDeliverableSummary])
 def list_my_deliverables(user: CurrentUserResponse = Depends(current_user_from_request)):
     return client_hub_service.list_my_deliverables(user)
+
+
+@backoffice_router.get("/backoffice/daily-brief", response_model=DailyBrief)
+def get_daily_brief(user: CurrentUserResponse = Depends(current_user_from_request)):
+    """Resumo diario do cockpit (decisao 3, opcao A).
+
+    Sem push por evento, de proposito: notificacao por evento vira ruido, e
+    ruido vira gente que ignora o canal inteiro."""
+    return client_hub_service.get_daily_brief(user)
 
 
 @backoffice_router.get("/backoffice/cockpit-summary", response_model=CockpitPortfolioSummary)

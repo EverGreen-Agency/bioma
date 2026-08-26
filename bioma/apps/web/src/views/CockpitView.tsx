@@ -20,6 +20,7 @@ import { api } from "../lib/api";
 import { surfaceKeyForPath } from "../lib/app-config";
 import { useUiStore } from "../store/uiStore";
 import { useSurfaceVisibility, useCockpitSummary, useCurrentUser, useClients, useClientPortal, useMyDeliverables, useMyTasks, usePortfolioPerformance, useSetMonthlyTarget } from "../hooks/useBiomaApi";
+import { DailyBriefCard } from "../components/DailyBriefCard";
 import { externalClients } from "../lib/client-scope";
 import { SquadsView } from "./SquadsView";
 
@@ -110,6 +111,12 @@ export function CockpitView() {
   if (isEgAdmin) {
     return (
       <>
+        {/* Decisao 3, opcao A: resumo do dia ao abrir, sem push por evento.
+            NAO duplica o painel "Precisa de voce" abaixo — acrescenta as duas
+            coisas que ele nao tem: ordem por CUSTO DE NAO AGIR (1 entrega
+            atrasada vem antes de 40 conexoes velhas) e o estado "nada
+            pendente", que hoje aparece como secoes vazias. */}
+        <DailyBriefCard onNavigate={navigate} />
         <div className="bento-grid">
           {/* Ocupa o espaço nobre com o que exige ação hoje, em vez de uma
               saudação decorativa: aprovações e atrasos de toda a carteira,

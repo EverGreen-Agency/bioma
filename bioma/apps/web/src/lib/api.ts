@@ -2235,6 +2235,42 @@ export type GitHubProjectActivity = {
   commits: Array<{ sha: string; message: string; url: string; author_name: string | null; authored_at: string | null }>;
 };
 
+/** Decisao 9: a issue fechou la, a entrega segue aberta aqui. SUGESTAO —
+ *  concluir entrega tem efeito contratual e continua tendo aceite separado. */
+/** Decisao 3: resumo diario do cockpit. `clear` = nada pendente hoje. */
+export type DailyBriefItem = {
+  kind: string;
+  severity: "critical" | "warning" | "info";
+  title: string;
+  detail: string;
+  count: number;
+  examples: string[];
+  href: string;
+};
+
+export type DailyBrief = {
+  generated_at: string;
+  clear: boolean;
+  items: DailyBriefItem[];
+};
+
+export type GitHubCompletionSuggestion = {
+  deliverable_id: string;
+  deliverable_title: string;
+  deliverable_status: string;
+  issue_number: number;
+  issue_url: string | null;
+  issue_title: string;
+};
+
+export type GitHubCompletionSuggestions = {
+  project_id: string;
+  repository: string;
+  /** Momento da leitura no GitHub. E calculo na hora, nao estado guardado. */
+  checked_at: string;
+  suggestions: GitHubCompletionSuggestion[];
+};
+
 export type ClientProfilePayload = {
   sector?: string | null;
   primary_offer?: string | null;
@@ -3543,6 +3579,12 @@ export const api = {
   githubConnection: (projectId: string) => request<GitHubConnection>(`/integrations/github/projects/${projectId}`),
   configureGitHubConnection: (projectId: string, payload: { repository: string; default_branch: string; status?: "active" | "paused" }) =>
     request<GitHubConnection>(`/integrations/github/projects/${projectId}`, { method: "PUT", body: JSON.stringify(payload) }),
+  /** Decisao 9: entregas cuja issue fechou no GitHub e que seguem abertas aqui.
+   *  Calculado na hora, nao guardado — a pergunta "esta issue esta fechada?"
+   *  tem dono, e e o GitHub. */
+  dailyBrief: () => request<DailyBrief>("/backoffice/daily-brief"),
+  githubCompletionSuggestions: (projectId: string) =>
+    request<GitHubCompletionSuggestions>(`/integrations/github/projects/${projectId}/completion-suggestions`),
   githubProjectActivity: (projectId: string, limit = 20) =>
     request<GitHubProjectActivity>(`/integrations/github/projects/${projectId}/activity?limit=${limit}`),
   publishGitHubProjectUpdate: (projectId: string, clientVisible = true) =>

@@ -1034,6 +1034,29 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/backoffice/daily-brief": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Daily Brief
+         * @description Resumo diario do cockpit (decisao 3, opcao A).
+         *
+         *     Sem push por evento, de proposito: notificacao por evento vira ruido, e
+         *     ruido vira gente que ignora o canal inteiro.
+         */
+        get: operations["get_daily_brief_backoffice_daily_brief_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/backoffice/engineering": {
         parameters: {
             query?: never;
@@ -8699,6 +8722,47 @@ export interface components {
             id: string;
             /** Organizations */
             organizations: components["schemas"]["OrganizationSummary"][];
+        };
+        /** DailyBrief */
+        DailyBrief: {
+            /** Clear */
+            clear: boolean;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /**
+             * Items
+             * @default []
+             */
+            items: components["schemas"]["DailyBriefItem"][];
+        };
+        /**
+         * DailyBriefItem
+         * @description Uma linha do resumo diário (decisão 3).
+         */
+        DailyBriefItem: {
+            /** Count */
+            count: number;
+            /** Detail */
+            detail: string;
+            /**
+             * Examples
+             * @default []
+             */
+            examples: string[];
+            /** Href */
+            href: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "critical" | "warning" | "info";
+            /** Title */
+            title: string;
         };
         /** DeliverableCreateRequest */
         DeliverableCreateRequest: {
@@ -18857,6 +18921,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CockpitPortfolioSummary"];
+                };
+            };
+        };
+    };
+    get_daily_brief_backoffice_daily_brief_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DailyBrief"];
                 };
             };
         };

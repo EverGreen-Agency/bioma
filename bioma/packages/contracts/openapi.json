@@ -7067,6 +7067,85 @@
         "title": "CurrentUserResponse",
         "type": "object"
       },
+      "DailyBrief": {
+        "properties": {
+          "clear": {
+            "title": "Clear",
+            "type": "boolean"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "items": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/DailyBriefItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "generated_at",
+          "clear"
+        ],
+        "title": "DailyBrief",
+        "type": "object"
+      },
+      "DailyBriefItem": {
+        "description": "Uma linha do resumo diário (decisão 3).",
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "examples": {
+            "default": [],
+            "items": {
+              "type": "string"
+            },
+            "title": "Examples",
+            "type": "array"
+          },
+          "href": {
+            "title": "Href",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "severity": {
+            "enum": [
+              "critical",
+              "warning",
+              "info"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "severity",
+          "title",
+          "detail",
+          "count",
+          "href"
+        ],
+        "title": "DailyBriefItem",
+        "type": "object"
+      },
       "DeliverableCreateRequest": {
         "properties": {
           "due_at": {
@@ -32874,6 +32953,28 @@
           }
         },
         "summary": "Get Cockpit Summary",
+        "tags": [
+          "client-hub-backoffice"
+        ]
+      }
+    },
+    "/backoffice/daily-brief": {
+      "get": {
+        "description": "Resumo diario do cockpit (decisao 3, opcao A).\n\nSem push por evento, de proposito: notificacao por evento vira ruido, e\nruido vira gente que ignora o canal inteiro.",
+        "operationId": "get_daily_brief_backoffice_daily_brief_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DailyBrief"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Daily Brief",
         "tags": [
           "client-hub-backoffice"
         ]

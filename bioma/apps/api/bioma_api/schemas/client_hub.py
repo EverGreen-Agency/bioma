@@ -328,3 +328,25 @@ class PerformanceMetricUpdateRequest(BaseModel):
     value: float | None = None
     source: str | None = None
     notes: str | None = None
+
+
+class DailyBriefItem(BaseModel):
+    """Uma linha do resumo diário (decisão 3)."""
+
+    kind: str
+    severity: Literal["critical", "warning", "info"]
+    title: str
+    detail: str
+    count: int
+    # No máximo 3. O card é um resumo — listar tudo o transformaria na própria
+    # tela que ele deveria resumir.
+    examples: list[str] = []
+    href: str
+
+
+class DailyBrief(BaseModel):
+    generated_at: datetime
+    # True = nada pendente. A tela mostra isso em vez de inventar assunto:
+    # resumo que fala todo dia treina a pessoa a fechar sem ler.
+    clear: bool
+    items: list[DailyBriefItem] = []

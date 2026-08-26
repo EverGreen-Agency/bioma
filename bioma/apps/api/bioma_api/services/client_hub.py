@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -8,11 +9,13 @@ from bioma_api.access import (
     require_platform_admin,
     resolve_accessible_client,
 )
+from bioma_api import daily_brief
 from bioma_api.db import connect
 from bioma_api.repositories import client_hub as client_hub_repo
 from bioma_api.repositories import workspaces as workspaces_repo
 from bioma_api.schemas.auth import CurrentUserResponse
 from bioma_api.schemas.client_hub import (
+    DailyBrief,
     ApprovalCreateRequest,
     ApprovalDecisionRequest,
     ArtifactCreateRequest,
@@ -615,6 +618,22 @@ def get_cockpit_summary(user: CurrentUserResponse) -> CockpitPortfolioSummary:
     with connect() as conn:
         row = client_hub_repo.get_portfolio_summary(conn)
     return CockpitPortfolioSummary(**row)
+
+
+def get_daily_brief(user: CurrentUserResponse) -> DailyBrief:
+    """O resumo diário do cockpit — decisão 3, opção A.
+
+    Reaproveita o apanhado que o cockpit já faz em vez de consultar de novo: o
+    resumo é uma LEITURA do mesmo estado, e uma segunda consulta abriria a
+    chance de os dois discordarem na mesma tela.
+    """
+    require_platform_admin(user)
+    with connect() as conn:
+        row = client_hub_repo.get_portfolio_summary(conn)
+    return DailyBrief(
+        generated_at=datetime.now(timezone.utc),
+        **daily_brief.compose_brief(dict(row)),
+    )
 
 
 def get_portfolio_performance(user: CurrentUserResponse, days: int = 30) -> list[PortfolioPerformanceRow]:
