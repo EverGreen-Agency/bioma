@@ -35,6 +35,7 @@ MUTABLE = {
     "smoke_ai_operations",
     "smoke_ai_control_plane",
     "smoke_cms_publish",
+    "smoke_knowledge",
 }
 
 # Exclusões conscientes. Cada linha é uma decisão, não um esquecimento.

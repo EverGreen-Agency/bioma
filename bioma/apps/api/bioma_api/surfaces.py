@@ -69,6 +69,7 @@ SURFACE_CATALOG: dict[str, dict] = {
         "scope": "eg",
         "feature_key": "copilot",
     },
+    "eg-conhecimento": {"label": "Base de Conhecimento", "group": "Operação EG", "scope": "eg"},
     "eg-wiki": {"label": "Wiki EG", "group": "Operação EG", "scope": "eg"},
     "eg-ideas": {"label": "Banco de Ideias", "group": "Operação EG", "scope": "eg"},
     "eg-tech": {"label": "Banco de Stack", "group": "Operação EG", "scope": "eg"},
