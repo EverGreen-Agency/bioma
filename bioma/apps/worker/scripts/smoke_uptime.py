@@ -25,7 +25,7 @@ import sys
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from datetime import date
+from datetime import datetime, timezone
 
 from bioma_worker import uptime as collector
 from bioma_worker.db import connect
@@ -112,7 +112,12 @@ def rows_for(monitor_id: str):
             where monitor_id = %s and snapshot_date = %s
             order by window_days
             """,
-            (monitor_id, date.today()),
+            # UTC, o MESMO relogio do coletor (`datetime.now(timezone.utc)`).
+            # Com `date.today()` local, este smoke falhava todo dia entre 21h e
+            # meia-noite no Brasil: o coletor gravava sob a data de amanha em UTC
+            # e a leitura procurava sob a de hoje. Teste que passa 21 horas por
+            # dia e pior que teste que falha — ele ensina a ignorar a falha.
+            (monitor_id, datetime.now(timezone.utc).date()),
         ).fetchall()
 
 
