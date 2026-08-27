@@ -9,14 +9,25 @@ from bioma_api.schemas.ai_routing import (
 )
 
 
-def test_antigravity_cli_nao_pode_se_passar_por_executor_headless():
+def test_antigravity_cli_aceita_executor_headless_oficial():
+    account = ProviderAccountCreate(
+        provider="google",
+        channel="antigravity_cli",
+        display_name="Assinatura Google",
+        auth_mode="google_subscription",
+        execution_mode="local_cli",
+    )
+    assert account.execution_mode == "local_cli"
+
+
+def test_antigravity_cli_rejeita_modo_sdk():
     with pytest.raises(ValidationError):
         ProviderAccountCreate(
             provider="google",
             channel="antigravity_cli",
             display_name="Assinatura Google",
             auth_mode="google_subscription",
-            execution_mode="local_cli",
+            execution_mode="sdk",
         )
 
 

@@ -96,6 +96,39 @@ def copilot_plan_routed_safe(request: dict[str, Any], candidate: dict[str, Any])
     return plan_via_candidate(request, candidate, get_settings())
 
 
+def probe_ai_provider_runtime_safe(account: dict[str, Any]) -> dict[str, Any]:
+    if not _ensure_worker_in_path():
+        raise RuntimeError("Worker do Bioma nao encontrado no runtime da API.")
+    from bioma_worker.config import get_settings
+    from bioma_worker.provider_runtime import probe_provider_runtime
+
+    return probe_provider_runtime(account, get_settings())
+
+
+def pack_provider_credentials_safe(root: Path) -> str:
+    if not _ensure_worker_in_path():
+        raise RuntimeError("Worker do Bioma nao encontrado no runtime da API.")
+    from bioma_worker.provider_credentials import pack_credential_directory
+
+    return pack_credential_directory(root)
+
+
+def purge_provider_credentials_safe(account_id: Any) -> None:
+    if not _ensure_worker_in_path():
+        return
+    from bioma_worker.provider_credentials import purge_provider_credential_cache
+
+    purge_provider_credential_cache(account_id)
+
+
+def ai_provider_settings_safe() -> Any:
+    if not _ensure_worker_in_path():
+        raise RuntimeError("Worker do Bioma nao encontrado no runtime da API.")
+    from bioma_worker.config import get_settings
+
+    return get_settings()
+
+
 def rank_copilot_candidates(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """Ordena as contas para o copiloto pelo mesmo critério dos workflows.
 

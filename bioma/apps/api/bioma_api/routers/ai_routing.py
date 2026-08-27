@@ -5,14 +5,17 @@ from fastapi import APIRouter, Depends, status
 from bioma_api.auth import current_user_from_request
 from bioma_api.schemas.ai_routing import (
     AiRoutingControlPlane,
+    HarnessConfigUpsert,
     ModelCatalogUpsert,
     ProviderAccountCreate,
     ProviderAccountUpdate,
+    ProviderLoginInput,
+    ProviderLoginSession,
+    ProviderRuntimeStatus,
     QuotaBucketCreate,
     RoutePreview,
     RoutePreviewRequest,
     RoutingPolicyUpsert,
-    WebSessionConnectPayload,
 )
 from bioma_api.schemas.auth import CurrentUserResponse
 from bioma_api.services import ai_routing as service
@@ -62,15 +65,6 @@ def bootstrap_models(
     return service.bootstrap_models(account_id, user)
 
 
-@router.post("/accounts/{account_id}/connect-web-session", response_model=AiRoutingControlPlane)
-def connect_web_session(
-    account_id: UUID,
-    payload: WebSessionConnectPayload,
-    user: CurrentUserResponse = Depends(current_user_from_request),
-) -> AiRoutingControlPlane:
-    return service.connect_web_session(account_id, payload, user)
-
-
 @router.post(
     "/accounts/{account_id}/quota-buckets",
     response_model=AiRoutingControlPlane,
@@ -92,6 +86,55 @@ def collect_quota(
     return service.enqueue_quota_collection(account_id, user)
 
 
+@router.post("/accounts/{account_id}/runtime-probe", response_model=ProviderRuntimeStatus)
+def probe_runtime(
+    account_id: UUID,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> ProviderRuntimeStatus:
+    return service.probe_runtime(account_id, user)
+
+
+@router.post("/accounts/{account_id}/login", response_model=ProviderLoginSession, status_code=202)
+def start_provider_login(
+    account_id: UUID,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> ProviderLoginSession:
+    return service.start_provider_login(account_id, user)
+
+
+@router.delete("/accounts/{account_id}/credentials", response_model=AiRoutingControlPlane)
+def disconnect_provider_credentials(
+    account_id: UUID,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> AiRoutingControlPlane:
+    return service.disconnect_provider_credentials(account_id, user)
+
+
+@router.get("/login-sessions/{session_id}", response_model=ProviderLoginSession)
+def get_provider_login(
+    session_id: UUID,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> ProviderLoginSession:
+    return service.get_provider_login(session_id, user)
+
+
+@router.post("/login-sessions/{session_id}/input", response_model=ProviderLoginSession)
+def send_provider_login_input(
+    session_id: UUID,
+    payload: ProviderLoginInput,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> ProviderLoginSession:
+    return service.send_provider_login_input(session_id, payload, user)
+
+
+@router.delete("/login-sessions/{session_id}", response_model=ProviderLoginSession)
+def cancel_provider_login(
+    session_id: UUID,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> ProviderLoginSession:
+    return service.cancel_provider_login(session_id, user)
+
+
 @router.put("/routing-policies", response_model=AiRoutingControlPlane)
 def upsert_policy(
     payload: RoutingPolicyUpsert,
@@ -105,6 +148,14 @@ def bootstrap_policies(
     user: CurrentUserResponse = Depends(current_user_from_request),
 ) -> AiRoutingControlPlane:
     return service.bootstrap_policies(user)
+
+
+@router.put("/harness", response_model=AiRoutingControlPlane)
+def upsert_harness(
+    payload: HarnessConfigUpsert,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> AiRoutingControlPlane:
+    return service.upsert_harness(payload, user)
 
 
 @router.post("/route-preview", response_model=RoutePreview)

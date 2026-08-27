@@ -603,7 +603,7 @@ export interface paths {
         patch: operations["update_account_backoffice_ai_operations_accounts__account_id__patch"];
         trace?: never;
     };
-    "/backoffice/ai-operations/accounts/{account_id}/connect-web-session": {
+    "/backoffice/ai-operations/accounts/{account_id}/credentials": {
         parameters: {
             query?: never;
             header?: never;
@@ -612,8 +612,25 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Connect Web Session */
-        post: operations["connect_web_session_backoffice_ai_operations_accounts__account_id__connect_web_session_post"];
+        post?: never;
+        /** Disconnect Provider Credentials */
+        delete: operations["disconnect_provider_credentials_backoffice_ai_operations_accounts__account_id__credentials_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backoffice/ai-operations/accounts/{account_id}/login": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Start Provider Login */
+        post: operations["start_provider_login_backoffice_ai_operations_accounts__account_id__login_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -688,6 +705,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/backoffice/ai-operations/accounts/{account_id}/runtime-probe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Probe Runtime */
+        post: operations["probe_runtime_backoffice_ai_operations_accounts__account_id__runtime_probe_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/backoffice/ai-operations/control-plane": {
         parameters: {
             query?: never;
@@ -716,6 +750,58 @@ export interface paths {
         get: operations["get_finops_backoffice_ai_operations_finops_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backoffice/ai-operations/harness": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Upsert Harness */
+        put: operations["upsert_harness_backoffice_ai_operations_harness_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backoffice/ai-operations/login-sessions/{session_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Provider Login */
+        get: operations["get_provider_login_backoffice_ai_operations_login_sessions__session_id__get"];
+        put?: never;
+        post?: never;
+        /** Cancel Provider Login */
+        delete: operations["cancel_provider_login_backoffice_ai_operations_login_sessions__session_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backoffice/ai-operations/login-sessions/{session_id}/input": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Send Provider Login Input */
+        post: operations["send_provider_login_input_backoffice_ai_operations_login_sessions__session_id__input_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -6901,6 +6987,7 @@ export interface components {
              * Format: date-time
              */
             generated_at: string;
+            harness_config?: components["schemas"]["HarnessConfigSummary"] | null;
             /** Policies */
             policies: components["schemas"]["RoutingPolicySummary"][];
             /** Quota Collection Jobs */
@@ -9704,6 +9791,47 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** HarnessConfigSummary */
+        HarnessConfigSummary: {
+            /** Auditor Model Catalog Id */
+            auditor_model_catalog_id?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Curator Model Catalog Id */
+            curator_model_catalog_id?: string | null;
+            /** Enabled Tools */
+            enabled_tools?: string[];
+            /**
+             * Organization Id
+             * Format: uuid
+             */
+            organization_id: string;
+            /** Planner Model Catalog Id */
+            planner_model_catalog_id?: string | null;
+            /** Tool Caller Model Catalog Id */
+            tool_caller_model_catalog_id?: string | null;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** HarnessConfigUpsert */
+        HarnessConfigUpsert: {
+            /** Auditor Model Catalog Id */
+            auditor_model_catalog_id?: string | null;
+            /** Curator Model Catalog Id */
+            curator_model_catalog_id?: string | null;
+            /** Enabled Tools */
+            enabled_tools?: string[];
+            /** Planner Model Catalog Id */
+            planner_model_catalog_id?: string | null;
+            /** Tool Caller Model Catalog Id */
+            tool_caller_model_catalog_id?: string | null;
         };
         /** HookAnalysisSummary */
         HookAnalysisSummary: {
@@ -13778,6 +13906,11 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /**
+             * Credentials Configured
+             * @default false
+             */
+            credentials_configured: boolean;
             /** Display Name */
             display_name: string;
             /**
@@ -13844,6 +13977,97 @@ export interface components {
             status?: ("active" | "degraded" | "unavailable" | "paused") | null;
             /** Subscription Id */
             subscription_id?: string | null;
+        };
+        /** ProviderLoginInput */
+        ProviderLoginInput: {
+            /** Value */
+            value: string;
+        };
+        /** ProviderLoginSession */
+        ProviderLoginSession: {
+            /**
+             * Account Id
+             * Format: uuid
+             */
+            account_id: string;
+            /** Account Name */
+            account_name: string;
+            /** Channel */
+            channel: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Error Message */
+            error_message?: string | null;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Finished At */
+            finished_at?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Organization Id
+             * Format: uuid
+             */
+            organization_id: string;
+            /** Prompt Hint */
+            prompt_hint?: string | null;
+            /** Public Output */
+            public_output: string;
+            /** Started At */
+            started_at?: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "running" | "waiting_input" | "completed" | "failed" | "canceled" | "expired";
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /** ProviderRuntimeStatus */
+        ProviderRuntimeStatus: {
+            /**
+             * Account Id
+             * Format: uuid
+             */
+            account_id: string;
+            /** Auth Method */
+            auth_method?: string | null;
+            /** Authenticated */
+            authenticated: boolean;
+            /** Channel */
+            channel: string;
+            /**
+             * Checked At
+             * Format: date-time
+             */
+            checked_at: string;
+            /** Detail */
+            detail: string;
+            /** Installed */
+            installed: boolean;
+            /** Instructions */
+            instructions?: string[];
+            /** Ready */
+            ready: boolean;
+            /**
+             * Runtime Surface
+             * @enum {string}
+             */
+            runtime_surface: "api" | "worker";
+            /** Version */
+            version?: string | null;
         };
         /** ProviderTokenRequest */
         ProviderTokenRequest: {
@@ -16552,17 +16776,6 @@ export interface components {
              */
             status: "active" | "expired" | "rotating" | "compromised" | "revoked";
         };
-        /** WebSessionConnectPayload */
-        WebSessionConnectPayload: {
-            /** Client Id */
-            client_id?: string | null;
-            /** Oauth Token */
-            oauth_token?: string | null;
-            /** Refresh Token */
-            refresh_token?: string | null;
-            /** Session Token */
-            session_token: string;
-        };
         /** WhatsAppMessageLogSummary */
         WhatsAppMessageLogSummary: {
             /** Error Message */
@@ -18464,7 +18677,7 @@ export interface operations {
             };
         };
     };
-    connect_web_session_backoffice_ai_operations_accounts__account_id__connect_web_session_post: {
+    disconnect_provider_credentials_backoffice_ai_operations_accounts__account_id__credentials_delete: {
         parameters: {
             query?: never;
             header?: never;
@@ -18473,11 +18686,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["WebSessionConnectPayload"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -18486,6 +18695,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiRoutingControlPlane"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_provider_login_backoffice_ai_operations_accounts__account_id__login_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderLoginSession"];
                 };
             };
             /** @description Validation Error */
@@ -18631,6 +18871,37 @@ export interface operations {
             };
         };
     };
+    probe_runtime_backoffice_ai_operations_accounts__account_id__runtime_probe_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                account_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderRuntimeStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_control_plane_backoffice_ai_operations_control_plane_get: {
         parameters: {
             query?: never;
@@ -18667,6 +18938,136 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiFinOpsDashboard"];
+                };
+            };
+        };
+    };
+    upsert_harness_backoffice_ai_operations_harness_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HarnessConfigUpsert"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiRoutingControlPlane"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_provider_login_backoffice_ai_operations_login_sessions__session_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderLoginSession"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_provider_login_backoffice_ai_operations_login_sessions__session_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderLoginSession"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_provider_login_input_backoffice_ai_operations_login_sessions__session_id__input_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                session_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProviderLoginInput"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderLoginSession"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

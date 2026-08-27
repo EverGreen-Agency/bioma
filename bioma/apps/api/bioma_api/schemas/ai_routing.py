@@ -44,12 +44,12 @@ class ProviderAccountCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_channel_contract(self):
-        if self.channel == "antigravity_cli" and self.execution_mode != "manual_handoff":
+        if self.channel == "antigravity_cli" and self.execution_mode not in {"local_cli", "manual_handoff"}:
             raise ValueError(
-                "Antigravity CLI não documenta execução headless; configure manual_handoff ou use antigravity_sdk."
+                "Antigravity CLI deve usar local_cli para execução headless ou manual_handoff."
             )
-        if self.auth_ref and not self.auth_ref.startswith("env:"):
-            raise ValueError("auth_ref deve apontar para uma variável de ambiente no formato env:NOME.")
+        if self.auth_ref and not self.auth_ref.startswith(("env:", "vault:")):
+            raise ValueError("auth_ref deve usar env:NOME ou vault:IDENTIFICADOR.")
         return self
 
 
@@ -66,16 +66,9 @@ class ProviderAccountUpdate(BaseModel):
 
     @model_validator(mode="after")
     def validate_auth_ref(self):
-        if self.auth_ref and not self.auth_ref.startswith("env:"):
-            raise ValueError("auth_ref deve apontar para uma variável de ambiente no formato env:NOME.")
+        if self.auth_ref and not self.auth_ref.startswith(("env:", "vault:")):
+            raise ValueError("auth_ref deve usar env:NOME ou vault:IDENTIFICADOR.")
         return self
-
-
-class WebSessionConnectPayload(BaseModel):
-    session_token: str = Field(min_length=1, max_length=2000)
-    refresh_token: str | None = Field(default=None, max_length=2000)
-    oauth_token: str | None = Field(default=None, max_length=2000)
-    client_id: str | None = Field(default=None, max_length=200)
 
 
 class ModelCatalogUpsert(BaseModel):
@@ -212,6 +205,7 @@ class ProviderAccountSummary(BaseModel):
     settings: dict[str, Any]
     health_detail: str | None = None
     last_probe_at: datetime | None = None
+    credentials_configured: bool = False
     models: list[ModelCatalogSummary]
     quota_buckets: list[QuotaBucketSummary]
     created_at: datetime
@@ -220,6 +214,20 @@ class ProviderAccountSummary(BaseModel):
 
 class RoutingPolicySummary(RoutingPolicyUpsert):
     id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+
+class HarnessConfigUpsert(BaseModel):
+    planner_model_catalog_id: UUID | None = None
+    tool_caller_model_catalog_id: UUID | None = None
+    auditor_model_catalog_id: UUID | None = None
+    curator_model_catalog_id: UUID | None = None
+    enabled_tools: list[str] = Field(default_factory=list, max_length=80)
+
+
+class HarnessConfigSummary(HarnessConfigUpsert):
+    organization_id: UUID
     created_at: datetime
     updated_at: datetime
 
@@ -235,6 +243,41 @@ class QuotaCollectionJobSummary(BaseModel):
     started_at: datetime | None = None
     finished_at: datetime | None = None
     created_at: datetime
+
+
+class ProviderRuntimeStatus(BaseModel):
+    account_id: UUID
+    channel: str
+    runtime_surface: Literal["api", "worker"]
+    installed: bool
+    authenticated: bool
+    ready: bool
+    version: str | None = None
+    auth_method: str | None = None
+    detail: str
+    instructions: list[str] = Field(default_factory=list)
+    checked_at: datetime
+
+
+class ProviderLoginInput(BaseModel):
+    value: str = Field(min_length=1, max_length=2000)
+
+
+class ProviderLoginSession(BaseModel):
+    id: UUID
+    organization_id: UUID
+    account_id: UUID
+    channel: str
+    account_name: str
+    status: Literal["pending", "running", "waiting_input", "completed", "failed", "canceled", "expired"]
+    public_output: str
+    prompt_hint: str | None = None
+    error_message: str | None = None
+    expires_at: datetime
+    started_at: datetime | None = None
+    finished_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
 
 
 class RoutePreviewRequest(BaseModel):
@@ -265,5 +308,6 @@ class RoutePreview(BaseModel):
 class AiRoutingControlPlane(BaseModel):
     accounts: list[ProviderAccountSummary]
     policies: list[RoutingPolicySummary]
+    harness_config: HarnessConfigSummary | None = None
     quota_collection_jobs: list[QuotaCollectionJobSummary] = Field(default_factory=list)
     generated_at: datetime

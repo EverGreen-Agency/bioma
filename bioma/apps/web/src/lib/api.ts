@@ -2146,7 +2146,7 @@ export type AiModelCatalogItem = {
 export type AiProviderAccount = {
   id: string;
   subscription_id: string | null;
-  provider: "openai" | "anthropic" | "google";
+  provider: "openai" | "anthropic" | "google" | "openrouter" | "deepseek" | "groq";
   channel: AiProviderChannel;
   display_name: string;
   auth_mode: "chatgpt" | "claude_subscription" | "google_subscription" | "api_key" | "vertex_adc" | "service_account";
@@ -2158,6 +2158,7 @@ export type AiProviderAccount = {
   settings: Record<string, unknown>;
   health_detail: string | null;
   last_probe_at: string | null;
+  credentials_configured: boolean;
   models: AiModelCatalogItem[];
   quota_buckets: AiQuotaBucket[];
   created_at: string;
@@ -2181,6 +2182,16 @@ export type AiRoutingPolicy = {
 export type AiRoutingControlPlane = {
   accounts: AiProviderAccount[];
   policies: AiRoutingPolicy[];
+  harness_config: {
+    organization_id: string;
+    planner_model_catalog_id: string | null;
+    tool_caller_model_catalog_id: string | null;
+    auditor_model_catalog_id: string | null;
+    curator_model_catalog_id: string | null;
+    enabled_tools: string[];
+    created_at: string;
+    updated_at: string;
+  } | null;
   quota_collection_jobs: Array<{
     id: string;
     account_id: string;
@@ -2194,6 +2205,37 @@ export type AiRoutingControlPlane = {
     created_at: string;
   }>;
   generated_at: string;
+};
+
+export type AiProviderRuntimeStatus = {
+  account_id: string;
+  channel: string;
+  runtime_surface: "api" | "worker";
+  installed: boolean;
+  authenticated: boolean;
+  ready: boolean;
+  version: string | null;
+  auth_method: string | null;
+  detail: string;
+  instructions: string[];
+  checked_at: string;
+};
+
+export type AiProviderLoginSession = {
+  id: string;
+  organization_id: string;
+  account_id: string;
+  channel: string;
+  account_name: string;
+  status: "pending" | "running" | "waiting_input" | "completed" | "failed" | "canceled" | "expired";
+  public_output: string;
+  prompt_hint: string | null;
+  error_message: string | null;
+  expires_at: string;
+  started_at: string | null;
+  finished_at: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type AiRoutePreview = {
@@ -3383,19 +3425,6 @@ export const api = {
     request<AiRoutingControlPlane>(`/backoffice/ai-operations/accounts/${accountId}/models/bootstrap`, {
       method: "POST",
     }),
-  connectAiProviderWebSession: (
-    accountId: string,
-    payload: {
-      session_token: string;
-      refresh_token?: string | null;
-      oauth_token?: string | null;
-      client_id?: string | null;
-    },
-  ) =>
-    request<AiRoutingControlPlane>(`/backoffice/ai-operations/accounts/${accountId}/connect-web-session`, {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }),
   recordAiQuotaBucket: (accountId: string, payload: {
     bucket_key: string;
     scope?: string;
@@ -3416,9 +3445,43 @@ export const api = {
     request<AiRoutingControlPlane>(`/backoffice/ai-operations/accounts/${accountId}/quota-collection`, {
       method: "POST",
     }),
+  probeAiProviderRuntime: (accountId: string) =>
+    request<AiProviderRuntimeStatus>(`/backoffice/ai-operations/accounts/${accountId}/runtime-probe`, {
+      method: "POST",
+    }),
+  startAiProviderLogin: (accountId: string) =>
+    request<AiProviderLoginSession>(`/backoffice/ai-operations/accounts/${accountId}/login`, {
+      method: "POST",
+    }),
+  disconnectAiProvider: (accountId: string) =>
+    request<AiRoutingControlPlane>(`/backoffice/ai-operations/accounts/${accountId}/credentials`, {
+      method: "DELETE",
+    }),
+  aiProviderLoginSession: (sessionId: string) =>
+    request<AiProviderLoginSession>(`/backoffice/ai-operations/login-sessions/${sessionId}`),
+  sendAiProviderLoginInput: (sessionId: string, value: string) =>
+    request<AiProviderLoginSession>(`/backoffice/ai-operations/login-sessions/${sessionId}/input`, {
+      method: "POST",
+      body: JSON.stringify({ value }),
+    }),
+  cancelAiProviderLogin: (sessionId: string) =>
+    request<AiProviderLoginSession>(`/backoffice/ai-operations/login-sessions/${sessionId}`, {
+      method: "DELETE",
+    }),
   bootstrapAiRoutingPolicies: () =>
     request<AiRoutingControlPlane>("/backoffice/ai-operations/routing-policies/bootstrap", {
       method: "POST",
+    }),
+  updateAiHarness: (payload: {
+    planner_model_catalog_id?: string | null;
+    tool_caller_model_catalog_id?: string | null;
+    auditor_model_catalog_id?: string | null;
+    curator_model_catalog_id?: string | null;
+    enabled_tools: string[];
+  }) =>
+    request<AiRoutingControlPlane>("/backoffice/ai-operations/harness", {
+      method: "PUT",
+      body: JSON.stringify(payload),
     }),
   previewAiRoute: (taskKind: string) =>
     request<AiRoutePreview>("/backoffice/ai-operations/route-preview", {
@@ -4739,9 +4802,5 @@ export type ProposalAnalytics = {
     roi_percentage: number;
   }>;
 };
-
-
-
-
 
 

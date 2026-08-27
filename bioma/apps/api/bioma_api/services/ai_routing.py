@@ -1,21 +1,29 @@
 from collections import defaultdict
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
 from fastapi import HTTPException, status
 
+from bioma_api.access import require_platform_admin
 from bioma_api.db import connect
+from bioma_api.crypto import encrypt_secret, require_encryption_configured
+from bioma_api import provider_login
 from bioma_api.repositories import ai_routing as repo
 from bioma_api.repositories import client_hub as client_hub_repo
 from bioma_api.schemas.ai_routing import (
     AiRoutingControlPlane,
+    HarnessConfigSummary,
+    HarnessConfigUpsert,
     ModelCatalogSummary,
     ModelCatalogUpsert,
     ProviderAccountCreate,
     ProviderAccountSummary,
     ProviderAccountUpdate,
+    ProviderLoginInput,
+    ProviderLoginSession,
+    ProviderRuntimeStatus,
     QuotaBucketCreate,
     QuotaBucketSummary,
     QuotaCollectionJobSummary,
@@ -24,10 +32,14 @@ from bioma_api.schemas.ai_routing import (
     RoutePreviewRequest,
     RoutingPolicySummary,
     RoutingPolicyUpsert,
-    WebSessionConnectPayload,
 )
 from bioma_api.schemas.auth import CurrentUserResponse
 from bioma_api.services.ai_operations import _eg_organization_id
+from bioma_api.worker_bridge import (
+    ai_provider_settings_safe,
+    probe_ai_provider_runtime_safe,
+    purge_provider_credentials_safe,
+)
 
 
 MODEL_PRESETS: dict[str, list[dict[str, Any]]] = {
@@ -37,7 +49,7 @@ MODEL_PRESETS: dict[str, list[dict[str, Any]]] = {
             "display_name": "GPT-5.6 Luna",
             "family": "gpt-5.6",
             "capability_tier": "economy",
-            "capabilities": ["chat", "content", "code", "structured_output"],
+            "capabilities": ["chat", "content", "code", "reasoning", "structured_output"],
             "quality_score": 74,
             "cost_score": 95,
             "latency_score": 92,
@@ -48,7 +60,7 @@ MODEL_PRESETS: dict[str, list[dict[str, Any]]] = {
             "display_name": "GPT-5.6 Terra",
             "family": "gpt-5.6",
             "capability_tier": "balanced",
-            "capabilities": ["chat", "content", "strategy", "code", "tools", "structured_output"],
+            "capabilities": ["chat", "content", "strategy", "code", "reasoning", "tools", "structured_output"],
             "quality_score": 88,
             "cost_score": 75,
             "latency_score": 78,
@@ -59,7 +71,7 @@ MODEL_PRESETS: dict[str, list[dict[str, Any]]] = {
             "display_name": "GPT-5.6 Sol",
             "family": "gpt-5.6",
             "capability_tier": "frontier",
-            "capabilities": ["chat", "content", "strategy", "code", "tools", "structured_output"],
+            "capabilities": ["chat", "content", "strategy", "code", "reasoning", "tools", "structured_output"],
             "quality_score": 98,
             "cost_score": 45,
             "latency_score": 55,
@@ -72,7 +84,7 @@ MODEL_PRESETS: dict[str, list[dict[str, Any]]] = {
             "display_name": "Claude Haiku (alias da conta)",
             "family": "claude",
             "capability_tier": "economy",
-            "capabilities": ["chat", "content", "code", "structured_output"],
+            "capabilities": ["chat", "content", "code", "reasoning", "structured_output"],
             "quality_score": 72,
             "cost_score": 96,
             "latency_score": 96,
@@ -83,7 +95,7 @@ MODEL_PRESETS: dict[str, list[dict[str, Any]]] = {
             "display_name": "Claude Sonnet (alias da conta)",
             "family": "claude",
             "capability_tier": "balanced",
-            "capabilities": ["chat", "content", "strategy", "code", "tools", "structured_output"],
+            "capabilities": ["chat", "content", "strategy", "code", "reasoning", "tools", "structured_output"],
             "quality_score": 90,
             "cost_score": 72,
             "latency_score": 80,
@@ -94,7 +106,7 @@ MODEL_PRESETS: dict[str, list[dict[str, Any]]] = {
             "display_name": "Claude Opus (alias da conta)",
             "family": "claude",
             "capability_tier": "frontier",
-            "capabilities": ["chat", "content", "strategy", "code", "tools", "structured_output"],
+            "capabilities": ["chat", "content", "strategy", "code", "reasoning", "tools", "structured_output"],
             "quality_score": 98,
             "cost_score": 35,
             "latency_score": 50,
@@ -103,44 +115,44 @@ MODEL_PRESETS: dict[str, list[dict[str, Any]]] = {
     ],
     "antigravity_cli": [
         {
-            "model_id": "gemini-3.6-flash",
-            "display_name": "Gemini 3.6 Flash",
+            "model_id": "gemini-3.7-flash-medium",
+            "display_name": "Gemini 3.7 Flash (Medium)",
             "family": "gemini",
             "capability_tier": "economy",
-            "capabilities": ["chat", "content", "code", "tools", "multimodal"],
+            "capabilities": ["chat", "content", "code", "reasoning", "tools", "multimodal"],
             "quality_score": 82,
             "cost_score": 92,
             "latency_score": 94,
             "priority": 30,
         },
         {
-            "model_id": "gemini-3.1-pro",
-            "display_name": "Gemini 3.1 Pro",
+            "model_id": "gemini-3.1-pro-high",
+            "display_name": "Gemini 3.1 Pro (High)",
             "family": "gemini",
             "capability_tier": "frontier",
-            "capabilities": ["chat", "content", "strategy", "code", "tools", "multimodal"],
+            "capabilities": ["chat", "content", "strategy", "code", "reasoning", "tools", "multimodal"],
             "quality_score": 96,
             "cost_score": 48,
             "latency_score": 58,
             "priority": 10,
         },
         {
-            "model_id": "claude-sonnet-4.6",
+            "model_id": "claude-sonnet-4-6",
             "display_name": "Claude Sonnet 4.6 (Thinking)",
             "family": "claude",
             "capability_tier": "balanced",
-            "capabilities": ["chat", "content", "strategy", "code", "tools"],
+            "capabilities": ["chat", "content", "strategy", "code", "reasoning", "tools"],
             "quality_score": 92,
             "cost_score": 65,
             "latency_score": 70,
             "priority": 20,
         },
         {
-            "model_id": "claude-opus-4.6",
+            "model_id": "claude-opus-4-6",
             "display_name": "Claude Opus 4.6 (Thinking)",
             "family": "claude",
             "capability_tier": "frontier",
-            "capabilities": ["chat", "content", "strategy", "code", "tools"],
+            "capabilities": ["chat", "content", "strategy", "code", "reasoning", "tools"],
             "quality_score": 99,
             "cost_score": 30,
             "latency_score": 45,
@@ -151,7 +163,7 @@ MODEL_PRESETS: dict[str, list[dict[str, Any]]] = {
             "display_name": "GPT-OSS 120B",
             "family": "gpt-oss",
             "capability_tier": "specialist",
-            "capabilities": ["chat", "content", "code"],
+            "capabilities": ["chat", "content", "code", "reasoning"],
             "quality_score": 78,
             "cost_score": 80,
             "latency_score": 70,
@@ -164,7 +176,7 @@ MODEL_PRESETS: dict[str, list[dict[str, Any]]] = {
             "display_name": "Gemini 3.6 Flash",
             "family": "gemini",
             "capability_tier": "economy",
-            "capabilities": ["chat", "content", "code", "tools", "multimodal", "structured_output"],
+            "capabilities": ["chat", "content", "code", "reasoning", "tools", "multimodal", "structured_output"],
             "quality_score": 82,
             "cost_score": 92,
             "latency_score": 94,
@@ -175,7 +187,7 @@ MODEL_PRESETS: dict[str, list[dict[str, Any]]] = {
             "display_name": "Gemini 3.1 Pro",
             "family": "gemini",
             "capability_tier": "frontier",
-            "capabilities": ["chat", "content", "strategy", "code", "tools", "multimodal", "structured_output"],
+            "capabilities": ["chat", "content", "strategy", "code", "reasoning", "tools", "multimodal", "structured_output"],
             "quality_score": 96,
             "cost_score": 48,
             "latency_score": 58,
@@ -188,18 +200,18 @@ MODEL_PRESETS: dict[str, list[dict[str, Any]]] = {
             "display_name": "OpenRouter Auto Router",
             "family": "openrouter",
             "capability_tier": "balanced",
-            "capabilities": ["chat", "content", "code", "tools"],
+            "capabilities": ["chat", "content", "code", "reasoning", "tools"],
             "quality_score": 85,
             "cost_score": 85,
             "latency_score": 85,
             "priority": 10,
         },
         {
-            "model_id": "anthropic/claude-3.5-sonnet:beta",
-            "display_name": "Claude 3.5 Sonnet (OpenRouter)",
+            "model_id": "anthropic/claude-sonnet-4.6",
+            "display_name": "Claude Sonnet 4.6 (OpenRouter)",
             "family": "claude",
             "capability_tier": "frontier",
-            "capabilities": ["chat", "content", "strategy", "code", "tools"],
+            "capabilities": ["chat", "content", "strategy", "code", "reasoning", "tools"],
             "quality_score": 95,
             "cost_score": 70,
             "latency_score": 75,
@@ -219,8 +231,8 @@ MODEL_PRESETS: dict[str, list[dict[str, Any]]] = {
     ],
     "deepseek": [
         {
-            "model_id": "deepseek-reasoner",
-            "display_name": "DeepSeek R1 (Reasoner)",
+            "model_id": "deepseek-v4-pro",
+            "display_name": "DeepSeek V4 Pro",
             "family": "deepseek",
             "capability_tier": "frontier",
             "capabilities": ["reasoning", "strategy", "code"],
@@ -230,8 +242,8 @@ MODEL_PRESETS: dict[str, list[dict[str, Any]]] = {
             "priority": 10,
         },
         {
-            "model_id": "deepseek-chat",
-            "display_name": "DeepSeek V3 (Chat & Tools)",
+            "model_id": "deepseek-v4-flash",
+            "display_name": "DeepSeek V4 Flash",
             "family": "deepseek",
             "capability_tier": "balanced",
             "capabilities": ["chat", "content", "code", "tools"],
@@ -247,6 +259,54 @@ MODEL_PRESETS["vertex"] = MODEL_PRESETS["antigravity_sdk"]
 
 
 DEFAULT_POLICIES = [
+    RoutingPolicyUpsert(
+        task_kind="reasoning",
+        capability="reasoning",
+        name="Planejador do copiloto",
+        preferred_tiers=["balanced", "frontier"],
+        quality_weight=50,
+        quota_weight=20,
+        cost_weight=10,
+        reliability_weight=15,
+        latency_weight=5,
+        minimum_quota_headroom=15,
+    ),
+    RoutingPolicyUpsert(
+        task_kind="tool_calling",
+        capability="tools",
+        name="Executor de ferramentas",
+        preferred_tiers=["balanced"],
+        quality_weight=35,
+        quota_weight=20,
+        cost_weight=15,
+        reliability_weight=20,
+        latency_weight=10,
+        minimum_quota_headroom=15,
+    ),
+    RoutingPolicyUpsert(
+        task_kind="quality_audit",
+        capability="reasoning",
+        name="Auditor de qualidade",
+        preferred_tiers=["frontier"],
+        quality_weight=60,
+        quota_weight=10,
+        cost_weight=5,
+        reliability_weight=20,
+        latency_weight=5,
+        minimum_quota_headroom=20,
+    ),
+    RoutingPolicyUpsert(
+        task_kind="knowledge_curation",
+        capability="structured_output",
+        name="Curador de conhecimento",
+        preferred_tiers=["balanced", "frontier"],
+        quality_weight=45,
+        quota_weight=15,
+        cost_weight=15,
+        reliability_weight=20,
+        latency_weight=5,
+        minimum_quota_headroom=15,
+    ),
     RoutingPolicyUpsert(
         task_kind="internal_chat",
         capability="chat",
@@ -306,6 +366,7 @@ def _control_plane(organization_id: UUID) -> AiRoutingControlPlane:
         quota_rows = repo.list_latest_quota_buckets(conn, organization_id)
         policy_rows = repo.list_policies(conn, organization_id)
         quota_job_rows = repo.list_quota_collection_jobs(conn, organization_id)
+        harness_row = repo.get_harness_config(conn, organization_id)
     models_by_account: dict[UUID, list[ModelCatalogSummary]] = defaultdict(list)
     quotas_by_account: dict[UUID, list[QuotaBucketSummary]] = defaultdict(list)
     for row in model_rows:
@@ -325,6 +386,7 @@ def _control_plane(organization_id: UUID) -> AiRoutingControlPlane:
     return AiRoutingControlPlane(
         accounts=accounts,
         policies=[RoutingPolicySummary(**row) for row in policy_rows],
+        harness_config=HarnessConfigSummary(**harness_row) if harness_row else None,
         quota_collection_jobs=[QuotaCollectionJobSummary(**row) for row in quota_job_rows],
         generated_at=datetime.now(timezone.utc),
     )
@@ -419,32 +481,6 @@ def bootstrap_models(account_id: UUID, user: CurrentUserResponse) -> AiRoutingCo
     return _control_plane(organization_id)
 
 
-def connect_web_session(
-    account_id: UUID,
-    payload: WebSessionConnectPayload,
-    user: CurrentUserResponse,
-) -> AiRoutingControlPlane:
-    organization_id = _eg_organization_id(user)
-    with connect() as conn:
-        if not repo.connect_web_session(conn, organization_id, account_id, user.id, payload.model_dump(exclude_unset=True)):
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conta de IA não encontrada.")
-            
-        client_hub_repo.write_audit(
-            conn,
-            user.id,
-            organization_id,
-            "ai.provider_account.connected",
-            {"account_id": str(account_id), "method": "web_session"},
-        )
-    
-    # Após conectar a sessão com sucesso, vamos tentar preencher os modelos iniciais do canal
-    try:
-        return bootstrap_models(account_id, user)
-    except HTTPException:
-        # Se o canal não possuir modelos pré-configurados, retornamos normalmente
-        return _control_plane(organization_id)
-
-
 def record_quota(
     account_id: UUID,
     payload: QuotaBucketCreate,
@@ -480,8 +516,7 @@ def enqueue_quota_collection(account_id: UUID, user: CurrentUserResponse) -> AiR
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=(
-                    "Coleta automática está disponível apenas para contas codex_chatgpt. "
-                    "Claude Code e Antigravity CLI expõem a cota em UI/TUI; registre um snapshot manual."
+                    "Coleta automática está disponível para Codex, Claude Code e Antigravity CLI."
                 ),
             )
         client_hub_repo.write_audit(
@@ -489,8 +524,151 @@ def enqueue_quota_collection(account_id: UUID, user: CurrentUserResponse) -> AiR
             user.id,
             organization_id,
             "ai.quota_collection.queued",
-            {"account_id": str(account_id), "job_id": str(row["id"]), "collector": "codex_app_server"},
+            {"account_id": str(account_id), "job_id": str(row["id"])},
         )
+    return _control_plane(organization_id)
+
+
+def probe_runtime(account_id: UUID, user: CurrentUserResponse) -> ProviderRuntimeStatus:
+    organization_id = _eg_organization_id(user)
+    with connect() as conn:
+        account = repo.get_account(conn, account_id)
+    if not account or account["organization_id"] != organization_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conta de IA não encontrada.")
+    result = probe_ai_provider_runtime_safe(dict(account))
+    with connect() as conn:
+        repo.record_runtime_probe(conn, organization_id, account_id, result)
+        client_hub_repo.write_audit(
+            conn,
+            user.id,
+            organization_id,
+            "ai.provider_runtime.probed",
+            {"account_id": str(account_id), "ready": result["ready"], "channel": result["channel"]},
+        )
+    return ProviderRuntimeStatus(**result)
+
+
+def start_provider_login(account_id: UUID, user: CurrentUserResponse) -> ProviderLoginSession:
+    require_platform_admin(user)
+    require_encryption_configured()
+    runtime_settings = ai_provider_settings_safe()
+    organization_id = _eg_organization_id(user)
+    with connect() as conn:
+        account = repo.get_account(conn, account_id)
+        if not account or account["organization_id"] != organization_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conta de IA não encontrada.")
+        if account["channel"] not in {"codex_chatgpt", "claude_code", "antigravity_cli"}:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Este canal usa chave/ADC e não possui login interativo por assinatura.",
+            )
+        row, canceled_session_ids = repo.create_login_session(conn, organization_id, account_id, user.id)
+        if not row:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Canal não elegível para login.")
+        client_hub_repo.write_audit(
+            conn, user.id, organization_id, "ai.provider_account.login_started",
+            {"account_id": str(account_id), "channel": account["channel"], "session_id": str(row["id"])},
+        )
+    for canceled_session_id in canceled_session_ids:
+        provider_login.stop_login(canceled_session_id)
+    provider_login.start_login(row["id"], dict(account), user.id, runtime_settings)
+    return get_provider_login(row["id"], user)
+
+
+def get_provider_login(session_id: UUID, user: CurrentUserResponse) -> ProviderLoginSession:
+    require_platform_admin(user)
+    organization_id = _eg_organization_id(user)
+    with connect() as conn:
+        row = repo.get_login_session(conn, organization_id, session_id)
+        now = datetime.now(timezone.utc)
+        active = row and row["status"] in {"pending", "running", "waiting_input"}
+        if active and row["expires_at"] <= now:
+            conn.execute(
+                """update ai_provider_login_sessions set status = 'expired',
+                error_message = 'O login expirou após 15 minutos.', finished_at = now(), updated_at = now()
+                where id = %s""",
+                (session_id,),
+            )
+            row = repo.get_login_session(conn, organization_id, session_id)
+        elif (
+            active
+            and row["started_at"] is not None
+            and row["updated_at"] <= now - timedelta(seconds=provider_login.LOGIN_STALE_SECONDS)
+        ):
+            conn.execute(
+                """update ai_provider_login_sessions set status = 'failed',
+                encrypted_pending_input = null,
+                error_message = 'O processo de login foi interrompido. Inicie uma nova tentativa.',
+                finished_at = now(), updated_at = now()
+                where id = %s and status in ('pending', 'running', 'waiting_input')""",
+                (session_id,),
+            )
+            row = repo.get_login_session(conn, organization_id, session_id)
+    if not row:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sessão de login não encontrada.")
+    return ProviderLoginSession(**row)
+
+
+def send_provider_login_input(
+    session_id: UUID, payload: ProviderLoginInput, user: CurrentUserResponse
+) -> ProviderLoginSession:
+    require_platform_admin(user)
+    require_encryption_configured()
+    organization_id = _eg_organization_id(user)
+    with connect() as conn:
+        if not repo.queue_login_input(conn, organization_id, session_id, encrypt_secret(payload.value)):
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail="Sessão encerrada, expirada ou não encontrada.",
+            )
+    return get_provider_login(session_id, user)
+
+
+def cancel_provider_login(session_id: UUID, user: CurrentUserResponse) -> ProviderLoginSession:
+    require_platform_admin(user)
+    organization_id = _eg_organization_id(user)
+    with connect() as conn:
+        if not repo.cancel_login_session(conn, organization_id, session_id):
+            existing = repo.get_login_session(conn, organization_id, session_id)
+            if not existing:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sessão de login não encontrada.")
+        else:
+            client_hub_repo.write_audit(
+                conn, user.id, organization_id, "ai.provider_account.login_canceled",
+                {"session_id": str(session_id)},
+            )
+    provider_login.stop_login(session_id)
+    return get_provider_login(session_id, user)
+
+
+def disconnect_provider_credentials(account_id: UUID, user: CurrentUserResponse) -> AiRoutingControlPlane:
+    """Remove a sessão do Bioma; revogação no provedor continua sendo externa."""
+    require_platform_admin(user)
+    organization_id = _eg_organization_id(user)
+    with connect() as conn:
+        account = repo.get_account(conn, account_id)
+        if not account or account["organization_id"] != organization_id:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conta de IA não encontrada.")
+        if account["channel"] not in {"codex_chatgpt", "claude_code", "antigravity_cli"}:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Este canal usa chave/ADC e não possui credencial de assinatura no cofre.",
+            )
+        if not repo.disconnect_provider_credentials(conn, organization_id, account_id, user.id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conta de IA não encontrada.")
+        client_hub_repo.write_audit(
+            conn,
+            user.id,
+            organization_id,
+            "ai.provider_account.disconnected",
+            {
+                "account_id": str(account_id),
+                "channel": account["channel"],
+                "credential_was_configured": bool(account.get("credential_bundle")),
+                "upstream_revocation_required": True,
+            },
+        )
+    purge_provider_credentials_safe(account_id)
     return _control_plane(organization_id)
 
 
@@ -519,6 +697,25 @@ def bootstrap_policies(user: CurrentUserResponse) -> AiRoutingControlPlane:
             organization_id,
             "ai.routing_policies.bootstrapped",
             {"policies": [policy.task_kind for policy in DEFAULT_POLICIES]},
+        )
+    return _control_plane(organization_id)
+
+
+def upsert_harness(payload: HarnessConfigUpsert, user: CurrentUserResponse) -> AiRoutingControlPlane:
+    organization_id = _eg_organization_id(user)
+    with connect() as conn:
+        row = repo.upsert_harness_config(conn, organization_id, user.id, payload.model_dump())
+        if not row:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Um dos modelos do Harness não pertence ao catálogo desta organização.",
+            )
+        client_hub_repo.write_audit(
+            conn,
+            user.id,
+            organization_id,
+            "ai.harness.updated",
+            {"roles": [key for key, value in payload.model_dump().items() if key.endswith("_model_catalog_id") and value]},
         )
     return _control_plane(organization_id)
 
@@ -553,9 +750,6 @@ def preview_route(payload: RoutePreviewRequest, user: CurrentUserResponse) -> Ro
             if account.execution_mode == "manual_handoff":
                 eligible = False
                 reasons.append("canal exige handoff manual")
-            if account.channel == "antigravity_cli":
-                eligible = False
-                reasons.append("CLI não possui execução headless documentada; use antigravity_sdk")
             capabilities = set(account.capabilities) | set(model.capabilities)
             if capability not in capabilities:
                 eligible = False

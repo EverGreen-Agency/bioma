@@ -32,6 +32,7 @@ from bioma_api.repositories import knowledge as knowledge_repo
 from bioma_api.repositories import tasks as tasks_repo
 from bioma_api.repositories import workspaces as workspaces_repo
 from bioma_api.services import copilot_attachments as attachments_service
+from bioma_api.services.ai_operations import _eg_organization_id
 from bioma_api.schemas.auth import CurrentUserResponse
 from bioma_api.schemas.copilot import (
     CopilotAction,
@@ -60,18 +61,42 @@ SURFACE_ACTIONS = {
     ],
 }
 
+HARNESS_TOOL_ACTIONS = {
+    "update_task_status": {"set_status"},
+}
+
+
+def _enabled_harness_tools(user: CurrentUserResponse) -> set[str] | None:
+    """`None` preserva o contrato anterior até existir configuração explícita."""
+    organization_id = _eg_organization_id(user)
+    with connect() as conn:
+        harness = ai_routing_repo.get_harness_config(conn, organization_id)
+    return set(harness.get("enabled_tools") or []) if harness else None
+
+
+def _allowed_actions(surface: str, enabled_tools: set[str] | None) -> list[str]:
+    allowed = list(SURFACE_ACTIONS.get(surface, ["answer_only"]))
+    if enabled_tools is None:
+        return allowed
+    controlled_actions = set().union(*HARNESS_TOOL_ACTIONS.values())
+    enabled_actions = set().union(
+        *(actions for tool, actions in HARNESS_TOOL_ACTIONS.items() if tool in enabled_tools)
+    )
+    return [name for name in allowed if name not in controlled_actions or name in enabled_actions]
+
 
 def run(payload: CopilotRequest, user: CurrentUserResponse) -> CopilotResponse:
     require_platform_admin(user)
 
     catalog = copilot_action_catalog()
-    allowed = SURFACE_ACTIONS.get(payload.surface, ["answer_only"])
+    enabled_tools = _enabled_harness_tools(user)
+    allowed = _allowed_actions(payload.surface, enabled_tools)
 
     # O dossiê vem antes de abrir a execução porque é ele que valida as
     # referências: tarefa ou workspace inexistente tem que virar 404 limpo, não
     # uma thread órfã apontando para um id que não existe.
     started = time.monotonic()
-    dossier, context, task_row = _build_dossier(payload, user)
+    dossier, context, task_row = _build_dossier(payload, user, enabled_tools)
 
     # Anexos entram no dossiê como conteúdo, e na trilha como índice. Documento
     # vira texto e roda em qualquer provedor — inclusive na CLI, na cota da
@@ -324,9 +349,17 @@ def _routing_candidates() -> list[dict]:
             if not organization_id:
                 return []
             rows = ai_routing_repo.list_copilot_candidates(conn, organization_id)
-        return rank_copilot_candidates([dict(row) for row in rows])
+        ranked = rank_copilot_candidates([dict(row) for row in rows])
+        return _eligible_routing_candidates(ranked)
     except Exception:
         return []
+
+
+def _eligible_routing_candidates(ranked: list[dict]) -> list[dict]:
+    eligible = [candidate for candidate in ranked if candidate.get("eligible")]
+    if eligible and not eligible[0].get("allow_fallback", True):
+        return eligible[:1]
+    return eligible
 
 
 def _elapsed_ms(started: float) -> int:
@@ -450,7 +483,11 @@ class _StepRecorder:
         return _Timer()
 
 
-def _build_dossier(payload: CopilotRequest, user: CurrentUserResponse) -> tuple[dict, dict, dict | None]:
+def _build_dossier(
+    payload: CopilotRequest,
+    user: CurrentUserResponse,
+    enabled_tools: set[str] | None = None,
+) -> tuple[dict, dict, dict | None]:
     """Só dado real, e só do escopo que o usuário pode ver."""
     dossier: dict = {}
     context: dict = {"surface": payload.surface}
@@ -546,7 +583,11 @@ def _build_dossier(payload: CopilotRequest, user: CurrentUserResponse) -> tuple[
         # Índice do conhecimento da EG — títulos, não conteúdo. O copiloto passa
         # a saber que a resposta existe e onde; puxar o texto inteiro de tudo
         # estouraria o contexto sem melhorar a resposta.
-        dossier["knowledge_index"] = knowledge_repo.list_doc_titles(conn)
+        dossier["knowledge_index"] = (
+            knowledge_repo.list_doc_titles(conn)
+            if enabled_tools is None or "search_knowledge_base" in enabled_tools
+            else []
+        )
     return dossier, context, task_row
 
 
@@ -700,10 +741,10 @@ def _execute(
     return failed("Ação sem execução implementada.")
 
 
-def catalog_for(surface: str) -> list[dict]:
+def catalog_for(surface: str, user: CurrentUserResponse) -> list[dict]:
     """Catálogo da superfície — alimenta o menu de `/` na interface."""
     catalog = copilot_action_catalog()
-    allowed = SURFACE_ACTIONS.get(surface, ["answer_only"])
+    allowed = _allowed_actions(surface, _enabled_harness_tools(user))
     return [
         {
             "name": name,

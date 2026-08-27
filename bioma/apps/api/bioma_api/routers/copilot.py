@@ -32,7 +32,7 @@ def list_commands(
     from bioma_api.access import require_platform_admin
 
     require_platform_admin(user)
-    return [CopilotCommand(**item) for item in service.catalog_for(surface)]
+    return [CopilotCommand(**item) for item in service.catalog_for(surface, user)]
 
 
 @router.post("", response_model=CopilotResponse)

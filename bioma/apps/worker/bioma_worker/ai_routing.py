@@ -64,9 +64,6 @@ def rank_candidates(job: dict[str, Any], rows: list[dict[str, Any]]) -> list[dic
         if row["execution_mode"] == "manual_handoff":
             eligible = False
             reasons.append("canal exige handoff manual; worker não pode executá-lo")
-        if row["channel"] == "antigravity_cli":
-            eligible = False
-            reasons.append("Antigravity CLI não documenta execução headless; use o SDK para automação")
         headroom = _quota_headroom(row)
         minimum = Decimal(str(row.get("minimum_quota_headroom") or DEFAULT_WEIGHTS["minimum_quota_headroom"]))
         if headroom is not None and headroom < minimum:
@@ -95,6 +92,9 @@ def rank_candidates(job: dict[str, Any], rows: list[dict[str, Any]]) -> list[dic
         ) / Decimal("100")
         if preferred_tiers and row["capability_tier"] not in preferred_tiers:
             score -= Decimal("8")
+        if row.get("role_preferred"):
+            score += Decimal("12")
+            reasons.append("modelo escolhido para este papel do Harness")
         ranked.append(
             {
                 **row,

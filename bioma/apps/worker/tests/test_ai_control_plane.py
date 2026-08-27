@@ -1,9 +1,20 @@
 import json
 from datetime import datetime, timedelta, timezone
+from decimal import Decimal
+from types import SimpleNamespace
 
-from bioma_worker.ai_providers import parse_claude_json, parse_codex_jsonl
+from bioma_worker.ai_providers import (
+    execute_openai_compatible,
+    parse_antigravity_json,
+    parse_claude_json,
+    parse_codex_jsonl,
+)
 from bioma_worker.ai_routing import rank_candidates
-from bioma_worker.quota_collectors import parse_codex_rate_limits
+from bioma_worker.quota_collectors import (
+    parse_antigravity_usage,
+    parse_claude_rate_limits,
+    parse_codex_rate_limits,
+)
 
 
 def test_codex_quota_parser_preserva_janelas_e_reset_credit():
@@ -54,6 +65,160 @@ def test_claude_parser_nao_inventa_custo_e_converte_quando_fornecido():
     assert result["cost_cents"] == 12
 
 
+def test_claude_quota_parser_preserva_janelas_e_reset_oficiais():
+    buckets = parse_claude_rate_limits(
+        {
+            "version": "2.1.90",
+            "rate_limits": {
+                "five_hour": {"used_percentage": 23.5, "resets_at": 1785000000},
+                "seven_day": {"used_percentage": 41.2, "resets_at": 1785600000},
+            },
+        }
+    )
+
+    assert [(bucket["window_duration_minutes"], bucket["remaining_percent"]) for bucket in buckets] == [
+        (300, Decimal("76.5")),
+        (10080, Decimal("58.8")),
+    ]
+    assert all(bucket["confidence"] == "authoritative" for bucket in buckets)
+    assert all(bucket["resets_at"] is not None for bucket in buckets)
+
+
+def test_antigravity_exec_parser_preserva_uso_e_conversa():
+    result = parse_antigravity_json(
+        json.dumps(
+            {
+                "status": "SUCCESS",
+                "response": "Plano",
+                "conversation_id": "agy_1",
+                "num_turns": 1,
+                "usage": {
+                    "input_tokens": 100,
+                    "output_tokens": 20,
+                    "thinking_tokens": 8,
+                    "cache_read_tokens": 30,
+                },
+            }
+        )
+    )
+    assert result["text"] == "Plano"
+    assert result["external_event_id"] == "agy_1"
+    assert result["usage"] == {"input_units": 100, "output_units": 20, "cached_units": 30}
+
+
+def test_antigravity_quota_parser_separa_semana_e_cinco_horas():
+    buckets = parse_antigravity_usage(
+        """
+        Gemini Models
+        Weekly Limit Remaining 72%
+        Five Hour Limit Remaining 31%
+        Claude and GPT models
+        Weekly Limit Remaining 55%
+        Five Hour Limit Remaining 80%
+        """
+    )
+    assert [(bucket["window_duration_minutes"], bucket["remaining_percent"]) for bucket in buckets] == [
+        (10080, 72),
+        (300, 31),
+        (10080, 55),
+        (300, 80),
+    ]
+
+
+def _api_settings(**overrides):
+    values = {
+        "openrouter_api_key": "or-key",
+        "openrouter_base_url": "https://openrouter.test/api/v1",
+        "openrouter_site_url": "https://bioma.test",
+        "openrouter_app_name": "Bioma",
+        "deepseek_api_key": "ds-key",
+        "deepseek_base_url": "https://deepseek.test",
+        "ai_execution_timeout_seconds": 60,
+    }
+    values.update(overrides)
+    return SimpleNamespace(**values)
+
+
+class _FakeResponse:
+    def __init__(self, payload):
+        self._payload = payload
+
+    def raise_for_status(self):
+        return None
+
+    def json(self):
+        return self._payload
+
+
+def test_openrouter_executor_preserva_modelo_uso_e_custo(monkeypatch):
+    captured = {}
+
+    def fake_post(url, **kwargs):
+        captured.update({"url": url, **kwargs})
+        return _FakeResponse(
+            {
+                "id": "generation-1",
+                "model": "anthropic/claude-sonnet-4.6",
+                "choices": [{"message": {"content": "Material pronto"}}],
+                "usage": {
+                    "prompt_tokens": 120,
+                    "completion_tokens": 30,
+                    "cost": 0.042,
+                    "prompt_tokens_details": {"cached_tokens": 40},
+                },
+            }
+        )
+
+    monkeypatch.setattr("bioma_worker.ai_providers.httpx.post", fake_post)
+    result = execute_openai_compatible(
+        {
+            "channel": "openrouter",
+            "model_id": "anthropic/claude-sonnet-4.6",
+            "auth_ref": None,
+        },
+        "Crie um roteiro",
+        _api_settings(),
+    )
+
+    assert captured["url"] == "https://openrouter.test/api/v1/chat/completions"
+    assert captured["headers"]["Authorization"] == "Bearer or-key"
+    assert result["text"] == "Material pronto"
+    assert result["usage"] == {"input_units": 120, "output_units": 30, "cached_units": 40}
+    assert result["cost_cents"] == 4
+    assert result["metadata"]["served_model"] == "anthropic/claude-sonnet-4.6"
+
+
+def test_deepseek_executor_ativa_thinking_para_modelo_de_reasoning(monkeypatch):
+    captured = {}
+
+    def fake_post(url, **kwargs):
+        captured.update({"url": url, **kwargs})
+        return _FakeResponse(
+            {
+                "id": "chat-1",
+                "model": "deepseek-v4-pro",
+                "choices": [{"message": {"content": "Análise"}}],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 5},
+            }
+        )
+
+    monkeypatch.setattr("bioma_worker.ai_providers.httpx.post", fake_post)
+    result = execute_openai_compatible(
+        {
+            "channel": "deepseek",
+            "model_id": "deepseek-v4-pro",
+            "model_capabilities": ["reasoning"],
+            "auth_ref": None,
+        },
+        "Analise",
+        _api_settings(),
+    )
+
+    assert captured["url"] == "https://deepseek.test/chat/completions"
+    assert captured["json"]["thinking"] == {"type": "enabled"}
+    assert result["text"] == "Análise"
+
+
 def _candidate(**overrides):
     row = {
         "account_id": "a",
@@ -93,7 +258,7 @@ def _candidate(**overrides):
     return row
 
 
-def test_router_bloqueia_cota_baixa_e_cli_antigravity_manual():
+def test_router_bloqueia_cota_baixa_e_handoff_manual():
     future = (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat()
     low_quota = _candidate(
         quota_buckets=[{"remaining_percent": 5, "resets_at": future, "confidence": "authoritative", "model_id": None}]
@@ -107,4 +272,12 @@ def test_router_bloqueia_cota_baixa_e_cli_antigravity_manual():
     ranked = rank_candidates({"capability": "content"}, [low_quota, antigravity_cli])
     assert all(not candidate["eligible"] for candidate in ranked)
     assert any("cota abaixo" in reason for reason in ranked[0]["reasons"] + ranked[1]["reasons"])
-    assert any("headless" in reason for reason in ranked[0]["reasons"] + ranked[1]["reasons"])
+    assert any("handoff manual" in reason for reason in ranked[0]["reasons"] + ranked[1]["reasons"])
+
+
+def test_router_prioriza_modelo_escolhido_no_harness_sem_remover_fallback():
+    preferred = _candidate(model_id="preferred", role_preferred=True, quality_score=80)
+    fallback = _candidate(model_catalog_id="m2", model_id="fallback", quality_score=85)
+    ranked = rank_candidates({"capability": "content"}, [fallback, preferred])
+    assert ranked[0]["model_id"] == "preferred"
+    assert all(candidate["eligible"] for candidate in ranked)

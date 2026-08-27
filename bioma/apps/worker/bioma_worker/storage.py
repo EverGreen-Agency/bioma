@@ -141,7 +141,8 @@ def claim_next_ai_quota_collection(conn):
         from candidate, ai_provider_accounts account
         where job.id = candidate.id and account.id = job.account_id
         returning job.id, job.organization_id, job.account_id, job.collector,
-          job.attempts, account.channel, account.settings
+          job.attempts, account.channel, account.settings,
+          (select encrypted_bundle from ai_provider_credentials where account_id = account.id) as credential_bundle
         """
     ).fetchone()
 
@@ -224,6 +225,7 @@ def list_ai_route_candidates(conn, job: dict):
           account.display_name as account_name, account.auth_mode,
           account.execution_mode, account.auth_ref, account.status as account_status,
           account.capabilities as account_capabilities, account.settings as account_settings,
+          credential.encrypted_bundle as credential_bundle,
           model.id as model_catalog_id, model.model_id, model.display_name as model_name,
           model.capability_tier, model.capabilities as model_capabilities,
           model.quality_score, model.cost_score, model.latency_score, model.priority,
@@ -232,6 +234,13 @@ def list_ai_route_candidates(conn, job: dict):
           policy.cost_weight, policy.reliability_weight, policy.latency_weight,
           policy.minimum_quota_headroom, policy.requires_human_approval,
           policy.allow_fallback,
+          (model.id = case %s
+            when 'reasoning' then harness.planner_model_catalog_id
+            when 'tool_calling' then harness.tool_caller_model_catalog_id
+            when 'quality_audit' then harness.auditor_model_catalog_id
+            when 'knowledge_curation' then harness.curator_model_catalog_id
+            else null
+          end) as role_preferred,
           coalesce((
             select jsonb_agg(latest_quota.payload order by latest_quota.bucket_key)
             from (
@@ -256,11 +265,14 @@ def list_ai_route_candidates(conn, job: dict):
           on policy.organization_id = account.organization_id
           and policy.task_kind = %s
           and policy.status = 'active'
+        left join ai_harness_configs harness
+          on harness.organization_id = account.organization_id
+        left join ai_provider_credentials credential on credential.account_id = account.id
         where account.organization_id = %s
           and account.status in ('active', 'degraded')
         order by model.priority, account.display_name, model.display_name
         """,
-        (job["task_kind"], job["organization_id"]),
+        (job["task_kind"], job["task_kind"], job["organization_id"]),
     ).fetchall()
 
 

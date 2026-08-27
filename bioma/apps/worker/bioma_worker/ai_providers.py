@@ -7,6 +7,10 @@ from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 from typing import Any
 
+import httpx
+
+from bioma_worker.provider_credentials import provider_process_environment
+
 
 class ProviderExecutionError(RuntimeError):
     pass
@@ -44,7 +48,13 @@ def _working_directory(candidate: dict[str, Any]) -> str | None:
     return str(path)
 
 
-def _run_process(command: list[str], prompt: str, timeout_seconds: int, cwd: str | None) -> subprocess.CompletedProcess:
+def _run_process(
+    command: list[str],
+    prompt: str,
+    timeout_seconds: int,
+    cwd: str | None,
+    env: dict[str, str] | None = None,
+) -> subprocess.CompletedProcess:
     try:
         result = subprocess.run(
             command,
@@ -55,6 +65,7 @@ def _run_process(command: list[str], prompt: str, timeout_seconds: int, cwd: str
             errors="replace",
             timeout=timeout_seconds,
             cwd=cwd,
+            env=env,
             shell=False,
         )
     except FileNotFoundError as exc:
@@ -109,12 +120,14 @@ def execute_codex(candidate: dict[str, Any], prompt: str, settings) -> dict[str,
         candidate["model_id"],
         "-",
     ]
-    result = _run_process(
-        command,
-        prompt,
-        settings.ai_execution_timeout_seconds,
-        _working_directory(candidate),
-    )
+    with provider_process_environment(candidate, settings) as process_env:
+        result = _run_process(
+            command,
+            prompt,
+            settings.ai_execution_timeout_seconds,
+            _working_directory(candidate),
+            process_env,
+        )
     return parse_codex_jsonl(result.stdout)
 
 
@@ -157,13 +170,68 @@ def execute_claude(candidate: dict[str, Any], prompt: str, settings) -> dict[str
         "--tools",
         "",
     ]
-    result = _run_process(
-        command,
-        prompt,
-        settings.ai_execution_timeout_seconds,
-        _working_directory(candidate),
-    )
+    with provider_process_environment(candidate, settings) as process_env:
+        result = _run_process(
+            command,
+            prompt,
+            settings.ai_execution_timeout_seconds,
+            _working_directory(candidate),
+            process_env,
+        )
     return parse_claude_json(result.stdout)
+
+
+def parse_antigravity_json(raw: str) -> dict[str, Any]:
+    try:
+        payload = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        raise ProviderExecutionError("Antigravity CLI não retornou JSON válido.") from exc
+    if payload.get("status") != "SUCCESS":
+        raise ProviderExecutionError(
+            f"Antigravity CLI encerrou sem sucesso: {payload.get('error') or payload.get('status') or 'erro desconhecido'}"
+        )
+    text = payload.get("response")
+    if not isinstance(text, str) or not text.strip():
+        raise ProviderExecutionError("Antigravity CLI não retornou uma mensagem final reconhecível.")
+    usage = payload.get("usage") or {}
+    return {
+        "text": text.strip(),
+        "usage": {
+            "input_units": usage.get("input_tokens"),
+            "output_units": usage.get("output_tokens"),
+            "cached_units": usage.get("cache_read_tokens"),
+        },
+        "external_event_id": payload.get("conversation_id"),
+        "metadata": {
+            "thinking_units": usage.get("thinking_tokens"),
+            "num_turns": payload.get("num_turns"),
+        },
+    }
+
+
+def execute_antigravity_cli(candidate: dict[str, Any], prompt: str, settings) -> dict[str, Any]:
+    binary = (candidate.get("account_settings") or {}).get("binary_path") or settings.antigravity_cli_path
+    command = [
+        binary,
+        "-p",
+        prompt,
+        "--output-format",
+        "json",
+        "--model",
+        candidate["model_id"],
+        "--sandbox",
+        "--print-timeout",
+        f"{settings.ai_execution_timeout_seconds}s",
+    ]
+    with provider_process_environment(candidate, settings) as process_env:
+        result = _run_process(
+            command,
+            "",
+            settings.ai_execution_timeout_seconds + 10,
+            _working_directory(candidate),
+            process_env,
+        )
+    return parse_antigravity_json(result.stdout)
 
 
 def _env_auth_value(candidate: dict[str, Any], fallback: str | None) -> str | None:
@@ -181,6 +249,90 @@ def _usage_value(usage: Any, *names: str) -> int | None:
         if value is not None:
             return int(value)
     return None
+
+
+def _message_text(payload: dict[str, Any]) -> str:
+    choices = payload.get("choices") or []
+    if not choices:
+        raise ProviderExecutionError("Provider API respondeu sem choices.")
+    content = (choices[0].get("message") or {}).get("content")
+    if isinstance(content, str) and content.strip():
+        return content.strip()
+    if isinstance(content, list):
+        text = "\n".join(
+            str(part.get("text") or "")
+            for part in content
+            if isinstance(part, dict) and part.get("type") in {"text", "output_text"}
+        ).strip()
+        if text:
+            return text
+    raise ProviderExecutionError("Provider API não retornou texto reconhecível.")
+
+
+def execute_openai_compatible(candidate: dict[str, Any], prompt: str, settings) -> dict[str, Any]:
+    channel = candidate["channel"]
+    if channel == "openrouter":
+        api_key = _env_auth_value(candidate, settings.openrouter_api_key)
+        base_url = settings.openrouter_base_url
+        headers = {
+            "HTTP-Referer": settings.openrouter_site_url,
+            "X-OpenRouter-Title": settings.openrouter_app_name,
+            "X-OpenRouter-Metadata": "enabled",
+        }
+    elif channel == "deepseek":
+        api_key = _env_auth_value(candidate, settings.deepseek_api_key)
+        base_url = settings.deepseek_base_url
+        headers = {}
+    else:
+        raise ProviderExecutionError(f"Canal API incompatível: {channel}")
+    if not api_key:
+        env_name = "OPENROUTER_API_KEY" if channel == "openrouter" else "DEEPSEEK_API_KEY"
+        raise ProviderExecutionError(
+            f"Credencial {channel} ausente. Configure auth_ref=env:{env_name} e o secret no runtime."
+        )
+    request_payload: dict[str, Any] = {
+        "model": candidate["model_id"],
+        "messages": [{"role": "user", "content": prompt}],
+        "max_tokens": 4096,
+    }
+    if channel == "deepseek" and candidate["model_id"] in {"deepseek-v4-flash", "deepseek-v4-pro"}:
+        request_payload["thinking"] = {
+            "type": "enabled" if "reasoning" in (candidate.get("model_capabilities") or []) else "disabled"
+        }
+    try:
+        response = httpx.post(
+            f"{base_url.rstrip('/')}/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json", **headers},
+            json=request_payload,
+            timeout=settings.ai_execution_timeout_seconds,
+        )
+        response.raise_for_status()
+        payload = response.json()
+    except httpx.HTTPStatusError as exc:
+        detail = exc.response.text.strip()[-1600:]
+        raise ProviderExecutionError(f"{channel} respondeu HTTP {exc.response.status_code}: {detail}") from exc
+    except (httpx.HTTPError, ValueError) as exc:
+        raise ProviderExecutionError(f"Falha ao chamar {channel}: {exc}") from exc
+    usage = payload.get("usage") or {}
+    cost = usage.get("cost")
+    cost_cents = None
+    if cost is not None:
+        cost_cents = int((Decimal(str(cost)) * Decimal("100")).quantize(Decimal("1"), rounding=ROUND_HALF_UP))
+    return {
+        "text": _message_text(payload),
+        "usage": {
+            "input_units": usage.get("prompt_tokens"),
+            "output_units": usage.get("completion_tokens"),
+            "cached_units": (usage.get("prompt_tokens_details") or {}).get("cached_tokens"),
+        },
+        "cost_cents": cost_cents,
+        "currency": "USD",
+        "external_event_id": payload.get("id"),
+        "metadata": {
+            "served_model": payload.get("model"),
+            "service_tier": payload.get("service_tier"),
+        },
+    }
 
 
 async def _execute_antigravity_async(candidate: dict[str, Any], prompt: str, settings) -> dict[str, Any]:
@@ -263,8 +415,12 @@ def execute_candidate(
         result = execute_codex(candidate, prompt, settings)
     elif candidate["channel"] == "claude_code":
         result = execute_claude(candidate, prompt, settings)
+    elif candidate["channel"] == "antigravity_cli":
+        result = execute_antigravity_cli(candidate, prompt, settings)
     elif candidate["channel"] in {"antigravity_sdk", "gemini_api", "vertex"}:
         result = execute_antigravity_sdk(candidate, prompt, settings)
+    elif candidate["channel"] in {"openrouter", "deepseek"}:
+        result = execute_openai_compatible(candidate, prompt, settings)
     else:
         raise ProviderExecutionError(
             f"Canal {candidate['channel']} não possui executor headless seguro no worker."

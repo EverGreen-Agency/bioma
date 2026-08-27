@@ -126,13 +126,6 @@ export function useBootstrapAiModels() {
   return useControlPlaneMutation<string>(api.bootstrapAiModels);
 }
 
-export function useConnectAiProviderWebSession() {
-  return useControlPlaneMutation<{
-    accountId: string;
-    payload: Parameters<typeof api.connectAiProviderWebSession>[1];
-  }>(({ accountId, payload }) => api.connectAiProviderWebSession(accountId, payload));
-}
-
 export function useRecordAiQuotaBucket() {
   return useControlPlaneMutation<{
     accountId: string;
@@ -144,8 +137,53 @@ export function useCollectAiQuota() {
   return useControlPlaneMutation<string>(api.collectAiQuota);
 }
 
+export function useProbeAiProviderRuntime() {
+  return useMutation({ mutationFn: api.probeAiProviderRuntime });
+}
+
+export function useStartAiProviderLogin() {
+  return useMutation({ mutationFn: api.startAiProviderLogin });
+}
+
+export function useDisconnectAiProvider() {
+  return useControlPlaneMutation<string>(api.disconnectAiProvider);
+}
+
+export function useAiProviderLoginSession(sessionId: string | null) {
+  return useQuery({
+    queryKey: ["ai-provider-login", sessionId],
+    queryFn: () => api.aiProviderLoginSession(sessionId!),
+    enabled: Boolean(sessionId),
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status && ["completed", "failed", "canceled", "expired"].includes(status) ? false : 1000;
+    },
+  });
+}
+
+export function useSendAiProviderLoginInput() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ sessionId, value }: { sessionId: string; value: string }) =>
+      api.sendAiProviderLoginInput(sessionId, value),
+    onSuccess: (data) => queryClient.setQueryData(["ai-provider-login", data.id], data),
+  });
+}
+
+export function useCancelAiProviderLogin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.cancelAiProviderLogin,
+    onSuccess: (data) => queryClient.setQueryData(["ai-provider-login", data.id], data),
+  });
+}
+
 export function useBootstrapAiRoutingPolicies() {
   return useControlPlaneMutation<void>(() => api.bootstrapAiRoutingPolicies());
+}
+
+export function useUpdateAiHarness() {
+  return useControlPlaneMutation<Parameters<typeof api.updateAiHarness>[0]>(api.updateAiHarness);
 }
 
 export function usePreviewAiRoute() {

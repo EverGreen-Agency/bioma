@@ -41,7 +41,14 @@ class WorkerSettings(BaseSettings):
     openai_request_timeout_seconds: float = 120
     codex_cli_path: str = "codex"
     claude_cli_path: str = "claude"
+    antigravity_cli_path: str = "agy"
     ai_execution_timeout_seconds: int = 600
+    openrouter_api_key: str | None = None
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_site_url: str = "https://bioma.evergreen.ag"
+    openrouter_app_name: str = "Bioma"
+    deepseek_api_key: str | None = None
+    deepseek_base_url: str = "https://api.deepseek.com"
     gemini_api_key: str | None = None
     google_cloud_project: str | None = None
     google_cloud_location: str = "us-central1"

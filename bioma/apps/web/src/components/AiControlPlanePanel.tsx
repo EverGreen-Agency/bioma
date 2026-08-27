@@ -1,17 +1,23 @@
-import { FormEvent, useMemo, useState } from "react";
-import { Bot, Cpu, DatabaseZap, Gauge, Link2, Network, Plus, RefreshCw, Route } from "lucide-react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Bot, Cpu, DatabaseZap, Gauge, Link2, LogOut, Network, Plus, RefreshCw, Route, Save, ServerCog } from "lucide-react";
 
 import {
   useAiRoutingControlPlane,
   useBootstrapAiModels,
   useBootstrapAiRoutingPolicies,
   useCollectAiQuota,
-  useConnectAiProviderWebSession,
+  useAiProviderLoginSession,
+  useCancelAiProviderLogin,
   useCreateAiProviderAccount,
+  useDisconnectAiProvider,
   usePreviewAiRoute,
+  useProbeAiProviderRuntime,
   useRecordAiQuotaBucket,
+  useSendAiProviderLoginInput,
+  useStartAiProviderLogin,
+  useUpdateAiHarness,
 } from "../hooks/useBiomaApi";
-import type { AiProviderChannel } from "../lib/api";
+import type { AiProviderChannel, AiProviderRuntimeStatus } from "../lib/api";
 import { EmptyState, SectionHeader } from "./shared";
 
 const channelOptions: Record<AiProviderChannel, {
@@ -39,7 +45,7 @@ const channelOptions: Record<AiProviderChannel, {
     label: "Antigravity CLI · assinatura",
     provider: "google",
     authMode: "google_subscription",
-    executionMode: "manual_handoff",
+    executionMode: "local_cli",
     authRef: null,
   },
   antigravity_sdk: {
@@ -80,10 +86,19 @@ const channelOptions: Record<AiProviderChannel, {
 };
 
 const taskOptions = [
+  ["reasoning", "Planejador do copiloto"],
+  ["tool_calling", "Execução de ferramentas"],
+  ["quality_audit", "Auditoria de qualidade"],
+  ["knowledge_curation", "Curadoria de conhecimento"],
   ["internal_chat", "Chat interno"],
   ["content_draft", "Rascunho de conteúdo"],
   ["brand_strategy", "Estratégia / brand book"],
   ["code_agent", "Engenharia / squads"],
+] as const;
+
+const harnessTools = [
+  ["search_knowledge_base", "search_knowledge_base (RAG)"],
+  ["update_task_status", "update_task_status (Kanban)"],
 ] as const;
 
 function formatQuota(value: number | string | null) {
@@ -92,14 +107,19 @@ function formatQuota(value: number | string | null) {
 }
 
 export function AiControlPlanePanel() {
-  const { data: controlPlane, error } = useAiRoutingControlPlane();
+  const { data: controlPlane, error, refetch: refetchControlPlane } = useAiRoutingControlPlane();
   const createAccount = useCreateAiProviderAccount();
+  const disconnectProvider = useDisconnectAiProvider();
   const bootstrapModels = useBootstrapAiModels();
   const bootstrapPolicies = useBootstrapAiRoutingPolicies();
   const recordQuota = useRecordAiQuotaBucket();
   const collectQuota = useCollectAiQuota();
   const previewRoute = usePreviewAiRoute();
-  const connectWebSession = useConnectAiProviderWebSession();
+  const startProviderLogin = useStartAiProviderLogin();
+  const sendProviderLoginInput = useSendAiProviderLoginInput();
+  const cancelProviderLogin = useCancelAiProviderLogin();
+  const probeRuntime = useProbeAiProviderRuntime();
+  const updateHarness = useUpdateAiHarness();
   const [channel, setChannel] = useState<AiProviderChannel>("codex_chatgpt");
   const [displayName, setDisplayName] = useState("Codex local");
   const [quotaAccountId, setQuotaAccountId] = useState("");
@@ -108,17 +128,68 @@ export function AiControlPlanePanel() {
   const [windowMinutes, setWindowMinutes] = useState("10080");
   const [resetsAt, setResetsAt] = useState("");
   const [taskKind, setTaskKind] = useState("content_draft");
+  const [runtimeByAccount, setRuntimeByAccount] = useState<Record<string, AiProviderRuntimeStatus>>({});
+  const [plannerModelId, setPlannerModelId] = useState("");
+  const [toolCallerModelId, setToolCallerModelId] = useState("");
+  const [auditorModelId, setAuditorModelId] = useState("");
+  const [curatorModelId, setCuratorModelId] = useState("");
+  const [enabledTools, setEnabledTools] = useState<string[]>(harnessTools.map(([value]) => value));
   
-  // Web session modal states
-  const [sessionAccountId, setSessionAccountId] = useState<string | null>(null);
-  const [sessionToken, setSessionToken] = useState("");
-  const [oauthToken, setOauthToken] = useState("");
+  const [loginSessionId, setLoginSessionId] = useState<string | null>(null);
+  const [loginInput, setLoginInput] = useState("");
+  const { data: loginSession } = useAiProviderLoginSession(loginSessionId);
 
   const modelCount = useMemo(
     () => controlPlane?.accounts.reduce((total, account) => total + account.models.length, 0) ?? 0,
     [controlPlane],
   );
   const selectedPreset = channelOptions[channel];
+  const modelOptions = useMemo(
+    () => controlPlane?.accounts.flatMap((account) => account.models.map((model) => ({
+      id: model.id,
+      label: `${account.display_name} · ${model.display_name}`,
+    }))) ?? [],
+    [controlPlane],
+  );
+  const loginUrl = useMemo(
+    () => loginSession?.public_output.match(/https?:\/\/[^\s<>"']+/)?.[0] ?? null,
+    [loginSession?.public_output],
+  );
+
+  useEffect(() => {
+    if (loginSession?.status !== "completed") return;
+    void refetchControlPlane();
+    probeRuntime.mutate(loginSession.account_id, {
+      onSuccess: (result) => setRuntimeByAccount((current) => ({ ...current, [loginSession.account_id]: result })),
+    });
+  }, [loginSession?.status, loginSession?.account_id]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    const config = controlPlane?.harness_config;
+    if (!config) return;
+    setPlannerModelId(config.planner_model_catalog_id ?? "");
+    setToolCallerModelId(config.tool_caller_model_catalog_id ?? "");
+    setAuditorModelId(config.auditor_model_catalog_id ?? "");
+    setCuratorModelId(config.curator_model_catalog_id ?? "");
+    setEnabledTools(config.enabled_tools);
+  }, [controlPlane?.harness_config]);
+
+  function handleHarness(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    updateHarness.mutate({
+      planner_model_catalog_id: plannerModelId || null,
+      tool_caller_model_catalog_id: toolCallerModelId || null,
+      auditor_model_catalog_id: auditorModelId || null,
+      curator_model_catalog_id: curatorModelId || null,
+      enabled_tools: enabledTools,
+    });
+  }
+
+  function toggleHarnessTool(tool: string) {
+    setEnabledTools((current) => current.includes(tool)
+      ? current.filter((item) => item !== tool)
+      : [...current, tool]);
+  }
 
   function handleCreateAccount(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -130,7 +201,7 @@ export function AiControlPlanePanel() {
       auth_mode: selectedPreset.authMode,
       execution_mode: selectedPreset.executionMode,
       auth_ref: selectedPreset.authRef,
-      capabilities: ["chat", "content", "strategy", "code"],
+      capabilities: ["chat", "content", "strategy", "code", "reasoning", "tools", "structured_output"],
       settings: {},
     });
   }
@@ -151,34 +222,33 @@ export function AiControlPlanePanel() {
     });
   };
 
-  const handleConnectWebSession = (event: FormEvent) => {
+  const handleProviderLoginInput = (event: FormEvent) => {
     event.preventDefault();
-    if (!sessionAccountId || !sessionToken) return;
-    connectWebSession.mutate(
-      {
-        accountId: sessionAccountId,
-        payload: {
-          session_token: sessionToken,
-          oauth_token: oauthToken || undefined,
-        },
-      },
-      {
-        onSuccess: () => {
-          setSessionAccountId(null);
-          setSessionToken("");
-          setOauthToken("");
-        },
-      }
+    if (!loginSessionId || !loginInput.trim()) return;
+    sendProviderLoginInput.mutate(
+      { sessionId: loginSessionId, value: loginInput.trim() },
+      { onSuccess: () => setLoginInput("") },
     );
+  };
+
+  const closeProviderLogin = () => {
+    if (loginSessionId && loginSession && ["pending", "running", "waiting_input"].includes(loginSession.status)) {
+      cancelProviderLogin.mutate(loginSessionId);
+    }
+    setLoginSessionId(null);
+    setLoginInput("");
   };
 
   return (
     <div className="operations-layout">
       {error && <div className="notice error">{error.message}</div>}
+      {startProviderLogin.error && <div className="notice error">{startProviderLogin.error.message}</div>}
+      {sendProviderLoginInput.error && <div className="notice error">{sendProviderLoginInput.error.message}</div>}
+      {disconnectProvider.error && <div className="notice error">{disconnectProvider.error.message}</div>}
       <div className="notice">
         <strong>Dois canais Google, duas cotas diferentes.</strong>{" "}
-        Antigravity CLI usa a assinatura Google e hoje exige handoff manual; Antigravity SDK executa no worker
-        com Gemini API ou Vertex. O Bioma nunca soma esses saldos como se fossem a mesma conta.
+        Antigravity CLI usa a assinatura Google em modo headless; Antigravity SDK executa com Gemini API ou
+        Vertex. São credenciais e cotas diferentes, e o Bioma não soma esses saldos.
       </div>
 
       <div className="bento-grid">
@@ -264,57 +334,64 @@ export function AiControlPlanePanel() {
                 <small>score {previewRoute.data.selected.score} · {previewRoute.data.selected.reasons.join(" · ")}</small>
               </div>
             ) : previewRoute.data ? <EmptyState compact text="Nenhum candidato elegível." /> : null}
-            {controlPlane?.policies.length === 0 && (
-              <button className="secondary-button" type="button" onClick={() => bootstrapPolicies.mutate()} disabled={bootstrapPolicies.isPending}>
-                Criar políticas padrão
-              </button>
-            )}
+            <button className="secondary-button" type="button" onClick={() => bootstrapPolicies.mutate()} disabled={bootstrapPolicies.isPending}>
+              Sincronizar políticas padrão
+            </button>
           </div>
         </article>
       </div>
 
       <article className="surface">
         <SectionHeader eyebrow="Harness & Tools" title="Configuração de Etapa & Tool Calling" icon={Cpu} />
-        <div className="form-grid" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: "16px" }}>
+        <form className="form-grid" onSubmit={handleHarness} style={{ gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: "16px" }}>
           <label>
-            Modelo de Raciocínio (Reasoning Step)
-            <select defaultValue="deepseek/deepseek-r1">
-              <option value="deepseek/deepseek-r1">DeepSeek R1 (Reasoner)</option>
-              <option value="openai/o3-mini">OpenAI o3-mini (Reasoning)</option>
-              <option value="claude-opus-4.6">Claude Opus 4.6 (Thinking)</option>
+            Planejador
+            <select value={plannerModelId} onChange={(event) => setPlannerModelId(event.target.value)}>
+              <option value="">Router escolhe por política e cota</option>
+              {modelOptions.map((model) => <option key={model.id} value={model.id}>{model.label}</option>)}
             </select>
-            <small>Usado para planejar a execução e sequenciamento de tools.</small>
+            <small>Preferência real do task kind reasoning; os elegíveis continuam como fallback.</small>
           </label>
-
           <label>
-            Modelo de Execução (Tool Calling)
-            <select defaultValue="anthropic/claude-3.5-sonnet">
-              <option value="anthropic/claude-3.5-sonnet">Claude 3.5 Sonnet (Recomendado)</option>
-              <option value="openai/gpt-4o">OpenAI GPT-4o</option>
-              <option value="deepseek/deepseek-chat">DeepSeek V3 (Chat & Tools)</option>
-              <option value="google/gemini-3.6-flash">Gemini 3.6 Flash</option>
+            Tool caller
+            <select value={toolCallerModelId} onChange={(event) => setToolCallerModelId(event.target.value)}>
+              <option value="">Router escolhe por política e cota</option>
+              {modelOptions.map((model) => <option key={model.id} value={model.id}>{model.label}</option>)}
             </select>
-            <small>Usado para invocar as funções e sintetizar o resultado.</small>
+            <small>Preferência do task kind tool_calling.</small>
           </label>
-
           <label>
-            Ferramentas Habilitadas (Tool Registry)
+            Auditor
+            <select value={auditorModelId} onChange={(event) => setAuditorModelId(event.target.value)}>
+              <option value="">Router escolhe por política e cota</option>
+              {modelOptions.map((model) => <option key={model.id} value={model.id}>{model.label}</option>)}
+            </select>
+            <small>Preferência do task kind quality_audit.</small>
+          </label>
+          <label>
+            Curador
+            <select value={curatorModelId} onChange={(event) => setCuratorModelId(event.target.value)}>
+              <option value="">Router escolhe por política e cota</option>
+              {modelOptions.map((model) => <option key={model.id} value={model.id}>{model.label}</option>)}
+            </select>
+            <small>Preferência do task kind knowledge_curation.</small>
+          </label>
+          <div>
+            <strong style={{ fontSize: "13px" }}>Ferramentas habilitadas</strong>
             <div style={{ display: "flex", flexDirection: "column", gap: "6px", marginTop: "6px", fontSize: "13px" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <input type="checkbox" defaultChecked /> search_knowledge_base (RAG)
-              </label>
-              <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <input type="checkbox" defaultChecked /> read_client_vault (Cofre)
-              </label>
-              <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <input type="checkbox" defaultChecked /> update_task_status (Kanban)
-              </label>
-              <label style={{ display: "flex", alignItems: "center", gap: "6px" }}>
-                <input type="checkbox" defaultChecked /> create_commercial_proposal (Vendas)
-              </label>
+              {harnessTools.map(([value, label]) => (
+                <label key={value} style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <input type="checkbox" checked={enabledTools.includes(value)} onChange={() => toggleHarnessTool(value)} /> {label}
+                </label>
+              ))}
             </div>
-          </label>
-        </div>
+          </div>
+          <div style={{ alignSelf: "end" }}>
+            <button className="primary-button" type="submit" disabled={updateHarness.isPending}>
+              <Save size={15} /> Salvar Harness
+            </button>
+          </div>
+        </form>
       </article>
 
       <article className="surface">
@@ -345,17 +422,55 @@ export function AiControlPlanePanel() {
                 <button className="secondary-button" type="button" onClick={() => bootstrapModels.mutate(account.id)} disabled={bootstrapModels.isPending}>
                   <RefreshCw size={14} /> Catálogo
                 </button>
-                {account.channel === "codex_chatgpt" && (
+                {["codex_chatgpt", "claude_code", "antigravity_cli"].includes(account.channel) && (
                   <button className="secondary-button" type="button" onClick={() => collectQuota.mutate(account.id)} disabled={collectQuota.isPending}>
                     <Gauge size={14} /> Coletar cota
                   </button>
                 )}
-                {["codex_chatgpt", "claude_code", "antigravity_sdk"].includes(account.channel) && (
-                  <button className="secondary-button" type="button" onClick={() => setSessionAccountId(account.id)}>
-                    <Link2 size={14} /> Conectar
+                <button
+                  className="secondary-button"
+                  type="button"
+                  onClick={() => probeRuntime.mutate(account.id, {
+                    onSuccess: (result) => setRuntimeByAccount((current) => ({ ...current, [account.id]: result })),
+                  })}
+                  disabled={probeRuntime.isPending}
+                >
+                  <ServerCog size={14} /> Verificar runtime
+                </button>
+                {["codex_chatgpt", "claude_code", "antigravity_cli"].includes(account.channel) && (
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => startProviderLogin.mutate(account.id, {
+                      onSuccess: (session) => setLoginSessionId(session.id),
+                    })}
+                    disabled={startProviderLogin.isPending}
+                  >
+                    <Link2 size={14} /> Entrar com {account.provider === "openai" ? "ChatGPT" : account.provider === "anthropic" ? "Claude" : "Google"}
+                  </button>
+                )}
+                {account.credentials_configured && (
+                  <button
+                    className="secondary-button"
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm(
+                        `Desconectar ${account.display_name} do Bioma? A sessão será removida daqui, mas a revogação no provedor continua sendo feita na conta do provedor.`,
+                      )) disconnectProvider.mutate(account.id);
+                    }}
+                    disabled={disconnectProvider.isPending}
+                  >
+                    <LogOut size={14} /> Desconectar
                   </button>
                 )}
               </div>
+              {runtimeByAccount[account.id] && (
+                <div className={runtimeByAccount[account.id].ready ? "notice" : "notice error"} style={{ width: "100%" }}>
+                  <strong>{runtimeByAccount[account.id].ready ? "Runtime pronto" : "Runtime incompleto"}</strong>
+                  <small>{runtimeByAccount[account.id].detail}</small>
+                  {runtimeByAccount[account.id].instructions.map((instruction) => <small key={instruction}>• {instruction}</small>)}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -379,46 +494,57 @@ export function AiControlPlanePanel() {
         </article>
       )}
 
-      {sessionAccountId && (
-        <div className="modal-backdrop" onClick={() => setSessionAccountId(null)}>
+      {loginSessionId && (
+        <div className="modal-backdrop" onClick={closeProviderLogin}>
           <div className="modal-card wide" onClick={(e) => e.stopPropagation()} style={{ maxWidth: "560px" }}>
             <div className="modal-header">
               <div className="modal-title-group">
                 <Link2 size={18} className="modal-icon" color="var(--brand-accent)" />
                 <div>
-                  <h3 className="modal-title">Conectar Conta via Web</h3>
-                  <p className="modal-subtitle">Insira as credenciais de sessão para autorizar esta conta.</p>
+                  <h3 className="modal-title">Login oficial · {loginSession?.account_name ?? "provider"}</h3>
+                  <p className="modal-subtitle">O CLI roda no servidor; senhas e tokens nunca passam pelo navegador do Bioma.</p>
                 </div>
               </div>
-              <button className="modal-close" onClick={() => setSessionAccountId(null)}>×</button>
+              <button className="modal-close" onClick={closeProviderLogin}>×</button>
             </div>
             <div className="modal-body" style={{ padding: "20px" }}>
-              <form className="form-grid" onSubmit={handleConnectWebSession}>
+              <form className="form-grid" onSubmit={handleProviderLoginInput}>
+                <div className={loginSession?.status === "failed" ? "notice error" : "notice"}>
+                  <strong>Status: {loginSession?.status ?? "iniciando"}</strong>
+                  <small>{loginSession?.prompt_hint ?? "Aguardando o terminal do CLI..."}</small>
+                  {loginSession?.error_message && <small>{loginSession.error_message}</small>}
+                </div>
+                {loginUrl && (
+                  <a className="primary-button" href={loginUrl} target="_blank" rel="noreferrer">
+                    Abrir página oficial de login
+                  </a>
+                )}
                 <label>
-                  Session Token (Requerido)
-                  <textarea 
-                    value={sessionToken} 
-                    onChange={(e) => setSessionToken(e.target.value)} 
-                    placeholder="Cole o cookie da sessão ou token equivalente..."
-                    rows={4}
-                  />
+                  Saída do CLI
+                  <pre style={{ whiteSpace: "pre-wrap", maxHeight: "220px", overflow: "auto", padding: "12px", background: "var(--surface-soft)", borderRadius: "8px", fontSize: "12px" }}>
+                    {loginSession?.public_output || "Preparando sessão segura..."}
+                  </pre>
                 </label>
-                <label>
-                  OAuth Token / Extra (Opcional)
-                  <textarea 
-                    value={oauthToken} 
-                    onChange={(e) => setOauthToken(e.target.value)} 
-                    placeholder="Token adicional, se exigido pelo provider..."
-                    rows={2}
-                  />
-                </label>
+                {loginSession && ["pending", "running", "waiting_input"].includes(loginSession.status) && (
+                  <label>
+                    Código solicitado pelo CLI (quando houver)
+                    <input
+                      value={loginInput}
+                      onChange={(event) => setLoginInput(event.target.value)}
+                      placeholder="Cole apenas o código de uso único"
+                      autoComplete="one-time-code"
+                    />
+                  </label>
+                )}
                 <div className="modal-actions" style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "16px" }}>
-                  <button className="secondary-button" type="button" onClick={() => setSessionAccountId(null)}>
-                    Cancelar
+                  <button className="secondary-button" type="button" onClick={closeProviderLogin}>
+                    {loginSession?.status === "completed" ? "Fechar" : "Cancelar"}
                   </button>
-                  <button className="primary-button" type="submit" disabled={!sessionToken || connectWebSession.isPending}>
-                    Confirmar Conexão
-                  </button>
+                  {loginSession && ["pending", "running", "waiting_input"].includes(loginSession.status) && (
+                    <button className="primary-button" type="submit" disabled={!loginInput.trim() || sendProviderLoginInput.isPending}>
+                      Enviar código
+                    </button>
+                  )}
                 </div>
               </form>
             </div>

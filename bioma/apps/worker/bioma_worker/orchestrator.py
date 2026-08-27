@@ -6,7 +6,11 @@ from bioma_worker.db import connect
 from bioma_worker.ai_content import generate_content
 from bioma_worker.ai_providers import execute_candidate
 from bioma_worker.ai_routing import rank_candidates
-from bioma_worker.quota_collectors import collect_codex_rate_limits
+from bioma_worker.quota_collectors import (
+    collect_antigravity_usage,
+    collect_claude_rate_limits,
+    collect_codex_rate_limits,
+)
 from bioma_worker import storage
 
 
@@ -127,10 +131,19 @@ def run_next_ai_quota_collection() -> dict[str, Any] | None:
     if not job:
         return None
     try:
-        if job["collector"] != "codex_app_server":
-            raise RuntimeError(f"Coletor não suportado: {job['collector']}")
-        binary = (job.get("settings") or {}).get("binary_path") or get_settings().codex_cli_path
-        buckets = collect_codex_rate_limits(binary)
+        settings = get_settings()
+        from bioma_worker.provider_credentials import provider_process_environment
+
+        with provider_process_environment(job, settings) as process_env:
+            binary = (job.get("settings") or {}).get("binary_path")
+            if job["collector"] == "codex_app_server":
+                buckets = collect_codex_rate_limits(binary or settings.codex_cli_path, env=process_env)
+            elif job["collector"] == "claude_statusline":
+                buckets = collect_claude_rate_limits(binary or settings.claude_cli_path, env=process_env)
+            elif job["collector"] == "antigravity_usage":
+                buckets = collect_antigravity_usage(binary or settings.antigravity_cli_path, env=process_env)
+            else:
+                raise RuntimeError(f"Coletor não suportado: {job['collector']}")
         with connect() as conn:
             storage.complete_ai_quota_collection(conn, job, buckets)
         return {
