@@ -146,6 +146,84 @@ A EG não tem cardápio. O problema define quais capacidades entram no projeto. 
 
 **Uso comercial:** esta tabela é ferramenta de qualificação, não de venda. Dizer "isso não entra agora, e aqui está o porquê" é o movimento que sustenta a promessa de ser *a decisão mais segura* em vez de a opção mais barata.
 
+# **Capítulo 3.4 — Da nota ao entregável: a corrente completa**
+
+Os capítulos anteriores fecharam duas ligações. Falta a corrente inteira, que é o que permite sair de um número e chegar a uma proposta sem reconstruir o raciocínio a cada diagnóstico.
+
+São cinco elos:
+
+**pilar → sustentação → métrica → ponto de atuação → entregável**
+
+- O **pilar** diz *onde* a receita vaza. É o que recebe nota.
+- A **sustentação** diz *por quê*. Não recebe nota; é vocabulário de causa.
+- A **métrica** é o número que prova a causa — e que vai provar o conserto depois.
+- O **ponto de atuação** é a intervenção específica.
+- O **entregável** é o degrau da escada que a carrega.
+
+Sem o terceiro elo, o diagnóstico vira opinião defensável. Sem o quinto, vira recomendação sem preço.
+
+## **Como usar na devolutiva**
+
+Quatro perguntas, nesta ordem, e a resposta de cada uma é a linha seguinte da tabela:
+
+1. Qual é o menor pilar?
+2. Qual sustentação está faltando embaixo dele?
+3. Que número prova isso — e onde ele está hoje?
+4. Qual intervenção move esse número, e em qual degrau ela cabe?
+
+Quem responde as quatro sai da reunião com escopo. Quem responde só a primeira sai com diagnóstico.
+
+## **Pilar OFERTA**
+
+| Sustentação em falta | Métrica que prova | Ponto de atuação | Entregável |
+| :---- | :---- | :---- | :---- |
+| **Processo** | dispersão entre propostas de vendedores diferentes para casos parecidos | template único de proposta, com escopo e garantia fixos | Sprint |
+| **Dados** | taxa de fechamento por segmento de cliente | leitura de ganhos e perdas dos últimos 6 meses, segmentada | Raio-X |
+| **Pessoas** | dispersão de desconto concedido | política de desconto com teto e alçada | Sprint |
+| **Tecnologia** | — | raramente é a causa aqui | — |
+
+**Leitura:** Oferta baixa quase nunca é problema de ferramenta. É de clareza e padronização. Se a causa apontada for Tecnologia, desconfie do diagnóstico.
+
+## **Pilar DEMANDA**
+
+| Sustentação em falta | Métrica que prova | Ponto de atuação | Entregável |
+| :---- | :---- | :---- | :---- |
+| **Dados** | custo por oportunidade criada, por origem | instrumentação de origem ponta a ponta | Sprint |
+| **Tecnologia** | % de oportunidades sem origem registrada | tracking e integração das fontes | Sprint |
+| **Processo** | oportunidades criadas por semana, e a variação entre semanas | cadência de prospecção com meta semanal | Retainer |
+| **Pessoas** | — quem é o dono da geração? | papel definido, com meta e revisão | Retainer |
+
+**Leitura:** Demanda com Dados em falta é o caso mais comum e o mais caro, porque impede qualquer decisão de investimento. Antes de discutir orçamento de mídia, é preciso saber quanto custa uma oportunidade hoje.
+
+## **Pilar CONVERSÃO**
+
+| Sustentação em falta | Métrica que prova | Ponto de atuação | Entregável |
+| :---- | :---- | :---- | :---- |
+| **Processo** | taxa de passagem entre etapas — a menor da sequência | cadência de follow-up escrita: quantidade, intervalo, canal | Sprint |
+| **Pessoas** | tempo até a primeira resposta | dono por etapa e SLA de resposta | Sprint |
+| **Tecnologia** | % de follow-up que depende de alguém lembrar | CRM com a etapa disparando a próxima ação | Sprint |
+| **Dados** | motivo de perda em campo livre, ou em branco | seis categorias fixas de perda, obrigatórias no fechamento | Raio-X |
+
+**Leitura:** Conversão é o pilar com mais causas possíveis, e por isso o que mais se conserta errado. Implantar CRM quando a causa é Pessoas entrega um sistema bem configurado que ninguém opera.
+
+## **A regra que impede o erro mais caro**
+
+> **A métrica é escolhida antes da intervenção, nunca depois.**
+
+Definir o número antes obriga a admitir se a intervenção funcionou. Escolher depois permite justificar qualquer resultado — sempre existe algum indicador que subiu.
+
+Na prática: registre a métrica e o valor dela **no dia do diagnóstico**. É o que transforma o Raio-X seguinte em comparação em vez de nova opinião.
+
+## **Quando a corrente não fecha**
+
+Duas situações em que a tabela não deve ser forçada:
+
+**Quando a métrica não existe e não pode ser construída em tempo hábil.** Aí o primeiro entregável é construir a medição, e ele vale sozinho. Vender estruturação sobre um número que ninguém consegue apurar produz um projeto que não pode ser avaliado.
+
+**Quando duas sustentações estão igualmente em falta.** Acontece, e a saída não é atacar as duas. É a ordem de precedência: **Dados e Processo antes de Tecnologia e Pessoas** — porque instrumentar e escrever destravam as outras duas, e o contrário não é verdade. Automatizar antes de escrever congela o erro; contratar antes de medir replica o problema com mais gente.
+
+Essa precedência é a mesma ideia que rege o Raio-X Tecnológico, onde Documentação destrava Automação e Margem é sempre consequência. É o mesmo princípio aplicado aos dois lados da casa.
+
 # **Capítulo 4 — O plano de 90 dias**
 
 Diagnóstico sem plano é relatório. O Raio-X termina em um plano de 90 dias que ataca o gargalo prioritário primeiro.

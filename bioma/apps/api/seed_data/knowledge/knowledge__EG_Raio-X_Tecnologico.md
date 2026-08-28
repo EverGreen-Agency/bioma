@@ -183,6 +183,96 @@ Mesma lógica do Comercial.
 
 * **Nível 2 — Otimização:** com a dimensão em 4–5, as perguntas endurecem. Não mais "o processo está escrito?", e sim "a documentação é versionada, testada contra a realidade e consumível por um agente de IA sem ambiguidade?".
 
+## **As 35 perguntas do Nível 2 — Otimização**
+
+O Nível 1 pergunta se a estrutura **existe**. Quando uma dimensão chega a 4–5 consistente, essa pergunta para de discriminar. O Nível 2 troca *existe?* por *é versionado, medido e confiável o suficiente para uma máquina operar em cima?*.
+
+Mesma escala, mesma conversão, mesma precedência do §5 — inclusive a regra de que Margem nunca é ponto de entrada.
+
+**Ativa-se por dimensão, não pelo conjunto.** Uma empresa pode estar em Nível 2 em Dados e ainda em Nível 1 em Documentação, e essa assimetria é informação: significa que ela tem número bom sobre um processo que ninguém escreveu.
+
+### **Dimensão 1 — DIAGNÓSTICO (Nível 2)**
+
+1. O custo do trabalho manual é apurado periodicamente, ou foi medido uma vez?
+2. Existe comparação da eficiência operacional entre períodos, com a mesma régua?
+3. Quando um processo piora, alguém é avisado por limite definido — ou descobre-se pelo efeito?
+4. As decisões de investimento em tecnologia citam o número que as motivou?
+5. O retrabalho é categorizado por causa, e não só contado?
+
+### **Dimensão 2 — EXECUÇÃO (Nível 2)**
+
+1. O tempo entre decisão e entrega é medido, e a mediana é conhecida?
+2. Existe alguma dependência de pessoa única ainda mapeada como risco aberto?
+3. Mudança pequena vai ao ar sem exigir uma janela combinada?
+4. Existe capacidade de reverter uma entrega em minutos?
+5. A fila de execução é priorizada por critério escrito, ou por quem pediu mais alto?
+
+### **Dimensão 3 — DOCUMENTAÇÃO (Nível 2)**
+
+1. A documentação é versionada junto com o que ela descreve?
+2. Existe checagem — mesmo manual — de que ela ainda bate com a realidade?
+3. Um agente de IA conseguiria executar o processo lendo o documento, sem ambiguidade?
+4. As decisões registram alternativas descartadas e o porquê, não só o resultado?
+5. Documento desatualizado é detectado por alguma rotina, ou por alguém tropeçar nele?
+
+### **Dimensão 4 — DADOS (Nível 2)**
+
+1. Existe uma fonte declarada como oficial para cada indicador central?
+2. Divergência entre fontes dispara alerta, ou é descoberta em reunião?
+3. O dado histórico é preservado de forma que permita comparar períodos?
+4. Uma pergunta nova é respondida por quem precisa dela, sem intermediário técnico?
+5. Existe alguma planilha crítica remanescente — e ela está mapeada como risco?
+
+### **Dimensão 5 — AUTOMAÇÃO (Nível 2)**
+
+1. Toda automação tem dono nomeado e alerta de falha?
+2. Automação é idempotente — rodar duas vezes produz o mesmo resultado?
+3. Existe registro do que cada automação fez, auditável depois?
+4. Automação quebrada é detectada em minutos ou em dias?
+5. Existe critério escrito para decidir o que automatizar em seguida, e a fila segue ele?
+
+### **Dimensão 6 — QUALIDADE (Nível 2)**
+
+1. A taxa de erro dos processos centrais é medida e acompanhada ao longo do tempo?
+2. Existe checagem automatizada em algum ponto do fluxo, não só revisão humana?
+3. Erro recorrente vira mudança de processo dentro de um prazo definido?
+4. O critério de "pronto" é verificável por alguém que não executou?
+5. A variação de resultado entre executores é conhecida em número?
+
+### **Dimensão 7 — MARGEM (Nível 2)**
+
+1. O custo de servir é apurado por cliente, e não só na média?
+2. A parcela da entrega que escala sem esforço adicional é conhecida em percentual?
+3. As assinaturas de software são revisadas em ciclo definido, com corte efetivo?
+4. Existe projeção de qual seria o custo de dobrar o volume?
+5. O ganho de eficiência das automações entregues foi medido depois, e não só estimado antes?
+
+### **Sobre a queda de nota**
+
+Uma dimensão que estava em 9 no Nível 1 costuma cair para 4 ou 5 quando a régua sobe. **Diga isso antes de aplicar**, não depois.
+
+A nota não piorou: a pergunta ficou mais dura. Sem esse enquadramento, a mudança de régua parece manobra para justificar mais trabalho — e essa leitura destrói a confiança construída até ali.
+
+A formulação que funciona: *"você venceu o Nível 1 nessa dimensão. A partir de agora medimos outra coisa, e a nota recomeça."*
+
+## **A corrente completa, do lado tecnológico**
+
+O equivalente ao capítulo 3.4 do Playbook. Cinco elos: **dimensão → causa → métrica → ponto de atuação → entregável.**
+
+| Dimensão-gargalo | Métrica que prova | Ponto de atuação | Entregável |
+| :---- | :---- | :---- | :---- |
+| **Diagnóstico** | ausência de qualquer medição de tempo operacional | instrumentar as três rotinas mais caras | Tech 1 |
+| **Execução** | mediana entre decisão e entrega; nº de dependências de pessoa única | remover o gargalo de aprovação; documentar a tarefa crítica | Tech 2 |
+| **Documentação** | % dos processos centrais escritos e consultados | escrever os cinco processos mais repetidos | Tech 2 |
+| **Dados** | nº de fontes que respondem à mesma pergunta | declarar fonte oficial; integrar o resto a ela | Tech 2 |
+| **Automação** | nº de rotinas semanais idênticas ainda manuais | automatizar as já escritas — só as já escritas | Tech 2 · Tech 3 |
+| **Qualidade** | variação de resultado entre executores | critério de pronto escrito + checagem antes da entrega | Tech 3 |
+| **Margem** | custo de servir por cliente | *nenhum — Margem não se ataca direto* | — |
+
+A última linha é a parte que mais se erra. **Margem é sempre consequência.** Quando ela é a menor nota, o ponto de atuação está em Dados ou Automação, e a Margem sobe atrás.
+
+E vale a mesma regra do lado comercial: **a métrica é escolhida antes da intervenção, nunca depois.** Registre o valor dela no dia do diagnóstico — é o que transforma o Raio-X seguinte em comparação em vez de nova opinião.
+
 **Frequência de re-score:** completo a cada trimestre, junto da revisão estratégica do Tech 3. Pulso mensal apenas nas 5 perguntas da dimensão-gargalo.
 
 # **7\. Como é entregue**

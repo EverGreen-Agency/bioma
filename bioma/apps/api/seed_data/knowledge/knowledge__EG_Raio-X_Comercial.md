@@ -115,6 +115,58 @@ O Raio-X não satura. Quando um pilar atinge 4–5 consistente, ele não está "
 
 É um modelo de maturidade: a faixa preta não encerra o aprendizado, inaugura outro nível. Reposiciona o trabalho de *estruturar* (Ramos) para *evoluir* (Copa) e mantém o valor visível no retainer.
 
+## **As 15 perguntas do Nível 2 — Otimização**
+
+O Nível 1 pergunta se a estrutura **existe**. Quando um pilar chega a 4–5 consistente, essa pergunta para de discriminar: todo mundo responde 5 e a nota satura sem que a operação tenha melhorado.
+
+O Nível 2 troca a pergunta de *existe?* para *é testado, medido e ajustado?*. Mesma escala de 1 a 5, mesma conversão, mesma regra de atacar o menor primeiro.
+
+**Quando ativar:** por pilar, não pelo conjunto. Um cliente pode estar em Nível 2 em Oferta e ainda em Nível 1 em Conversão — e a leitura correta é essa, não a média.
+
+### **Pilar 1 — OFERTA (Nível 2)**
+
+1. A oferta foi testada contra uma alternativa nos últimos 12 meses — preço, escopo ou formato — com resultado medido?
+
+2. Existe diferença conhecida de taxa de fechamento entre segmentos, e a prospecção prioriza o melhor?
+
+3. O preço é revisado com base em margem apurada por projeto, ou repetido por inércia?
+
+4. As objeções mais frequentes viraram mudança de oferta, ou continuam sendo contornadas na conversa?
+
+5. A empresa recusa negócio fora de perfil — e consegue dizer quantos recusou no último trimestre?
+
+### **Pilar 2 — DEMANDA (Nível 2)**
+
+1. O custo por oportunidade é conhecido **por origem**, e as origens são comparadas entre si?
+
+2. Existe previsão de quantas oportunidades entrarão no próximo mês, com erro conhecido?
+
+3. Alguma origem foi desligada nos últimos 12 meses por não pagar o custo?
+
+4. A qualidade da oportunidade é medida por origem, e não só o volume?
+
+5. Existe teste ativo de um canal novo, com orçamento e critério de corte definidos?
+
+### **Pilar 3 — CONVERSÃO (Nível 2)**
+
+1. A taxa de passagem entre etapas é acompanhada por coorte, e não só no agregado do mês?
+
+2. O follow-up é testado — intervalo, canal, mensagem — com resultado comparado?
+
+3. Existe limite de idade por etapa, e negócio que estoura o limite é revisado por regra e não por lembrança?
+
+4. O motivo de perda agregado gerou alguma mudança de processo nos últimos 6 meses?
+
+5. O tempo de ciclo é conhecido por segmento, e a previsão de fechamento usa isso em vez de sensação?
+
+### **Como interpretar a queda de nota**
+
+Um cliente que estava em 9 no Nível 1 costuma cair para 4 ou 5 quando a régua sobe. **Isso é esperado e precisa ser dito antes de aplicar.**
+
+A nota não piorou — a pergunta ficou mais dura. Sem esse enquadramento, a mudança de régua parece uma manobra para justificar mais trabalho, e é exatamente a leitura que destrói a confiança construída até ali.
+
+A formulação que funciona na devolutiva: *"você venceu o Nível 1 nesse pilar. A partir de agora medimos outra coisa, e a nota recomeça."*
+
 **Frequência de re-score:**
 
 * **Completo** (15 perguntas, 3 pilares): **trimestral**, junto da revisão estratégica.  
