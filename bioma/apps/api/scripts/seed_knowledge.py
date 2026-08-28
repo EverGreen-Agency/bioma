@@ -207,6 +207,83 @@ def seed_ideas_docs(conn) -> int:
 
 
 
+def seed_cases(conn) -> int:
+    """Acervo de cases da EG (migração 0103).
+
+    Mesma regra de sobrescrita dos documentos: só atualiza o que ele mesmo
+    semeou. Case editado dentro do Bioma nunca é revertido por redeploy — e
+    isso vale especialmente para o estado de autorização, que é a razão de o
+    acervo ter vindo para o banco.
+
+    O conteúdo foi extraído dos arrays `casesPt/casesEn` do repo do site, que
+    seguem existindo como fallback: uma apresentação comercial não pode ficar
+    em branco porque a API estava reiniciando.
+    """
+    source = SEED_DIR / "cases.json"
+    if not source.is_file():
+        return 0
+    cases = json.loads(source.read_text(encoding="utf-8"))
+    tombstones = _get_tombstones(conn, "case")
+    count = 0
+    for case in cases:
+        slug, deck = case["slug"], case["deck"]
+        if f"{deck}::{slug}" in tombstones:
+            continue
+        row = conn.execute(
+            """
+            insert into eg_cases (
+              deck, slug, display_order, client_named,
+              consent_status, consent_note, status, seeded
+            )
+            values (%s, %s, %s, %s, %s, %s, %s, true)
+            on conflict (deck, slug) do update set
+              display_order = excluded.display_order,
+              client_named = excluded.client_named,
+              consent_status = excluded.consent_status,
+              consent_note = excluded.consent_note,
+              status = excluded.status,
+              updated_at = now()
+            where eg_cases.seeded = true
+            returning id
+            """,
+            (
+                deck, slug, case.get("order", 0), case["client_named"],
+                case["consent_status"], case.get("note"), case["status"],
+            ),
+        ).fetchone()
+        if row is None:
+            # já existe e foi editado dentro do produto: não mexemos
+            continue
+        case_id = row[0]
+        for lang, body in case["langs"].items():
+            conn.execute(
+                """
+                insert into eg_case_translations (
+                  case_id, lang, name, category, headline,
+                  metric, evidence, highlights, sections
+                )
+                values (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                on conflict (case_id, lang) do update set
+                  name = excluded.name,
+                  category = excluded.category,
+                  headline = excluded.headline,
+                  metric = excluded.metric,
+                  evidence = excluded.evidence,
+                  highlights = excluded.highlights,
+                  sections = excluded.sections,
+                  updated_at = now()
+                """,
+                (
+                    case_id, lang, body["name"], body["category"], body["headline"],
+                    body["metric"], body["evidence"],
+                    json.dumps(body["highlights"], ensure_ascii=False),
+                    json.dumps(body["sections"], ensure_ascii=False),
+                ),
+            )
+        count += 1
+    return count
+
+
 def main() -> None:
     if not SEED_DIR.is_dir():
         print("seed_knowledge: seed_data/ ausente, nada a importar.")
@@ -217,10 +294,11 @@ def main() -> None:
         docs = seed_docs(conn)
         engineering = seed_engineering(conn)
         ideas_docs = seed_ideas_docs(conn)
+        cases = seed_cases(conn)
     print(
         f"seed_knowledge: {ideas} ideia(s), {techs} tecnologia(s), "
         f"{docs} documento(s), {engineering} arquivo(s) de engenharia, "
-        f"{ideas_docs} doc(s) de ideias."
+        f"{ideas_docs} doc(s) de ideias, {cases} case(s)."
     )
 
 

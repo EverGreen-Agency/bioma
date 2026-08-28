@@ -14,6 +14,7 @@ from bioma_api.routers import (
     knowledge,
     auth,
     benchmark,
+    cases,
     briefing,
     certifications,
     client_profiles,
@@ -81,6 +82,7 @@ app.include_router(oauth.router)
 app.include_router(passwords.router)
 app.include_router(invites.public_router)
 app.include_router(benchmark.public_router)
+app.include_router(cases.public_router)
 app.include_router(client_hub.router)
 app.include_router(client_hub.backoffice_router)
 app.include_router(client_profiles.router)
@@ -116,6 +118,7 @@ app.include_router(files.router)
 app.include_router(files.workspace_router)
 app.include_router(integrations.router)
 app.include_router(benchmark.admin_router)
+app.include_router(cases.admin_router)
 app.include_router(health.router)
 app.include_router(admin.router)
 app.include_router(wiki.router)

@@ -55,6 +55,33 @@ Trabalhamos na ordem em que a natureza cresce: raiz primeiro. Antes de acelerar 
 
 Cada fase sustenta a próxima. Não pulamos etapas: estruturar antes de diagnosticar é construir no escuro; escalar antes de estruturar é amplificar o problema.
 
+## **As quatro fases por dentro — os cinco módulos**
+
+As fases dizem *onde* estamos. Os módulos dizem *o que está sendo feito*. São cinco, e a Copa cobre dois — porque ela não termina.
+
+| Fase | Módulo | O que acontece |
+| :---- | :---- | :---- |
+| **Raiz** | 01 · Diagnóstico | Antes de decidir o que fazer, descobrimos onde a receita está escapando. Sai o Raio-X. |
+| **Tronco** | 02 · Arquitetura | Conectamos jornada, processo, dados e tecnologia **antes** de acelerar. Decide-se também o que *não* fazer agora. |
+| **Ramos** | 03 · Implementação | Ativamos as alavancas prioritárias. Implementar bem é sequenciar por impacto e complexidade. |
+| **Copa** | 04 · Operação | Indicadores só ganham valor quando levam a uma decisão. Scorecard, ritos, hipóteses. |
+| **Copa** | 05 · Evolução | O sistema ganha capacidades novas. Automação, novos módulos, escala sustentável. |
+
+A separação entre **Arquitetura** (decidir e desenhar) e **Implementação** (construir) é a que mais se perde na prática, e é onde mais dinheiro se queima: times pulam da decisão para a execução sem desenhar, e descobrem o desenho errado depois de construído.
+
+## **Onde o Sistema Raiz se aplica**
+
+As quatro fases valem para as duas frentes da EG. `/servicos` diz o mesmo: *a frente tecnológica segue a mesma lógica*.
+
+| Fase | Frente comercial | Frente tecnológica |
+| :---- | :---- | :---- |
+| Raiz | Raio-X Comercial | Raio-X Tecnológico |
+| Tronco | priorizar o pilar-gargalo | priorizar a dimensão-gargalo |
+| Ramos | Sprint de Estruturação | Sprint de Estruturação Tecnológica |
+| Copa | Retainer de Previsibilidade | Retainer de Operação Tecnológica |
+
+A árvore é uma só. Muda a régua, não o método.
+
 # **Capítulo 3 — O Raio-X Comercial**
 
 O Raio-X é a ferramenta de leitura do Sistema Raiz. Ele lê a sua operação comercial em três pilares que, juntos, determinam a previsibilidade de receita.
@@ -69,6 +96,55 @@ Cada pilar recebe uma nota de 0 a 10\. O gargalo prioritário é o pilar de meno
 
 | A régua evolui. Quando um pilar atinge 4–5 de forma consistente, ele não está "pronto" — gradua-se para uma régua mais exigente. Deixa de ser "existe follow-up?" e passa a ser "o follow-up é automatizado, testado, preditivo?". O 5 de hoje vira o 1 de amanhã. Por isso o diagnóstico nunca satura — e a parceria de longo prazo não vira manutenção, e sim evolução. |
 | :---- |
+
+# **Capítulo 3.1 — As quatro sustentações**
+
+Os três pilares (Oferta, Demanda, Conversão) dizem **onde** a receita vaza. Não dizem **por quê**. Um pilar em 3,0 é sintoma; a causa está quase sempre em uma das quatro sustentações abaixo — que não são pilares, não recebem nota, e não entram na média.
+
+| Sustentação | O que sustenta | Sintoma de ausência |
+| :---- | :---- | :---- |
+| **Dados** | evidência para decidir o próximo movimento | decisão recorrente tomada por sensação; duas fontes divergentes |
+| **Tecnologia** | infraestrutura que sustenta o processo | o processo existe no papel e não no sistema |
+| **Pessoas** | papéis, contexto e responsabilidade claros | todos sabem o que fazer e ninguém é dono |
+| **Processo** | cadência que transforma intenção em receita | o que acontece depende de quem lembrou |
+
+**Como usar na devolutiva:** apresentado o pilar-gargalo, a pergunta seguinte é sempre *qual sustentação está faltando embaixo dele*. Sem isso, o plano de 90 dias ataca o sintoma e o pilar volta a cair no ciclo seguinte.
+
+As sustentações **não expandem a régua** — os três pilares seguem fixos para todo cliente (`Documento-Mestre_EG.md` §10.2). Elas são vocabulário de diagnóstico, não item de score.
+
+# **Capítulo 3.2 — O pedido não é o problema**
+
+Quase todo cliente chega pedindo uma ferramenta. A ferramenta quase nunca é a causa. Esta tabela é o roteiro da primeira conversa — e é o que separa a EG de quem vende o que foi pedido.
+
+| O pedido comum | O sintoma real | A causa raiz |
+| :---- | :---- | :---- |
+| "Quero Google Ads." | Leads entram, mas o atendimento demora. | Jornada e processo. |
+| "Quero CRM." | Não existe cadência nem critério comercial. | Operação comercial. |
+| "Quero automação." | O fluxo já nasce confuso. | Arquitetura do processo. |
+| "Quero um dashboard." | Cada fonte devolve um número diferente. | Arquitetura de dados. |
+| "Quero usar IA." | A saída é plausível e ninguém consegue conferir. | Contexto e critério de qualidade. |
+
+**Regra de condução:** nunca se recusa o pedido na primeira conversa. Mostra-se o sintoma, nomeia-se a causa, e deixa-se o cliente concluir. Quem chega pedindo mídia e sai entendendo que o gargalo é atendimento fecha diagnóstico; quem é corrigido de saída, não.
+
+# **Capítulo 3.3 — Quando cada capacidade entra, e quando não entra**
+
+A EG não tem cardápio. O problema define quais capacidades entram no projeto. A coluna da direita é a que importa — é ela que impede a EG de virar agência 360, e é a que quase ninguém publica.
+
+| Capacidade | Para que serve | Quando entra | **Quando NÃO entra** |
+| :---- | :---- | :---- | :---- |
+| **CRM** | pipeline, cadência e próximo passo | falta visibilidade e processo comercial | quando se espera que a ferramenta corrija uma operação sem dono |
+| **Mídia** | demanda mensurável e qualificada | oferta validada e capacidade de atendimento | quando mais demanda ampliaria um gargalo existente |
+| **CRO** | reduzir fricção em jornadas críticas | há tráfego e uma hipótese mensurável | quando o problema principal está depois da conversão |
+| **Web** | experiências orientadas à decisão | a interface precisa explicar, provar ou converter | quando uma nova página apenas mascara uma oferta confusa |
+| **Dados** | transformar sinais em decisões | há decisões recorrentes sem evidência confiável | quando medir tudo substitui a escolha de poucos KPIs úteis |
+| **Automação** | reduzir fricção e trabalho manual | o processo já está claro e repetível | quando o fluxo que será automatizado ainda está errado |
+| **IA** | ampliar capacidade com contexto e controle | há tarefa, dado e critério de qualidade definidos | quando IA é tratada como estratégia por si só |
+| **RevOps** | alinhar marketing, vendas e receita | áreas otimizam métricas desconectadas | quando não há compromisso executivo com o processo |
+| **Produto** | construir infraestrutura sob medida | software cria vantagem operacional real | quando uma solução pronta resolve melhor e mais rápido |
+| **Integrações** | fazer conversar o que já existe | o dado existe mas não atravessa as ferramentas | quando integrar só adia aposentar um sistema |
+| **Infraestrutura** | sustentar o que foi construído | a operação passa a depender do sistema | quando não há quem assuma a operação do outro lado |
+
+**Uso comercial:** esta tabela é ferramenta de qualificação, não de venda. Dizer "isso não entra agora, e aqui está o porquê" é o movimento que sustenta a promessa de ser *a decisão mais segura* em vez de a opção mais barata.
 
 # **Capítulo 4 — O plano de 90 dias**
 

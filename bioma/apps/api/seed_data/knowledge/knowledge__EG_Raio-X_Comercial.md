@@ -102,6 +102,8 @@ A regra de apresentação é simples: mostrar o suficiente para gerar confiança
 | 7 – 8 | Saudável | Funciona. Otimização fina, não reconstrução. |
 | 9 – 10 | Maduro | Referência. Manter e proteger. |
 
+**Depois de achar o pilar-gargalo, pergunte por quê.** O pilar diz onde vaza; a causa está quase sempre em uma das quatro sustentações — Dados, Tecnologia, Pessoas, Processo. Elas não recebem nota e não entram na média; são vocabulário de diagnóstico. Tabela e uso na devolutiva em `EG_Playbook_Metodologia.md`, capítulo 3.1. Sem isso o plano de 90 dias ataca o sintoma e o pilar volta a cair no ciclo seguinte.
+
 Regra de condução: **ataca-se o menor pilar primeiro.** Não adianta investir em gerar mais demanda (pilar Demanda) se a Conversão está em 1 — seria encher de leads um funil furado. O Sistema Raiz prioriza por impacto, e o Raio-X é o que torna esse impacto visível.
 
 # **5\. A régua que evolui — dois níveis**
@@ -143,5 +145,8 @@ Diagnóstico parcial feito no discovery (dados ainda incompletos, a serem valida
 **Raio-X geral preliminar:** \~2 a 3 de 10\. **Gargalo prioritário:** Conversão. **Implicação para o plano:** a Fase 1 ataca Conversão primeiro (CRM, processo, follow-up, baseline) — só depois faz sentido escalar Demanda com mídia paga, senão seria alimentar um funil sem fundo.
 
 # **8\. Nota de naming**
+
+Existe um irmão para a frente de tecnologia: o **Raio-X Tecnológico** (`EG_Raio-X_Tecnologico.md`), entregável do degrau Tech 1. Mesma escala, mesma conversão, mesma regra de gargalo — sete dimensões em vez de três pilares. São réguas independentes aplicadas ao mesmo cliente quando o caso pede: dá para ter Comercial 8,0 e Tecnológico 3,0.
+
 
 Esta ferramenta já foi chamada internamente de "IPC" (Índice de Previsibilidade Comercial). O nome foi alterado para **Raio-X Comercial EG** para evitar confusão com "ICP" (Ideal Customer Profile / perfil de cliente ideal), sigla quase idêntica usada no mesmo contexto. "Raio-X" também é mais intuitivo para o cliente — remete a diagnóstico, a enxergar o que está por dentro — e não exige explicação de sigla.
