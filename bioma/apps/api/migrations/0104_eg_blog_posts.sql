@@ -5,6 +5,11 @@
 -- `eg_knowledge_docs` porque aquilo alimenta o copiloto: misturar rascunho de
 -- marketing com base de conhecimento polui a fonte que o copiloto consulta.
 --
+-- CORREÇÃO (migração 0105): a separação certa não era "post não entra", era
+-- "RASCUNHO não entra". Post publicado é conhecimento da casa — carrega a posição
+-- da EG sobre processo comercial, sobre quando um CRM não vale, sobre o que nunca
+-- automatizar. A 0105 espelha o publicado em `eg_knowledge_docs` por trigger.
+--
 -- O que justifica os campos de SEO aqui: a auditoria de 28/08/2026 mostrou o
 -- dominio com 16 keywords, zero no top 10 e trafego organico estimado zero.
 -- Os 12 posts do calendario existem para atacar keywords especificas com volume

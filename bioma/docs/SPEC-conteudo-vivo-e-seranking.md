@@ -119,6 +119,34 @@ com metade do conteúdo por semanas sem ninguém notar.
 
 ---
 
+## ADR 2.1 — Post publicado alimenta o copiloto; rascunho não
+
+**Contexto.** Os 12 posts do calendário editorial entraram em `eg_blog_posts`
+(migração 0104), fora de `eg_knowledge_docs` — porque aquela tabela é o que o
+copiloto consulta, e rascunho de marketing na base de conhecimento faz o copiloto
+citar como verdade da casa um texto ainda sendo escrito.
+
+**A correção.** A separação certa não é "post não entra". É **"rascunho não
+entra"**. Post publicado é conhecimento destilado: carrega a posição da EG sobre
+processo comercial, sobre quando um CRM não vale, sobre o que nunca automatizar.
+Deixar isso fora do copiloto joga fora a parte mais trabalhada do que a empresa
+pensa.
+
+**Decisão.** Trigger em `eg_blog_posts` (migração 0105) espelha para
+`eg_knowledge_docs` com categoria `blog` quando `status = 'published'`, e remove
+quando sai do ar ou é apagado. O corpo espelhado leva um cabeçalho dizendo que é
+post público, qual a keyword-alvo e a URL — para o copiloto citar com contexto em
+vez de misturar com documento interno.
+
+**Por que trigger e não código de aplicação.** Publicar pode acontecer por vários
+caminhos: a tela, o seeder, uma correção manual em SQL. Regra em trigger não tem
+caminho que escape. É a mesma lógica do `check` de autorização dos cases.
+
+**Consequência a observar:** o copiloto passa a ter duas vozes sobre o mesmo
+assunto — o documento interno (`EG_Playbook_Metodologia.md`) e o post público, que
+diz a mesma coisa em linguagem de mercado. Isso é desejável para redigir proposta,
+e é risco se as duas divergirem. Ao mudar método, mudar os dois.
+
 ## ADR 3 — SEO no Bioma, dois níveis
 
 **Contexto.** O Eduardo conectou um MCP de SE Ranking. Na sessão de Claude Code
