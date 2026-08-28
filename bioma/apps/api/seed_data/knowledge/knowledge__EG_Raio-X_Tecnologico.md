@@ -4,8 +4,7 @@ Documento operacional da EverGreen — frente de Tecnologia.
 
 **Auditoria de Prontidão AI-First.** É o entregável do degrau **Tech 1** da Escada de Oferta de Tecnologia (`Documento-Mestre_EG.md` §10.1) e o pré-requisito de todos os degraus seguintes, exatamente como o Raio-X Comercial é para a escada de growth.
 
-> **Aviso de procedência — ler antes de usar.**
-> O Documento-Mestre §10.1 promete "score de maturidade AI-First em **7 dimensões**" mas nunca enumerou quais são. O número rastreia a uma referência externa (o plugin `ai-firstify`, citado num log de sessão de junho/2026 como inspiração do squad Guardião). **As sete dimensões deste documento são proposta**, derivadas da lista "Diferencial tecnológico da EG" do próprio Documento-Mestre. Decisão aberta em `bioma/docs/DECISOES-ABERTAS.md`. Enquanto não for confirmada, não publicar a régua no site — `/servicos` hoje afirma que o diagnóstico tecnológico não tem régua fechada, e as duas afirmações não podem coexistir no mesmo domínio.
+> **Nota de origem.** O Documento-Mestre §10.1 prometia "score de maturidade AI-First em 7 dimensões" desde sempre, mas nunca enumerou quais eram — o número tinha vindo de uma referência externa (o plugin `ai-firstify`). As sete abaixo foram derivadas da lista "Diferencial tecnológico da EG" do próprio Documento-Mestre e **confirmadas pelo Eduardo em 2026-08-28**. A régua está fechada.
 
 # **1\. O que é o Raio-X Tecnológico**
 

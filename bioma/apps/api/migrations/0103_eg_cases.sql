@@ -56,7 +56,7 @@ create table if not exists eg_cases (
 create table if not exists eg_case_translations (
   id uuid primary key default gen_random_uuid(),
   case_id uuid not null references eg_cases(id) on delete cascade,
-  lang text not null check (lang in ('pt', 'en')),
+  lang text not null check (lang in ('pt', 'en', 'es', 'it', 'fr', 'de')),
 
   name       text not null,
   category   text not null,

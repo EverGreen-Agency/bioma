@@ -349,7 +349,7 @@ Espelha a escada de ofertas de growth (seção 10) para o braço tecnológico da
 
 * Entregáveis: Auditoria da stack tecnológica atual; score de maturidade AI-First em 7 dimensões; gargalos operacionais priorizados; roadmap de implementação.
 
-* **Régua completa** (as 7 dimensões, as 35 perguntas, o cálculo e a ordem de precedência entre dimensões): `EG_Raio-X_Tecnologico.md`. **Atenção:** as sete dimensões daquele documento são proposta, não decisão — este §10.1 nomeia o número desde sempre mas nunca enumerou quais são. Decisão aberta em `bioma/docs/DECISOES-ABERTAS.md`.
+* **Régua completa** (as 7 dimensões, as 35 perguntas, o cálculo e a ordem de precedência entre dimensões): `EG_Raio-X_Tecnologico.md`. As dimensões são Diagnóstico, Execução, Documentação, Dados, Automação, Qualidade e Margem — fechadas em 2026-08-28.
 
 * **Garantia/Regra:** Se o cliente não sair com clareza prática sobre gargalos tecnológicos e prioridades, a EG revisa o diagnóstico sem custo até ficar cristalino.
 

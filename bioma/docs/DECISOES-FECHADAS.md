@@ -640,3 +640,35 @@ criar a próxima LP (a de tech, por exemplo) lê isto antes de inventar rótulo 
 separação entre *decidir/desenhar* (Arquitetura) e *construir* (Implementação) é
 mais operacional que o par Priorizar/Estruturar. Não é contradição, é detalhe
 melhor. Baixa prioridade.
+
+---
+
+## As 7 dimensões do Raio-X Tecnológico — confirmadas em 2026-08-28
+
+**Diagnóstico · Execução · Documentação · Dados · Automação · Qualidade · Margem.**
+
+O §10.1 prometia "score de maturidade AI-First em 7 dimensões" desde sempre e nunca
+enumerou quais. O número tinha vindo de fora (plugin `ai-firstify`, citado num log
+de sessão de junho/2026). As sete foram derivadas da lista "Diferencial tecnológico
+da EG" do próprio Documento-Mestre e o Eduardo confirmou.
+
+**O que a confirmação destravou:**
+
+- `EG_Raio-X_Tecnologico.md` deixa de ser proposta — 7 dimensões × 5 perguntas,
+  escala 1–5, conversão `(soma÷5)×2`, idêntica ao Raio-X Comercial.
+- A LP `/tech` pode publicar.
+- `/servicos` **precisava** ser corrigida: afirmava que "o diagnóstico tecnológico
+  é mais amplo e desenhado caso a caso — preferimos dizer isso a fingir uma régua
+  que ainda não existe". A régua existe e está fechada; a frase virou falsa e foi
+  reescrita.
+
+**O que o Eduardo destacou como o mais valioso**, e vale registrar porque é o tipo
+de coisa que se perde: não são as dimensões em si, é **a interligação entre elas**.
+Documentação destrava Automação e Qualidade. Dados destravam Diagnóstico e Margem.
+Margem é sempre consequência, nunca causa — se for a menor dimensão, não é por ela
+que se começa. Isso não existe no Raio-X Comercial, onde o menor pilar é sempre a
+entrada, e é a diferença que muda o roadmap de lugar.
+
+O mesmo raciocínio gerou as **quatro sustentações** do lado comercial (Dados,
+Tecnologia, Pessoas, Processo): os pilares dizem onde vaza, as sustentações dizem
+por quê. Ambos em `EG_Playbook_Metodologia.md`, capítulo 3.1 e `EG_Raio-X_Tecnologico.md` §5.
