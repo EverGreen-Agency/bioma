@@ -284,6 +284,60 @@ def seed_cases(conn) -> int:
     return count
 
 
+def seed_blog_posts(conn) -> int:
+    """Fila editorial do blog (migração 0104).
+
+    Os posts vêm de `seed_data/posts/*.md` com frontmatter simples. Mesma regra
+    de sobrescrita: só atualiza o que ele mesmo semeou, então post editado
+    dentro do Bioma nunca é revertido por redeploy.
+    """
+    directory = SEED_DIR / "posts"
+    if not directory.is_dir():
+        return 0
+    tombstones = _get_tombstones(conn, "blog_post")
+    count = 0
+    for path in sorted(directory.glob("*.md")):
+        if path.name in tombstones:
+            continue
+        raw = path.read_text(encoding="utf-8")
+        meta: dict[str, str] = {}
+        body = raw
+        if raw.startswith("---"):
+            head, _, body = raw[3:].partition(chr(10) + "---" + chr(10))
+            for line in head.strip().splitlines():
+                key, _, value = line.partition(":")
+                meta[key.strip()] = value.strip()
+        conn.execute(
+            """
+            insert into eg_blog_posts (
+              slug, title, excerpt, content, target_keyword,
+              search_volume, difficulty, intent, planned_month, status, seeded
+            )
+            values (%s, %s, %s, %s, %s, %s, %s, %s, %s, 'draft', true)
+            on conflict (slug) do update set
+              title = excluded.title,
+              excerpt = excluded.excerpt,
+              content = excluded.content,
+              target_keyword = excluded.target_keyword,
+              search_volume = excluded.search_volume,
+              difficulty = excluded.difficulty,
+              intent = excluded.intent,
+              planned_month = excluded.planned_month,
+              updated_at = now()
+            where eg_blog_posts.seeded = true
+            """,
+            (
+                meta.get("slug", path.stem), meta.get("title", path.stem),
+                meta.get("excerpt"), body.strip(), meta.get("keyword"),
+                int(meta["volume"]) if meta.get("volume", "").isdigit() else None,
+                int(meta["kd"]) if meta.get("kd", "").isdigit() else None,
+                meta.get("intent"), meta.get("month"),
+            ),
+        )
+        count += 1
+    return count
+
+
 def main() -> None:
     if not SEED_DIR.is_dir():
         print("seed_knowledge: seed_data/ ausente, nada a importar.")
@@ -295,10 +349,11 @@ def main() -> None:
         engineering = seed_engineering(conn)
         ideas_docs = seed_ideas_docs(conn)
         cases = seed_cases(conn)
+        posts = seed_blog_posts(conn)
     print(
         f"seed_knowledge: {ideas} ideia(s), {techs} tecnologia(s), "
         f"{docs} documento(s), {engineering} arquivo(s) de engenharia, "
-        f"{ideas_docs} doc(s) de ideias, {cases} case(s)."
+        f"{ideas_docs} doc(s) de ideias, {cases} case(s), {posts} post(s)."
     )
 
 
