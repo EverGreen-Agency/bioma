@@ -218,3 +218,56 @@ errado se despublica, e-mail enviado não volta.
 
 `RESPOSTA (score de SEO/GEO entra agora ou fica para depois?):`Gostaria que entrasse agora. E se precisar, eu achei projetos open source de SEO. Se precisar lhe trago!
 
+
+---
+
+## Quais são as 7 dimensões do Raio-X Tecnológico
+
+**Contexto.** O Documento-Mestre §10.1 define a Escada de Oferta de Tecnologia e
+promete, como entregável do Tech 1, um *"score de maturidade AI-First em 7
+dimensões"*. **As sete dimensões não estão enumeradas em lugar nenhum** — nem no
+Documento-Mestre, nem no Bioma, nem no repo do site. O número 7 aparece rastreado
+a uma referência externa: um log de sessão de junho/2026 registra *"ai-firstify
+plugin (7 dimensions, 9 principles)"* como inspiração do Guardião/Arquiteto.
+
+Ou seja: o entregável está vendido, a régua não está escrita.
+
+**O que eu fiz enquanto isso.** A LP `/tech` (`src/app/tech/data.ts` no repo
+`EGMKT/eg`) usa sete dimensões **propostas por mim**, derivadas da lista
+"Diferencial tecnológico da EG" do próprio Documento-Mestre, que por coincidência
+também tem sete itens:
+
+| # | Dimensão | A pergunta que ela abre |
+|---|---|---|
+| 1 | Diagnóstico | Existe leitura da operação ou só percepção de quem está dentro? |
+| 2 | Execução | O que demora semanas por depender de uma pessoa específica? |
+| 3 | Documentação | O que só existe na cabeça de alguém? |
+| 4 | Dados | Quantas planilhas respondem à mesma pergunta de formas diferentes? |
+| 5 | Automação | Qual trabalho manual se repete toda semana sem variação? |
+| 6 | Qualidade | O resultado muda conforme quem faz? |
+| 7 | Margem | Atender o dobro exigiria o dobro de time? |
+
+**Isto é proposta, não recuperação.** A coincidência de ambos serem sete não
+prova que sejam a mesma lista.
+
+**Por que trava a publicação.** Hoje `/servicos` diz, com todas as letras, que
+*"o diagnóstico tecnológico é mais amplo e desenhado caso a caso — preferimos
+dizer isso a fingir uma régua que ainda não existe"*. Se a `/tech` for ao ar
+afirmando sete dimensões, passam a existir duas afirmações contraditórias no
+mesmo domínio — exatamente o problema que a auditoria da `/growth` acabou de
+resolver. **Não publicar `/tech` antes de fechar isto.**
+
+Três saídas:
+
+1. **Confirmar estas sete.** Então `/servicos` precisa ser atualizada junto: a
+   frente tech deixa de ser "aberta" e passa a ter régua, como o §10.1 já promete.
+2. **Escrever outras sete.** Troca-se o array em `data.ts` e vale a mesma
+   atualização de `/servicos`.
+3. **Assumir que não há régua.** Aí o §10.1 é que está desatualizado, o
+   entregável do Tech 1 precisa ser reescrito sem "7 dimensões", e a `/tech` troca
+   a seção 02 por outra coisa.
+
+Minha recomendação é a 1: as sete acima saem do próprio documento, são
+perguntáveis numa call de diagnóstico e não exigem instrumentação nova.
+
+`RESPOSTA (confirmar as sete, escrever outras, ou assumir que não há régua):`

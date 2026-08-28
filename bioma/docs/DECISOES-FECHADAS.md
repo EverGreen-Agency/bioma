@@ -587,3 +587,56 @@ Muda quem enxerga por padrão, e a decisão errada aqui é cara de desfazer.
 `RESPOSTA (começar pela base da EG ou do cliente?):`Faça para ambos.
 
 
+
+---
+
+## Sistema Raiz é o nome público do método — decidido e aplicado em 2026-08-27
+
+**O que aconteceu.** A LP `/growth` do site (repo `EGMKT/eg`, construída pelo CTO
+entre 18 e 20/08/2026) nasceu com uma metodologia própria: "Método EG" de cinco
+etapas — Diagnóstico, Arquitetura, Implementação, Operação, Evolução — mais sete
+alavancas. Zero menções a Sistema Raiz, Raio-X Comercial, Tronco/Ramos/Copa,
+Sprint ou Retainer. O resto do site roda a outra. Eram duas metodologias
+concorrentes no mesmo domínio, e o rodapé da LP linka `evergreenmkt.com.br`: o
+prospect que clicasse via outro método, da mesma empresa, dentro da mesma proposta.
+
+**A decisão.** Sistema Raiz vence; a LP se ajustou a ele. Motivos, na ordem:
+
+1. Já estava em 45 rotas contra uma.
+2. **É o schema real do Bioma.** `raio_x_scores` guarda Oferta, Demanda e
+   Conversão. Se as sete alavancas virassem padrão, o Raio-X que a EG vende não
+   teria onde pontuar e o benchmark público (migração 0012) quebraria.
+3. "Diagnóstico → Arquitetura → Implementação" é o que toda consultoria diz.
+   Raiz/Tronco/Ramos/Copa é proprietário — e trocar o nome próprio pelo genérico
+   é downgrade justo no mercado onde se vende "a decisão mais segura".
+
+**O que não foi jogado fora.** Não eram duas metodologias: era a mesma com dois
+conjuntos de rótulos. O site já dizia *"A Copa não termina: é melhoria contínua"*;
+a LP dizia *"O sistema não termina: ele ganha novas capacidades"*. O mapeamento
+ficou assim, e os cinco módulos passaram a carregar a fase a que pertencem:
+
+| Fase | Ação | Módulo da LP |
+|---|---|---|
+| Raiz | Diagnosticar | 01 Diagnóstico |
+| Tronco | Priorizar | 02 Arquitetura |
+| Ramos | Estruturar | 03 Implementação |
+| Copa | Evoluir | 04 Operação · 05 Evolução |
+
+A Copa é a única fase com dois módulos, e isso é verdade e não acomodação: ela não
+termina. As sete alavancas viraram **três pilares medidos** (Oferta, Demanda,
+Conversão — os do `raio_x_scores`) mais **quatro sustentações** (Dados, Tecnologia,
+Pessoas, Processo), o que é mais informativo que qualquer um dos dois modelos
+sozinhos e não mexe no banco.
+
+**O Documento-Mestre não mudou** — a decisão é justamente que ele é a fonte.
+
+**Por que este bloco existe.** A deriva não foi erro de ninguém: em lugar nenhum
+estava escrito, onde quem constrói uma página fosse ver, que Sistema Raiz é o nome
+público do método. O CTO montou um framework razoável de boa-fé porque nada dizia
+o contrário. Registrar aqui é o conserto barato que evita a repetição — quem for
+criar a próxima LP (a de tech, por exemplo) lê isto antes de inventar rótulo novo.
+
+**Refinamento que a LP trouxe e vale absorver se o §9 for revisado algum dia:** a
+separação entre *decidir/desenhar* (Arquitetura) e *construir* (Implementação) é
+mais operacional que o par Priorizar/Estruturar. Não é contradição, é detalhe
+melhor. Baixa prioridade.
