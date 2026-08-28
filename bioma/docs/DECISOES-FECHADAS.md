@@ -672,3 +672,63 @@ entrada, e é a diferença que muda o roadmap de lugar.
 O mesmo raciocínio gerou as **quatro sustentações** do lado comercial (Dados,
 Tecnologia, Pessoas, Processo): os pilares dizem onde vaza, as sustentações dizem
 por quê. Ambos em `EG_Playbook_Metodologia.md`, capítulo 3.1 e `EG_Raio-X_Tecnologico.md` §5.
+
+---
+
+## Como o site trata parceria de ferramenta — decidido em 2026-08-28
+
+**A pergunta.** Com mais parcerias vindo (Sleekflow e outras, inclusive CRMs
+concorrentes do Kommo): vamos fazer uma página e um calendário de blog para cada?
+
+**A régua já existia.** §12 do Documento-Mestre: *"se não puxa previsibilidade,
+controle, conversão, jornada ou estrutura, provavelmente não pertence ao escopo
+principal. Vende-se como parte da tese central, nunca como 'fazemos tudo'."*
+Página que diz "somos parceiros de X" é cardápio. Página que diz "quando X serve e
+quando não" é a tese.
+
+**O que os números mostraram**, e por que a intuição estava errada. Eu ia
+recomendar hub de categoria + páginas finas de parceiro. Categoria não paga:
+
+| Termo | Volume/mês | KD |
+|---|---|---|
+| `qual crm escolher` | **0** | — |
+| `comparativo de crm` | 20 | 0 |
+| `crm para vendas` | 1.900 | **69** — inalcançável |
+| `kommo` | 60.500 | 65 — é do próprio Kommo |
+| `kommo parceiros` | 260 | **21** — já ranqueamos |
+| `consultoria crm` | 110 | **13** |
+| `implantação de crm` | 90 | **0** |
+
+O que se ganha não é a marca nem a categoria: é **o long tail do modificador**
+(`<marca> + parceiro/implantação`) e os termos de serviço que não dependem de
+marca de ninguém.
+
+**A decisão.**
+
+1. **Um hub de decisão** em termo próprio (`/consultoria-crm`), que compara e onde
+   mora a autoridade. Não depende de marca de terceiro.
+2. **Páginas finas por parceiro**, só para o long tail da marca, descendo do hub.
+3. **Blog nunca por parceiro.** O blog mira termo de *problema* — processo
+   comercial, pipeline, playbook. Blog que vira resenha das ferramentas que a casa
+   vende tem credibilidade zero, e perde o que diferencia os 12 posts.
+
+Custo de uma parceria nova: uma entrada em `src/config/paginas-servico.ts`, cerca
+de uma hora de conteúdo, e um link. Sem decisão de arquitetura a cada vez.
+
+**A regra que sustenta tudo:** o comparativo compara **formato de problema, nunca
+funcionalidade**. Afirmar que a ferramenta X tem o recurso Y exige verificar spec
+de produto de terceiro que muda sem aviso — errar isso numa página pública é pior
+do que não ter a página. Formato de operação a EG conhece de primeira mão.
+
+**O risco a vigiar, nomeado.** Ser parceiro de CRMs concorrentes é legítimo e até
+mais alinhado com "a decisão mais segura" do que ficar preso a um. Mas só funciona
+se a comparação for real: a seção "onde o Kommo é a escolha errada" é o que dá
+credibilidade àquela página, e ela só se sustenta se dissermos *"aqui use o
+outro"* quando for o caso. Se todas as páginas de parceiro disserem "excelente
+escolha", viram folheto e a honestidade morre junto — que é a agência 360 da §2
+com logo de vendor.
+
+**Segundo risco, de outra natureza:** as cinco keywords que o site ranqueia hoje
+são todas `kommo X`. Isso é autoridade **alugada**. Se o Kommo mudar o programa de
+parceria, o ativo evapora. Vale ter; não vale ser a fundação — e é a razão de o hub
+existir em termo próprio.
