@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 import {
+  AlertTriangle,
   Bot,
   Brain,
   CheckCircle2,
   Clock,
   FileAudio,
+  GitBranch,
   Headphones,
   KeyRound,
   Loader2,
@@ -12,6 +14,7 @@ import {
   Play,
   Plus,
   Radio,
+  RefreshCw,
   ShieldCheck,
   Sparkles,
   Square,
@@ -24,6 +27,7 @@ import {
   api,
   type ClientSummary,
   type FathomMeeting,
+  type OpportunitySummary,
   type ProposalSummary,
   type SalesCopilotMetrics,
   type SalesCopilotRealtimeStatus,
@@ -51,11 +55,13 @@ const selectStyle: React.CSSProperties = {
 export function SalesCopilotPanel({ proposals }: { proposals: ProposalSummary[] }) {
   const [sessions, setSessions] = useState<SalesCopilotSession[]>([]);
   const [clients, setClients] = useState<ClientSummary[]>([]);
+  const [opportunities, setOpportunities] = useState<OpportunitySummary[]>([]);
   const [metrics, setMetrics] = useState<SalesCopilotMetrics | null>(null);
   const [adapter, setAdapter] = useState<SalesCopilotRealtimeStatus | null>(null);
   const [selectedId, setSelectedId] = useState("");
   const [title, setTitle] = useState("");
   const [workspaceId, setWorkspaceId] = useState("");
+  const [opportunityId, setOpportunityId] = useState("");
   const [proposalId, setProposalId] = useState("");
   const [objective, setObjective] = useState("");
   const [transcriptChunk, setTranscriptChunk] = useState("");
@@ -79,14 +85,16 @@ export function SalesCopilotPanel({ proposals }: { proposals: ProposalSummary[] 
   };
 
   const load = async () => {
-    const [sessionRows, clientRows, metricData, adapterData] = await Promise.all([
+    const [sessionRows, clientRows, opportunityRows, metricData, adapterData] = await Promise.all([
       api.salesCopilotSessions(),
       api.clients(),
+      api.listOpportunities(),
       api.salesCopilotMetrics(),
       api.salesCopilotRealtimeStatus(),
     ]);
     setSessions(sessionRows);
     setClients(clientRows.filter((client) => client.status !== "archived"));
+    setOpportunities(opportunityRows.filter((item) => !["archived", "rejected", "lost"].includes(item.status)));
     setMetrics(metricData);
     setAdapter(adapterData);
     setSelectedId((current) => current || sessionRows[0]?.id || "");
@@ -209,6 +217,7 @@ export function SalesCopilotPanel({ proposals }: { proposals: ProposalSummary[] 
                 value={workspaceId}
                 onChange={(event) => {
                   setWorkspaceId(event.target.value);
+                  setOpportunityId("");
                   setProposalId("");
                 }}
               >
@@ -216,6 +225,18 @@ export function SalesCopilotPanel({ proposals }: { proposals: ProposalSummary[] 
                 {clients.map((client) => (
                   <option key={client.id} value={client.id}>{client.organization_name}</option>
                 ))}
+              </select>
+            </div>
+
+            <div>
+              <label style={{ fontSize: "0.78rem", fontWeight: 600, color: "var(--text-dim)", display: "block", marginBottom: 4 }}>Oportunidade</label>
+              <select style={selectStyle} value={opportunityId} onChange={(event) => setOpportunityId(event.target.value)}>
+                <option value="">Sem oportunidade vinculada</option>
+                {opportunities
+                  .filter((item) => !workspaceId || item.workspace_id === workspaceId)
+                  .map((item) => (
+                    <option key={item.id} value={item.id}>{item.title} · {item.status}</option>
+                  ))}
               </select>
             </div>
 
@@ -246,6 +267,7 @@ export function SalesCopilotPanel({ proposals }: { proposals: ProposalSummary[] 
               onClick={() => void run("create", () => api.createSalesCopilotSession({
                 title: title.trim(),
                 workspace_id: workspaceId || null,
+                opportunity_id: opportunityId || null,
                 proposal_id: proposalId || null,
                 session_type: proposalId ? "proposal_review" : "discovery",
                 objective: objective.trim() || null,
@@ -631,6 +653,60 @@ export function SalesCopilotPanel({ proposals }: { proposals: ProposalSummary[] 
                 </div>
               )}
 
+              {selected.status === "completed" && !selected.journey_snapshot && (
+                <div className="notice" style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
+                  <span>Esta reunião é anterior ao registro de jornada. Gere a projeção usando os vínculos e evidências já salvos.</span>
+                  <button className="secondary-button" disabled={Boolean(busy)} onClick={() => void run("journey", () => api.rebuildSalesCopilotJourney(selected.id))}>
+                    <GitBranch size={14} /> Gerar jornada
+                  </button>
+                </div>
+              )}
+
+              {/* Funil, jornada e raio-X derivados da reunião. Nenhuma nota é
+                  inventada: scores ficam nulos até haver Raio-X comercial. */}
+              {selected.journey_snapshot && (
+                <div style={{ background: "var(--bg-inset)", border: "1px solid var(--border)", borderRadius: "10px", padding: 16, display: "grid", gap: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "center" }}>
+                    <strong style={{ display: "flex", alignItems: "center", gap: 8 }}><GitBranch size={17} color="var(--brand-accent)" /> Jornada e funil registrados</strong>
+                    <button className="secondary-button" disabled={Boolean(busy)} onClick={() => void run("journey", () => api.rebuildSalesCopilotJourney(selected.id))}>
+                      <RefreshCw size={14} /> Recalcular com evidências atuais
+                    </button>
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 8 }}>
+                    {selected.journey_snapshot.funnel_map.map((stage) => (
+                      <div key={stage.key} style={{ padding: 10, borderRadius: 8, border: `1px solid ${stage.state === "current" ? "var(--brand-accent)" : "var(--border)"}`, background: stage.state === "completed" ? "rgba(58, 201, 123, 0.08)" : "var(--surface)" }}>
+                        <small>{stage.state === "completed" ? "concluído" : stage.state === "current" ? "etapa atual" : "a seguir"}</small>
+                        <strong style={{ display: "block", marginTop: 3 }}>{stage.label}</strong>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div style={{ display: "grid", gridTemplateColumns: "1.25fr .75fr", gap: 12 }}>
+                    <div>
+                      <small style={{ textTransform: "uppercase", letterSpacing: ".08em" }}>Jornada 5 A's</small>
+                      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", gap: 7, marginTop: 7 }}>
+                        {selected.journey_snapshot.journey_stages.map((stage) => (
+                          <div key={stage.key} style={{ padding: 9, borderRadius: 8, border: `1px solid ${stage.state === "current" ? "#f59e0b" : "var(--border)"}`, background: "var(--surface)" }}>
+                            <strong style={{ fontSize: ".82rem" }}>{stage.label}</strong>
+                            <small style={{ display: "block", marginTop: 3 }}>{stage.score === null ? stage.state : stage.score}</small>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="notice" style={{ margin: 0 }}>
+                      <strong style={{ display: "flex", gap: 6, alignItems: "center" }}><AlertTriangle size={15} /> Gargalo atual</strong>
+                      {selected.journey_snapshot.bottlenecks.map((item) => <p key={`${item.stage}-${item.title}`} style={{ margin: "6px 0 0", fontSize: ".82rem" }}>{item.title}</p>)}
+                    </div>
+                  </div>
+
+                  <div><small style={{ textTransform: "uppercase", letterSpacing: ".08em" }}>Próximas ações</small>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 7, marginTop: 7 }}>{selected.journey_snapshot.recommended_actions.map((item, index) => <span className="status-badge" key={`${item.title}-${index}`}>{item.title}</span>)}</div>
+                  </div>
+                  <small style={{ color: "var(--text-dim)" }}>Modo: {selected.journey_snapshot.generation_mode} · {selected.journey_snapshot.evidence_refs.length} referência(s) de evidência.</small>
+                </div>
+              )}
+
               {/* Compromissos Pós-Reunião */}
               <div style={{ background: "var(--bg-inset)", border: "1px solid var(--border)", borderRadius: "10px", padding: 16, display: "flex", flexDirection: "column", gap: 12 }}>
                 <strong style={{ fontSize: "0.88rem", display: "flex", alignItems: "center", gap: 8 }}>
@@ -643,7 +719,7 @@ export function SalesCopilotPanel({ proposals }: { proposals: ProposalSummary[] 
                     <span style={{ fontSize: "0.85rem" }}>{action.title} · <em style={{ color: "var(--text-dim)" }}>{action.action_type}</em></span>
                     {action.status === "proposed" && (
                       <button className="secondary-button" disabled={Boolean(busy)} onClick={() => void run("materialize", () => api.materializeSalesCopilotAction(action.id, `copilot-${action.id}`))}>
-                        Confirmar e Criar Tarefa
+                        {action.action_type === "opportunity_registration" ? "Confirmar e registrar oportunidade" : "Confirmar e materializar"}
                       </button>
                     )}
                   </div>

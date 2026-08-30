@@ -356,6 +356,8 @@ export function TaskDrawer({
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [acceptanceCriteria, setAcceptanceCriteria] = useState("");
+  const [definitionOfDone, setDefinitionOfDone] = useState("");
   const [groupStatus, setGroupStatus] = useState<TaskGroupStatus>("NOT_STARTED");
   const [specificStatus, setSpecificStatus] = useState("");
   const [priority, setPriority] = useState<TaskPriority | "">("");
@@ -381,6 +383,8 @@ export function TaskDrawer({
     if (existingTask) {
       setTitle(existingTask.title);
       setDescription(existingTask.description || "");
+      setAcceptanceCriteria(existingTask.acceptance_criteria || "");
+      setDefinitionOfDone(existingTask.definition_of_done || "");
       setClientVisible(existingTask.client_visible ?? true);
       setGroupStatus(existingTask.group_status);
       setSpecificStatus(existingTask.status);
@@ -403,6 +407,8 @@ export function TaskDrawer({
     } else {
       setTitle("");
       setDescription("");
+      setAcceptanceCriteria("");
+      setDefinitionOfDone("");
       setGroupStatus(initialStatus || "NOT_STARTED");
       setSpecificStatus(initialDetailedStatus || statusesForFrente(effectiveListType)[0]?.status || "");
       setPriority("");
@@ -450,6 +456,8 @@ export function TaskDrawer({
         payload: {
           title,
           description,
+          acceptance_criteria: acceptanceCriteria || null,
+          definition_of_done: definitionOfDone || null,
           group_status: groupStatus,
           status: specificStatus || "pending",
           priority: priority || null,
@@ -474,6 +482,8 @@ export function TaskDrawer({
         payload: {
           title,
           description,
+          acceptance_criteria: acceptanceCriteria || null,
+          definition_of_done: definitionOfDone || null,
           status: specificStatus || "pending",
           group_status: groupStatus,
           priority: priority || null,
@@ -499,6 +509,8 @@ export function TaskDrawer({
         payload: {
           title,
           description,
+          acceptance_criteria: acceptanceCriteria || null,
+          definition_of_done: definitionOfDone || null,
           status: specificStatus || "pending",
           group_status: groupStatus,
           priority: priority || null,
@@ -600,6 +612,22 @@ export function TaskDrawer({
               Registro legado importado em modo somente leitura. Duplique-o como tarefa nativa para continuar o trabalho no Bioma.
             </div>
           )}
+          {existingTask?.semantic_review_required && (
+            <div
+              role="status"
+              style={{
+                padding: "10px 12px",
+                border: "1px solid #ffab00",
+                borderRadius: 6,
+                background: "rgba(255,171,0,0.08)",
+                fontSize: 12,
+              }}
+            >
+              Esta tarefa veio do modelo antigo. O texto anterior foi preservado em
+              Definição de Pronto; revise a separação entre contexto, aceite e DoD ao salvar.
+            </div>
+          )}
+
           <label style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 500 }}>Título</span>
             <input 
@@ -952,18 +980,46 @@ export function TaskDrawer({
             </label>
           </div>
 
-          {/* Manual v2: a descrição É a Definição de Pronto — o critério que
-              autoriza mover para DONE, não um campo de texto solto. */}
+          <label style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 500 }}>Contexto e resultado esperado</span>
+            <span style={{ fontSize: 11, color: "var(--text-dim)", marginTop: -4 }}>
+              Por que existe, qual problema resolve e qual resultado se espera.
+            </span>
+            <textarea
+              className="text-input"
+              style={{ minHeight: 90, resize: "vertical" }}
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Ex: o cliente precisa acompanhar o avanço sem pedir atualização no WhatsApp."
+              disabled={isBusy}
+            />
+          </label>
+
+          <label style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 500 }}>Critérios de aceite</span>
+            <span style={{ fontSize: 11, color: "var(--text-dim)", marginTop: -4 }}>
+              Comportamentos específicos que uma pessoa consegue verificar.
+            </span>
+            <textarea
+              className="text-input"
+              style={{ minHeight: 90, resize: "vertical" }}
+              value={acceptanceCriteria}
+              onChange={(e) => setAcceptanceCriteria(e.target.value)}
+              placeholder="Ex: dado o workspace do cliente, ao abrir a Home, ele vê a próxima decisão pendente."
+              disabled={isBusy}
+            />
+          </label>
+
           <label style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             <span style={{ fontSize: 13, fontWeight: 500 }}>Definição de Pronto</span>
             <span style={{ fontSize: 11, color: "var(--text-dim)", marginTop: -4 }}>
-              O que precisa ser verdade para esta tarefa poder ser fechada.
+              Gates técnicos e operacionais para esta tarefa poder ser fechada.
             </span>
             <textarea
               className="text-input"
               style={{ minHeight: 100, resize: "vertical" }}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              value={definitionOfDone}
+              onChange={(e) => setDefinitionOfDone(e.target.value)}
               placeholder="Ex: testes passam, PR aprovado e deploy em staging validado."
               disabled={isBusy}
             />

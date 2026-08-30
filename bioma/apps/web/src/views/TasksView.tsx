@@ -1,15 +1,16 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useWorkspaceTasks, useCreateWorkspaceTask, useWorkspaceProjects } from "../hooks/useBiomaApi";
+import { useWorkspaceTasks, useWorkspaceProjects, useCurrentUser } from "../hooks/useBiomaApi";
 import { TaskBoard } from "../components/tasks/TaskBoard";
 import { TaskListView } from "../components/tasks/TaskListView";
 import { TaskCalendarView } from "../components/tasks/TaskCalendarView";
 import { TaskGanttView } from "../components/tasks/TaskGanttView";
+import { WorkGraphPanel } from "../components/tasks/WorkGraphPanel";
 import { EmptyState, SectionHeader } from "../components/shared";
 import { buildTaskPredicate, quickFiltersForFrente } from "../lib/task-filters";
 import { resolveComposerProject } from "../lib/task-composer";
 import { api } from "../lib/api";
-import { LayoutDashboard, Kanban, List, Calendar, ChartGantt } from "lucide-react";
+import { LayoutDashboard, Kanban, List, Calendar, ChartGantt, Network } from "lucide-react";
 
 type TasksViewProps = {
   workspaceId: string;
@@ -28,7 +29,7 @@ export function TasksView({ workspaceId }: TasksViewProps) {
   const [quickFilterId, setQuickFilterId] = useState<string | null>(null);
   // Gantt e uma visao como as outras, disponivel para qualquer disciplina --
   // nao e exclusiva do roadmap do cliente.
-  const [viewMode, setViewMode] = useState<"board" | "list" | "calendar" | "gantt">("board");
+  const [viewMode, setViewMode] = useState<"board" | "list" | "calendar" | "gantt" | "traceability">("board");
 
   const { data: tasks = [], isLoading } = useWorkspaceTasks(
     workspaceId,
@@ -36,6 +37,8 @@ export function TasksView({ workspaceId }: TasksViewProps) {
     projectFilter || undefined,
   );
   const { data: projects = [] } = useWorkspaceProjects(workspaceId);
+  const { data: currentUser } = useCurrentUser();
+  const canTraceWork = currentUser?.organizations.some((organization: { role: string }) => organization.role === "eg_admin") ?? false;
 
   // Decisao 13: tarefa de cliente exige projeto; na Operacao EG e opcional.
   // A regra mora em `resolveComposerProject` porque e regra, nao renderizacao —
@@ -97,6 +100,17 @@ export function TasksView({ workspaceId }: TasksViewProps) {
           >
             <ChartGantt size={16} />
           </button>
+          {canTraceWork && (
+            <button
+              type="button"
+              className={viewMode === "traceability" ? "primary-button" : "icon-button"}
+              onClick={() => setViewMode("traceability")}
+              title="Rastreabilidade: intenção, execução e evidência"
+              style={{ padding: "4px 8px" }}
+            >
+              <Network size={16} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -175,6 +189,9 @@ export function TasksView({ workspaceId }: TasksViewProps) {
             taskFilter,
             discipline: discipline || undefined,
           } as const;
+          if (viewMode === "traceability") {
+            return <WorkGraphPanel workspaceId={workspaceId} tasks={tasks} projects={projects.map((project) => ({ id: project.id, name: project.name }))} />;
+          }
           if (viewMode === "board") return <TaskBoard {...shared} composerProject={composerProject} />;
           if (viewMode === "list") return <TaskListView {...shared} composerProject={composerProject} />;
           if (viewMode === "calendar") return <TaskCalendarView {...shared} />;

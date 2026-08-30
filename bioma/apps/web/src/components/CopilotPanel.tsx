@@ -6,7 +6,15 @@ import {
   Loader2, MessageSquarePlus, Mic, Paperclip, PanelRightClose, Send, Sparkles, TriangleAlert, X,
 } from "lucide-react";
 
-import { api, type CopilotAttachment, type CopilotRunTrace, type CopilotSurface } from "../lib/api";
+import {
+  api,
+  type CopilotAction,
+  type CopilotAttachment,
+  type CopilotBlock,
+  type CopilotRunTrace,
+  type CopilotSource,
+  type CopilotSurface,
+} from "../lib/api";
 import { useDictation } from "../hooks/useDictation";
 import { useUiStore } from "../store/uiStore";
 import { SaveToStudioButton } from "./SaveToStudioButton";
@@ -75,7 +83,14 @@ function renderAnswer(text: string) {
 }
 
 /** Escopo derivado da rota: o copiloto enxerga a tela em que você está. */
-function useScopeFromRoute(): { surface: CopilotSurface; workspaceId?: string; label: string } {
+function useScopeFromRoute(): {
+  surface: CopilotSurface;
+  workspaceId?: string;
+  projectId?: string;
+  opportunityId?: string;
+  proposalId?: string;
+  label: string;
+} {
   const location = useLocation();
   const params = useParams();
   const selectedClientId = useUiStore((state) => state.selectedClientId);
@@ -89,10 +104,83 @@ function useScopeFromRoute(): { surface: CopilotSurface; workspaceId?: string; l
     const clientId = params.clientId ?? selectedClientId;
     const workspace = workspaces?.find((item) => item.kind === "client" && item.client_id === clientId);
     if (location.pathname.startsWith("/clientes") && workspace) {
-      return { surface: "workspace" as const, workspaceId: workspace.id, label: workspace.name };
+      return {
+        surface: "workspace" as const,
+        workspaceId: workspace.id,
+        projectId: params.projectId,
+        opportunityId: params.oppId ?? params.opportunityId,
+        proposalId: params.proposalId,
+        label: workspace.name,
+      };
     }
     return { surface: "workspace" as const, label: "Operação EG" };
-  }, [location.pathname, params.clientId, selectedClientId, workspaces]);
+  }, [
+    location.pathname,
+    params.clientId,
+    params.projectId,
+    params.oppId,
+    params.opportunityId,
+    params.proposalId,
+    selectedClientId,
+    workspaces,
+  ]);
+}
+
+function SourceItems({ sources }: { sources: CopilotSource[] }) {
+  return (
+    <div className="copilot-sources">
+      {sources.map((source, index) => {
+        if (source.kind === "web") {
+          let label = source.reference;
+          try { label = new URL(source.reference).hostname; } catch { /* fonte inválida fica como texto */ }
+          return source.reference.startsWith("http") ? (
+            <a key={index} href={source.reference} target="_blank" rel="noreferrer">
+              <ExternalLink size={11} /> {label}
+            </a>
+          ) : <span key={index}>{label}</span>;
+        }
+        return <span key={index}>{source.reference}</span>;
+      })}
+    </div>
+  );
+}
+
+function CopilotBlockView({ block }: { block: CopilotBlock }) {
+  if (block.kind === "markdown") {
+    return <div className="copilot-answer" dangerouslySetInnerHTML={renderAnswer(String(block.data.text ?? ""))} />;
+  }
+  if (block.kind === "entity_summary") {
+    return (
+      <div className="copilot-entity-block">
+        <strong>{block.title ?? "Contexto ativo"}</strong>
+        <span>{String(block.data.entity_type ?? "item")} · {String(block.data.entity_id ?? "")}</span>
+      </div>
+    );
+  }
+  if (block.kind === "action_list") {
+    const actions = Array.isArray(block.data.items) ? block.data.items as CopilotAction[] : [];
+    return (
+      <ul className="copilot-actions">
+        {actions.map((action, index) => (
+          <li key={index} className={action.status}>
+            <strong>{action.label}</strong>
+            <span>{action.detail}</span>
+            {action.undo_hint && <em>Desfazer: {action.undo_hint}</em>}
+          </li>
+        ))}
+      </ul>
+    );
+  }
+  if (block.kind === "source_list") {
+    const sources = Array.isArray(block.data.items) ? block.data.items as CopilotSource[] : [];
+    return <SourceItems sources={sources} />;
+  }
+  return (
+    <div className="copilot-entity-block">
+      <strong>{block.title ?? block.kind.replace(/_/g, " ")}</strong>
+      <span>Bloco disponível na visualização operacional.</span>
+    </div>
+  );
 }
 
 function AttachmentChip({
@@ -274,6 +362,9 @@ export function CopilotPanel() {
         message: text,
         surface: scope.surface,
         workspace_id: scope.workspaceId,
+        project_id: scope.projectId,
+        opportunity_id: scope.opportunityId,
+        proposal_id: scope.proposalId,
         thread_id: threadId ?? undefined,
         attachment_ids: pending.map((item) => item.id),
       }),
@@ -384,11 +475,27 @@ export function CopilotPanel() {
       <div className="copilot-panel-body">
         {!threadId && !send.isPending && (
           <div className="copilot-intro">
-            <p>Pergunte sobre a operação. Ele lê o escopo desta tela e cita a fonte de tudo.</p>
+            <p>Converse como no ChatGPT. Ele lê o escopo desta tela, mantém a continuidade e cita a fonte de tudo.</p>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", margin: "10px 0" }}>
+              <button
+                type="button"
+                className="mini-button"
+                onClick={() => { setMessage("@Propostas "); window.setTimeout(() => inputRef.current?.focus(), 20); }}
+              >
+                @Propostas · colar uma vaga
+              </button>
+              <button
+                type="button"
+                className="mini-button"
+                onClick={() => { setMessage("Retome o contexto e me diga a próxima ação mais útil. "); window.setTimeout(() => inputRef.current?.focus(), 20); }}
+              >
+                Retomar este contexto
+              </button>
+            </div>
             <ul>
-              <li>“o que priorizar hoje?”</li>
-              <li>“quais entregas deste cliente estão atrasadas?”</li>
-              <li>“resume o que aconteceu nesta tarefa”</li>
+              <li>Cole uma vaga após <strong>@Propostas</strong>: ela pode virar oportunidade ligada à conversa.</li>
+              <li>Volte depois para registrar resposta, reunião, WhatsApp, proposta e decisão.</li>
+              <li>Em tarefas, peça resumo, subtarefas ou próxima ação com o contexto da tela.</li>
             </ul>
             <p className="copilot-intro-hint">
               Arraste um arquivo, cole uma imagem, ou use o clipe. Documento vira texto e funciona
@@ -427,9 +534,15 @@ export function CopilotPanel() {
                     Configurações&nbsp;→&nbsp;Empresa ou Operação&nbsp;EG&nbsp;→&nbsp;IA.
                   </div>
                 )}
-                <div className="copilot-answer" dangerouslySetInnerHTML={renderAnswer(trace.answer ?? "")} />
+                {trace.response_blocks?.length > 0 ? (
+                  <div className="copilot-blocks">
+                    {trace.response_blocks.map((block) => <CopilotBlockView key={block.id} block={block} />)}
+                  </div>
+                ) : (
+                  <div className="copilot-answer" dangerouslySetInnerHTML={renderAnswer(trace.answer ?? "")} />
+                )}
 
-                {trace.actions.length > 0 && (
+                {(!trace.response_blocks?.length && trace.actions.length > 0) && (
                   <ul className="copilot-actions">
                     {trace.actions.map((action, index) => (
                       <li key={index} className={action.status}>
@@ -441,18 +554,8 @@ export function CopilotPanel() {
                   </ul>
                 )}
 
-                {trace.sources.length > 0 && (
-                  <div className="copilot-sources">
-                    {trace.sources.map((source, index) =>
-                      source.kind === "web" ? (
-                        <a key={index} href={source.reference} target="_blank" rel="noreferrer">
-                          <ExternalLink size={11} /> {new URL(source.reference).hostname}
-                        </a>
-                      ) : (
-                        <span key={index}>{source.reference}</span>
-                      ),
-                    )}
-                  </div>
+                {(!trace.response_blocks?.length && trace.sources.length > 0) && (
+                  <SourceItems sources={trace.sources as CopilotSource[]} />
                 )}
 
                 <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
@@ -569,7 +672,7 @@ export function CopilotPanel() {
             ref={inputRef}
             rows={2}
             value={dictation.interim ? `${message}${message ? " " : ""}${dictation.interim}` : message}
-            placeholder="Pergunte ou peça algo…  (Ctrl+K)"
+            placeholder="Pergunte, cole uma vaga ou use @Propostas…  (Ctrl+K)"
             onChange={(event) => setMessage(event.target.value)}
             onPaste={(event) => {
               // Colar print é como a maioria manda imagem — mais que arrastar.

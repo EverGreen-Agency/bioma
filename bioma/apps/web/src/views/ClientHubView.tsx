@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate, useOutletContext } from "react-router-dom";
-import { ClipboardCheck, CheckCircle2, AlertCircle, ArrowLeft, CalendarDays, Settings, Trash2, Sparkles} from "lucide-react";
+import { ClipboardCheck, CheckCircle2, AlertCircle, ArrowLeft, CalendarDays, Settings, Trash2, MessageSquarePlus, TrendingUp } from "lucide-react";
 import { SectionHeader, EmptyState } from "../components/shared";
-import { statusLabel } from "../lib/app-config";
 import { externalClients } from "../lib/client-scope";
 import { AdminDock } from "../components/AdminDock";
-import { BriefingPanel } from "../components/BriefingPanel";
 import { EditorialCalendar } from "../components/EditorialCalendar";
 import { RaioXScorePanel } from "../components/RaioXScorePanel";
 import { useUiStore } from "../store/uiStore";
@@ -14,12 +12,12 @@ import {
   useClientPortal,
   useCommercialPortal,
   useCreateApproval,
-  useBuildBriefingDraft,
-  useCreateArtifact,
+  useCreateClientRequest,
   useDecideApproval,
   useDeleteDeliverable,
   useUpdateDeliverable,
   useCurrentUser,
+  useUpdateClientRequest,
 } from "../hooks/useBiomaApi";
 import { deliverableStatusLabel } from "../lib/app-config";
 import type { DeliverableStatus } from "../lib/api";
@@ -31,8 +29,12 @@ export function ClientHubView() {
   const contextId = workspace.workspaceId;
   const navigate = useNavigate();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [requestFormOpen, setRequestFormOpen] = useState(false);
+  const [requestTitle, setRequestTitle] = useState("");
+  const [requestDetail, setRequestDetail] = useState("");
+  const [requestCategory, setRequestCategory] = useState<"request" | "question" | "change" | "input">("request");
   
-  const { setSelectedClientId, setSelectedArtifact } = useUiStore();
+  const { setSelectedClientId } = useUiStore();
 
   const { data: user, isLoading: loadingUser } = useCurrentUser();
   const isEgAdmin = !loadingUser && (user?.organizations.some((org: { role: string }) => org.role === "eg_admin") ?? false);
@@ -44,9 +46,9 @@ export function ClientHubView() {
   const { data: portalData, isLoading: loadingPortal } = useClientPortal(contextId);
   const portal = portalData ?? null;
   const decideApproval = useDecideApproval();
-  const createArtifact = useCreateArtifact();
   const createApproval = useCreateApproval();
-  const briefingDraft = useBuildBriefingDraft();
+  const createClientRequest = useCreateClientRequest();
+  const updateClientRequest = useUpdateClientRequest();
   const updateDeliverable = useUpdateDeliverable();
   const deleteDeliverable = useDeleteDeliverable();
   const { data: commercialData, refetch: refetchCommercial } = useCommercialPortal(contextId);
@@ -55,7 +57,30 @@ export function ClientHubView() {
     decideApproval.isPending ||
     createApproval.isPending ||
     updateDeliverable.isPending ||
-    deleteDeliverable.isPending;
+    deleteDeliverable.isPending ||
+    createClientRequest.isPending ||
+    updateClientRequest.isPending;
+
+  const submitRequest = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!requestTitle.trim()) return;
+    createClientRequest.mutate(
+      {
+        clientId: contextId,
+        title: requestTitle.trim(),
+        detail: requestDetail.trim() || undefined,
+        category: requestCategory,
+      },
+      {
+        onSuccess: () => {
+          setRequestTitle("");
+          setRequestDetail("");
+          setRequestCategory("request");
+          setRequestFormOpen(false);
+        },
+      },
+    );
+  };
 
   useEffect(() => {
     if (id && useUiStore.getState().selectedClientId !== id) {
@@ -86,7 +111,7 @@ export function ClientHubView() {
           <ArrowLeft size={18} />
         </button>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-          <SectionHeader eyebrow="Dashboard" title="Visão Geral" icon={ClipboardCheck} />
+          <SectionHeader eyebrow={selectedClient.organization_name} title="Seu workspace" icon={ClipboardCheck} />
           {isEgAdmin && (
             <button 
               className="secondary-button" 
@@ -107,39 +132,116 @@ export function ClientHubView() {
           <div className="bento-grid">
             <article className="bento-card col-span-1">
               <div className="bento-header">
-                <h3>{selectedClient.organization_name}</h3>
-                <span className={`status-pill ${selectedClient.status}`}>{statusLabel[selectedClient.status]}</span>
+                <h3>Progresso das entregas</h3>
+                <TrendingUp size={16} color="var(--brand-accent)" />
               </div>
-              <div style={{ marginTop: '16px' }}>
-                <p>Responsável: <strong>{selectedClient.responsible_name ?? "não definido"}</strong></p>
+              <div style={{ marginTop: "18px", display: "grid", gap: "10px" }}>
+                <strong style={{ fontSize: "32px" }}>{portal.progress.completion_percentage}%</strong>
+                <div style={{ height: "8px", borderRadius: "999px", background: "var(--surface-muted, #e8e8e8)", overflow: "hidden" }}>
+                  <div style={{ width: `${portal.progress.completion_percentage}%`, height: "100%", background: "var(--brand-accent)", borderRadius: "inherit" }} />
+                </div>
+                <small>
+                  {portal.progress.deliverables_done} concluídas · {portal.progress.deliverables_in_progress} em andamento · {portal.progress.deliverables_total} no total
+                </small>
+                <p>Responsável EG: <strong>{selectedClient.responsible_name ?? "a definir"}</strong></p>
               </div>
             </article>
             
             <article className="bento-card col-span-2">
               <div className="bento-header">
-                <h3>Aprovações Pendentes</h3>
+                <h3>O que precisa da sua atenção</h3>
                 <CheckCircle2 size={16} color="var(--brand-accent)" />
               </div>
-              {portal.approvals.filter(a => a.status === 'pending').length === 0 && <EmptyState compact text="Tudo em dia." />}
-              {portal.approvals.filter(a => a.status === 'pending').map((approval) => (
-                <div className="work-row" key={approval.id}>
+              {portal.attention.length === 0 && <EmptyState compact text="Tudo em dia. A equipe segue com o trabalho." />}
+              {portal.attention.map((item) => {
+                const approval = item.kind === "approval" ? portal.approvals.find((entry) => entry.id === item.entity_id) : null;
+                return (
+                <div className="work-row" key={`${item.kind}-${item.entity_id}`}>
                   <AlertCircle size={16} />
                   <div>
-                    <strong>{approval.deliverable_title ?? "Aprovação"}</strong>
-                    <small>{approval.comment ?? "Sem comentário"}</small>
+                    <strong>{item.title}</strong>
+                    <small>{item.detail}</small>
+                  </div>
+                  {approval && (
+                    <div className="row-actions">
+                      <button className="mini-button approve" type="button" onClick={() => decideApproval.mutate({ clientId: contextId, approvalId: approval.id, status: "approved" })} disabled={isBusy}>Aprovar</button>
+                      <button className="mini-button reject" type="button" onClick={() => decideApproval.mutate({ clientId: contextId, approvalId: approval.id, status: "rejected" })} disabled={isBusy}>Pedir ajustes</button>
+                    </div>
+                  )}
+                </div>
+              )})}
+            </article>
+          </div>
+
+          <article className="surface" style={{ marginTop: "24px" }}>
+            <div className="surface-header" style={{ justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                <MessageSquarePlus size={18} />
+                <div>
+                  <h3>Solicitações à equipe</h3>
+                  <small>Peça algo pelo resultado esperado. A EG faz a triagem interna.</small>
+                </div>
+              </div>
+              <button className="primary-button" type="button" onClick={() => setRequestFormOpen((open) => !open)}>
+                {requestFormOpen ? "Cancelar" : "Solicitar algo"}
+              </button>
+            </div>
+            <div style={{ padding: "0 20px 20px" }}>
+              {requestFormOpen && (
+                <form onSubmit={submitRequest} style={{ display: "grid", gap: "10px", marginBottom: "18px", padding: "16px", border: "1px solid var(--border-subtle, #ddd)", borderRadius: "12px" }}>
+                  <label>
+                    Tipo
+                    <select value={requestCategory} onChange={(event) => setRequestCategory(event.target.value as typeof requestCategory)}>
+                      <option value="request">Nova solicitação</option>
+                      <option value="question">Dúvida</option>
+                      <option value="change">Pedido de ajuste</option>
+                      <option value="input">Envio de informação</option>
+                    </select>
+                  </label>
+                  <label>
+                    O que você precisa?
+                    <input value={requestTitle} onChange={(event) => setRequestTitle(event.target.value)} maxLength={300} placeholder="Ex.: atualizar os criativos da campanha de setembro" required />
+                  </label>
+                  <label>
+                    Contexto e resultado esperado
+                    <textarea value={requestDetail} onChange={(event) => setRequestDetail(event.target.value)} rows={4} maxLength={5000} placeholder="Conte o contexto, prazo desejado e como saberemos que ficou bom." />
+                  </label>
+                  <div><button className="primary-button" type="submit" disabled={isBusy || !requestTitle.trim()}>Enviar para triagem</button></div>
+                </form>
+              )}
+              {portal.requests.length === 0 && <EmptyState compact text="Nenhuma solicitação enviada ainda." />}
+              {portal.requests.map((request) => (
+                <div className="work-row" key={request.id}>
+                  <div>
+                    <strong>{request.title}</strong>
+                    <small>{request.detail || "Sem contexto adicional"}</small>
+                    {request.resolution_summary && <small><strong>Retorno:</strong> {request.resolution_summary}</small>}
                   </div>
                   <div className="row-actions">
-                    <button className="mini-button approve" type="button" onClick={() => decideApproval.mutate({ clientId: contextId, approvalId: approval.id, status: "approved" })} disabled={isBusy}>
-                      Aprovar
-                    </button>
-                    <button className="mini-button reject" type="button" onClick={() => decideApproval.mutate({ clientId: contextId, approvalId: approval.id, status: "rejected" })} disabled={isBusy}>
-                      Reprovar
-                    </button>
+                    {isEgAdmin ? (
+                      <select
+                        value={request.status}
+                        disabled={isBusy}
+                        onChange={(event) => updateClientRequest.mutate({ clientId: contextId, requestId: request.id, status: event.target.value as typeof request.status })}
+                      >
+                        <option value="submitted">Recebida</option>
+                        <option value="triaged">Em triagem</option>
+                        <option value="in_progress">Em andamento</option>
+                        <option value="waiting_client">Aguardando cliente</option>
+                        <option value="done">Concluída</option>
+                        <option value="declined">Não priorizada</option>
+                      </select>
+                    ) : (
+                      <span className={`status-pill ${request.status}`}>{{
+                        submitted: "Recebida", triaged: "Em triagem", in_progress: "Em andamento",
+                        waiting_client: "Aguardando você", done: "Concluída", declined: "Não priorizada",
+                      }[request.status]}</span>
+                    )}
                   </div>
                 </div>
               ))}
-            </article>
-          </div>
+            </div>
+          </article>
 
           <article className="surface" style={{ marginTop: "24px" }}>
             <div className="surface-header">

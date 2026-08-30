@@ -1810,3 +1810,23 @@
 }
 
 
+.copilot-blocks {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.copilot-entity-block {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 9px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 92%, var(--brand-accent) 8%);
+  font-size: 12px;
+}
+
+.copilot-entity-block span {
+  color: var(--text-dim);
+}

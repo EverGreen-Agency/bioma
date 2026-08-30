@@ -925,11 +925,44 @@ export type AuditLogSummary = {
 
 export type ClientPortal = {
   client: ClientSummary;
+  attention: ClientAttentionItem[];
+  progress: ClientProgressSummary;
+  requests: ClientRequestSummary[];
   artifacts: ArtifactSummary[];
   deliverables: DeliverableSummary[];
   approvals: ApprovalSummary[];
   sync_runs: SyncRunSummary[];
   audit_logs: AuditLogSummary[];
+};
+
+export type ClientRequestStatus = "submitted" | "triaged" | "in_progress" | "waiting_client" | "done" | "declined";
+export type ClientRequestSummary = {
+  id: string;
+  category: "request" | "question" | "change" | "input";
+  title: string;
+  detail: string | null;
+  status: ClientRequestStatus;
+  priority: "low" | "normal" | "high" | "urgent";
+  requested_by: string | null;
+  requested_by_name: string | null;
+  assigned_to: string | null;
+  resolution_summary: string | null;
+  created_at: string;
+  updated_at: string;
+};
+export type ClientAttentionItem = {
+  kind: "approval" | "request" | "delivery";
+  entity_id: string;
+  title: string;
+  detail: string;
+  action_label: string;
+  due_at: string | null;
+};
+export type ClientProgressSummary = {
+  deliverables_total: number;
+  deliverables_done: number;
+  deliverables_in_progress: number;
+  completion_percentage: number;
 };
 
 export type ClientPayload = {
@@ -1488,6 +1521,15 @@ export type CopilotSource = {
   reference: string;
 };
 
+export type CopilotBlock = {
+  id: string;
+  kind: "markdown" | "entity_summary" | "action_list" | "source_list"
+    | "task_list" | "timeline" | "approval" | "form" | "metric" | "artifact";
+  title: string | null;
+  data: Record<string, unknown>;
+  source_refs: string[];
+};
+
 export type CopilotResponse = {
   thread_id: string;
   /** Chave da trilha desta resposta — abre a auditoria sem caçar por data. */
@@ -1497,6 +1539,7 @@ export type CopilotResponse = {
   confidence: "alta" | "media" | "baixa";
   actions: CopilotAction[];
   sources: CopilotSource[];
+  blocks: CopilotBlock[];
 };
 
 // --- Mural de vitórias ---
@@ -1600,6 +1643,7 @@ export type CopilotRunTrace = {
   skills_used: string[];
   sources: { kind: string; reference: string }[];
   actions: CopilotAction[];
+  response_blocks: CopilotBlock[];
   /** O que estava anexado NAQUELE turno — anexar depois não reescreve a resposta. */
   attachments: {
     id: string;
@@ -2804,8 +2848,12 @@ export type TaskSubtaskInput = {
 
 export type TaskPayload = {
   title: string;
-  /** Definição de Pronto — critério que autoriza mover a tarefa para DONE. */
+  /** Contexto, problema e resultado esperado. */
   description?: string | null;
+  /** Comportamento observável que satisfaz a necessidade. */
+  acceptance_criteria?: string | null;
+  /** Gates técnicos e operacionais para encerrar a tarefa. */
+  definition_of_done?: string | null;
   status: string;
   group_status: TaskGroupStatus;
   priority?: TaskPriority | null;
@@ -2870,6 +2918,8 @@ export type TaskSummary = TaskPayload & {
   workspace_id?: string | null; // preenchido em tarefas novas
   external_source?: "clickup" | null;
   external_id?: string | null;
+  /** Registro migrado cujo antigo campo description precisa de revisão humana. */
+  semantic_review_required?: boolean;
   created_at: string;
   updated_at: string;
 };
@@ -2879,6 +2929,91 @@ export type TaskListSummary = {
   workspace_id: string;
   name: string;
   type: TaskListType;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WorkItemKind =
+  | "goal" | "spec" | "story" | "decision" | "plan" | "milestone" | "opportunity_event" | "deliverable"
+  | "test" | "evidence" | "release" | "asset";
+export type WorkEntityType =
+  | "workspace" | "project" | "opportunity" | "proposal" | "task"
+  | "document" | "document_import" | "artifact" | "work_item";
+export type WorkRelationType =
+  | "derives_from" | "decomposes_into" | "implements" | "tests" | "evidences"
+  | "decides" | "blocks" | "supersedes" | "reuses" | "materializes";
+
+export type WorkItem = {
+  id: string;
+  workspace_id: string;
+  project_id: string | null;
+  kind: WorkItemKind;
+  title: string;
+  summary: string | null;
+  status: "draft" | "active" | "done" | "superseded" | "archived";
+  external_ref: string | null;
+  backlog_status: "candidate" | "backlog" | "ready" | "in_progress" | "done" | "rejected";
+  priority: "low" | "medium" | "high" | "critical";
+  rank: number;
+  acceptance_criteria: string | null;
+  definition_of_done: string | null;
+  story_points: number | null;
+  planned_start_at: string | null;
+  planned_end_at: string | null;
+  source_document_import_id: string | null;
+  materialized_task_id: string | null;
+  metadata: Record<string, unknown>;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WorkLink = {
+  id: string;
+  workspace_id: string;
+  source_type: WorkEntityType;
+  source_id: string;
+  relation_type: WorkRelationType;
+  target_type: WorkEntityType;
+  target_id: string;
+  metadata: Record<string, unknown>;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type WorkGraphProjection = { items: WorkItem[]; links: WorkLink[] };
+
+export type DocumentImportCandidate = {
+  id: string;
+  kind: "story" | "milestone" | "opportunity_event";
+  title: string;
+  summary: string | null;
+  priority: WorkItem["priority"];
+  backlog_status: "candidate";
+  acceptance_criteria: string | null;
+  definition_of_done: string | null;
+  planned_start_at: string | null;
+  planned_end_at: string | null;
+  source_excerpt: string;
+  metadata: Record<string, unknown>;
+};
+
+export type ProjectDocumentImport = {
+  id: string;
+  workspace_id: string;
+  project_id: string;
+  source_name: string;
+  content_type: string;
+  content_hash: string;
+  source_size_bytes: number;
+  extracted_title: string | null;
+  extracted_text: string;
+  extraction_version: string;
+  status: "draft" | "materialized" | "rejected";
+  candidates: DocumentImportCandidate[];
+  warnings: string[];
+  materialized_item_ids: string[];
+  materialized_at: string | null;
   created_at: string;
   updated_at: string;
 };
@@ -3291,6 +3426,16 @@ export const api = {
       body: JSON.stringify(payload),
     }),
   clientPortal: (clientId: string) => request<ClientPortal>(`/workspaces/${clientId}`),
+  createClientRequest: (clientId: string, payload: { title: string; detail?: string; category?: ClientRequestSummary["category"]; priority?: ClientRequestSummary["priority"] }) =>
+    request<ClientPortal>(`/workspaces/${clientId}/requests`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  updateClientRequest: (clientId: string, requestId: string, payload: { status?: ClientRequestStatus; resolution_summary?: string; priority?: ClientRequestSummary["priority"] }) =>
+    request<ClientPortal>(`/workspaces/${clientId}/requests/${requestId}`, {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }),
   createArtifact: (clientId: string, payload: ArtifactPayload) =>
     request<ClientPortal>(`/workspaces/${clientId}/artifacts`, {
       method: "POST",
@@ -3831,6 +3976,61 @@ export const api = {
       method: "POST",
       body: JSON.stringify(payload),
     }),
+  workGraph: (workspaceId: string) =>
+    request<WorkGraphProjection>(`/workspaces/${workspaceId}/work-graph`),
+  createWorkItem: (
+    workspaceId: string,
+    payload: {
+      project_id?: string | null; kind: WorkItemKind; title: string; summary?: string | null;
+      status?: WorkItem["status"]; external_ref?: string | null; backlog_status?: WorkItem["backlog_status"];
+      priority?: WorkItem["priority"]; rank?: number; acceptance_criteria?: string | null;
+      definition_of_done?: string | null; story_points?: number | null; planned_start_at?: string | null;
+      planned_end_at?: string | null; source_document_import_id?: string | null; metadata?: Record<string, unknown>;
+    },
+  ) => request<WorkItem>(`/workspaces/${workspaceId}/work-graph/items`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }),
+  updateWorkItem: (workspaceId: string, itemId: string, payload: Partial<Pick<
+    WorkItem,
+    "title" | "summary" | "status" | "external_ref" | "backlog_status" | "priority" | "rank" |
+    "acceptance_criteria" | "definition_of_done" | "story_points" | "planned_start_at" | "planned_end_at" | "metadata"
+  >>) => request<WorkItem>(`/workspaces/${workspaceId}/work-graph/items/${itemId}`, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  }),
+  materializeWorkItem: (workspaceId: string, itemId: string) =>
+    request<WorkItem>(`/workspaces/${workspaceId}/work-graph/items/${itemId}/materialize-task`, {
+      method: "POST",
+      body: JSON.stringify({ confirm: true }),
+    }),
+  projectDocumentImports: (projectId: string) =>
+    request<ProjectDocumentImport[]>(`/projects/${projectId}/document-imports`),
+  importProjectDocument: (projectId: string, file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    return request<ProjectDocumentImport>(`/projects/${projectId}/document-imports`, { method: "POST", body: formData });
+  },
+  materializeProjectDocumentImport: (
+    importId: string,
+    candidateIds: string[],
+    createTasks = false,
+  ) => request<ProjectDocumentImport>(`/project-document-imports/${importId}/materialize`, {
+    method: "POST",
+    body: JSON.stringify({ confirm: true, candidate_ids: candidateIds, create_tasks: createTasks }),
+  }),
+  createWorkLink: (
+    workspaceId: string,
+    payload: {
+      source: { type: WorkEntityType; id: string };
+      relation: WorkRelationType;
+      target: { type: WorkEntityType; id: string };
+      metadata?: Record<string, unknown>;
+    },
+  ) => request<WorkLink>(`/workspaces/${workspaceId}/work-graph/links`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  }),
   // Legacy: mantidos para compatibilidade com dados/listas existentes
   taskLists: (workspaceId: string) => 
     request<TaskListSummary[]>(`/workspaces/${workspaceId}/task-lists`),
@@ -3966,8 +4166,25 @@ export const api = {
   // --- Oportunidades & Propostas ---
   listOpportunities: (status?: string) =>
     request<OpportunitySummary[]>(`/backoffice/proposals/opportunities${status ? `?status=${status}` : ""}`),
-  ingestOpportunity: (payload: { source_platform: string; title: string; url?: string; description?: string; budget_text?: string }) =>
+  ingestOpportunity: (payload: { workspace_id?: string | null; owner_user_id?: string | null; source_platform: string; title: string; url?: string; description?: string; budget_text?: string }) =>
     request<OpportunitySummary>("/backoffice/proposals/opportunities/ingest", { method: "POST", body: JSON.stringify(payload) }),
+  opportunityDetail: (oppId: string) =>
+    request<OpportunityDetail>(`/backoffice/proposals/opportunities/${oppId}`),
+  updateOpportunity: (oppId: string, payload: Partial<Pick<OpportunitySummary, "workspace_id" | "owner_user_id" | "title" | "description" | "budget_text" | "status" | "next_action_at">>) =>
+    request<OpportunityDetail>(`/backoffice/proposals/opportunities/${oppId}`, { method: "PATCH", body: JSON.stringify(payload) }),
+  addOpportunityActivity: (oppId: string, payload: {
+    activity_type: CommercialActivity["activity_type"];
+    direction?: CommercialActivity["direction"];
+    channel?: string | null;
+    title: string;
+    body?: string | null;
+    occurred_at?: string | null;
+    source_kind?: string;
+    source_ref?: string | null;
+    idempotency_key?: string | null;
+    metadata?: Record<string, unknown>;
+  }) =>
+    request<OpportunityDetail>(`/backoffice/proposals/opportunities/${oppId}/activities`, { method: "POST", body: JSON.stringify(payload) }),
   syncOpportunities: () =>
     request<{ status: string; scanned: number; new: number; skipped: number }>("/backoffice/proposals/opportunities/sync", { method: "POST" }),
   evaluateOpportunityWithAi: (oppId: string) =>
@@ -4129,6 +4346,10 @@ export const api = {
     surface: CopilotSurface;
     task_id?: string;
     workspace_id?: string;
+    project_id?: string;
+    opportunity_id?: string;
+    proposal_id?: string;
+    expert?: string;
     thread_id?: string;
     attachment_ids?: string[];
     allow_web_search?: boolean;
@@ -4200,7 +4421,7 @@ export const api = {
   fathomMeetings: (limit = 20) =>
     request<FathomMeeting[]>(`/backoffice/sales-copilot/fathom/meetings?limit=${limit}`),
   importFathomMeeting: (sessionId: string, recordingId: number, analyzeAfterImport = true) =>
-    request<FathomImportResult>(`/backoffice/sales-copilot/sessions/${sessionId}/fathom-import`, {
+    request<FathomImportResult>(`/backoffice/sales-copilot/${sessionId}/fathom-import`, {
       method: "POST",
       body: JSON.stringify({ recording_id: recordingId, analyze_after_import: analyzeAfterImport }),
     }),
@@ -4226,6 +4447,8 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ duration_seconds: durationSeconds }),
     }),
+  rebuildSalesCopilotJourney: (sessionId: string) =>
+    request<SalesCopilotSession>(`/backoffice/sales-copilot/${sessionId}/journey/rebuild`, { method: "POST" }),
   configureSalesCopilotMeeting: (sessionId: string, payload: SalesCopilotMeetingPayload) =>
     request<SalesCopilotSession>(`/backoffice/sales-copilot/${sessionId}/meeting`, {
       method: "PUT",
@@ -4302,6 +4525,8 @@ export type OpportunityPlatformConfig = {
 
 export type OpportunitySummary = {
   id: string;
+  workspace_id: string | null;
+  owner_user_id: string | null;
   source_platform: string;
   external_id: string | null;
   title: string;
@@ -4311,10 +4536,44 @@ export type OpportunitySummary = {
   /** Nulo = ninguém avaliou ainda. Zero seria "avaliada e péssima". */
   fit_score: number | null;
   fit_analysis: string | null;
-  status: "new" | "qualified" | "proposal_generated" | "rejected" | "archived";
+  status: "new" | "qualifying" | "qualified" | "contacted" | "meeting" | "proposal" | "proposal_generated" | "negotiating" | "won" | "lost" | "rejected" | "archived";
+  next_action_at: string | null;
+  closed_at: string | null;
   raw_payload: Record<string, unknown>;
   created_at: string;
   updated_at: string;
+};
+
+export type CommercialActivity = {
+  id: string;
+  opportunity_id: string;
+  activity_type: "captured" | "status_changed" | "note" | "follow_up_prepared" | "follow_up_sent" | "message_received" | "meeting_scheduled" | "meeting_completed" | "proposal_created" | "proposal_sent" | "decision" | "won" | "lost";
+  direction: "internal" | "inbound" | "outbound";
+  channel: string | null;
+  title: string;
+  body: string | null;
+  occurred_at: string;
+  source_kind: string;
+  source_ref: string | null;
+  idempotency_key: string | null;
+  metadata: Record<string, unknown>;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type OpportunityContact = {
+  opportunity_id: string;
+  lead_id: string;
+  relationship_role: "contact" | "champion" | "decision_maker" | "influencer" | "billing";
+  is_primary: boolean;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type OpportunityDetail = {
+  opportunity: OpportunitySummary;
+  activities: CommercialActivity[];
+  contacts: OpportunityContact[];
 };
 
 export type ProposalSummary = {
@@ -4551,7 +4810,7 @@ export type SalesCopilotLiveSuggestion = {
 export type SalesCopilotAction = {
   id: string;
   session_id: string;
-  action_type: "follow_up_task" | "proposal_revision" | "project_update";
+  action_type: "follow_up_task" | "proposal_revision" | "project_update" | "opportunity_registration";
   title: string;
   detail: string | null;
   owner_hint: string | null;
@@ -4567,9 +4826,27 @@ export type SalesCopilotAction = {
   updated_at: string;
 };
 
+export type SalesJourneySnapshot = {
+  id: string;
+  session_id: string;
+  workspace_id: string | null;
+  opportunity_id: string | null;
+  current_funnel_stage: string;
+  funnel_map: Array<{ key: string; label: string; state: "completed" | "current" | "not_started" }>;
+  journey_stages: Array<{ key: string; label: string; state: "completed" | "current" | "not_started"; score: number | null }>;
+  scores: Record<string, unknown>;
+  bottlenecks: Array<{ stage: string; title: string; severity: string }>;
+  recommended_actions: Array<{ title: string; type: string }>;
+  evidence_refs: Record<string, unknown>[];
+  generation_mode: string;
+  created_at: string;
+  updated_at: string;
+};
+
 export type SalesCopilotSession = {
   id: string;
   workspace_id: string | null;
+  opportunity_id: string | null;
   proposal_id: string | null;
   title: string;
   session_type: "sales_call" | "discovery" | "proposal_review" | "follow_up";
@@ -4600,10 +4877,12 @@ export type SalesCopilotSession = {
   segments: SalesCopilotTranscriptSegment[];
   suggestions: SalesCopilotLiveSuggestion[];
   actions: SalesCopilotAction[];
+  journey_snapshot: SalesJourneySnapshot | null;
 };
 
 export type SalesCopilotSessionPayload = {
   workspace_id?: string | null;
+  opportunity_id?: string | null;
   proposal_id?: string | null;
   title: string;
   session_type: SalesCopilotSession["session_type"];
@@ -4802,5 +5081,3 @@ export type ProposalAnalytics = {
     roi_percentage: number;
   }>;
 };
-
-

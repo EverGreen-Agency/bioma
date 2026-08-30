@@ -39,6 +39,30 @@ export function useCreateClient() {
   });
 }
 
+export function useCreateClientRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ clientId, title, detail, category }: { clientId: string; title: string; detail?: string; category?: "request" | "question" | "change" | "input" }) =>
+      api.createClientRequest(clientId, { title, detail, category }),
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(["portal", variables.clientId], data);
+      queryClient.setQueryData(["portal", data.client.id], data);
+    },
+  });
+}
+
+export function useUpdateClientRequest() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ clientId, requestId, status, resolutionSummary }: { clientId: string; requestId: string; status: "submitted" | "triaged" | "in_progress" | "waiting_client" | "done" | "declined"; resolutionSummary?: string }) =>
+      api.updateClientRequest(clientId, requestId, { status, resolution_summary: resolutionSummary }),
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(["portal", variables.clientId], data);
+      queryClient.setQueryData(["portal", data.client.id], data);
+    },
+  });
+}
+
 export function useUpdateClient() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -72,8 +96,9 @@ export function useCreateArtifact() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ clientId, payload }: { clientId: string; payload: ArtifactPayload }) => api.createArtifact(clientId, payload),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.setQueryData(["portal", variables.clientId], data);
       queryClient.setQueryData(["portal", data.client.id], data);
     },
   });
@@ -84,7 +109,8 @@ export function useUpdateArtifact() {
   return useMutation({
     mutationFn: ({ clientId, artifactId, payload }: { clientId: string; artifactId: string; payload: Partial<ArtifactPayload> }) =>
       api.updateArtifact(clientId, artifactId, payload),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(["portal", variables.clientId], data);
       queryClient.setQueryData(["portal", data.client.id], data);
     },
   });
@@ -94,7 +120,8 @@ export function useDeleteArtifact() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ clientId, artifactId }: { clientId: string; artifactId: string }) => api.deleteArtifact(clientId, artifactId),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
+      queryClient.setQueryData(["portal", variables.clientId], data);
       queryClient.setQueryData(["portal", data.client.id], data);
     },
   });
@@ -104,8 +131,9 @@ export function useCreateDeliverable() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ clientId, payload }: { clientId: string; payload: DeliverablePayload }) => api.createDeliverable(clientId, payload),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.setQueryData(["portal", variables.clientId], data);
       queryClient.setQueryData(["portal", data.client.id], data);
     },
   });
@@ -116,8 +144,9 @@ export function useUpdateDeliverable() {
   return useMutation({
     mutationFn: ({ clientId, deliverableId, payload }: { clientId: string; deliverableId: string; payload: Partial<DeliverablePayload> }) =>
       api.updateDeliverable(clientId, deliverableId, payload),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.setQueryData(["portal", variables.clientId], data);
       queryClient.setQueryData(["portal", data.client.id], data);
     },
   });
@@ -127,8 +156,9 @@ export function useDeleteDeliverable() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ clientId, deliverableId }: { clientId: string; deliverableId: string }) => api.deleteDeliverable(clientId, deliverableId),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.setQueryData(["portal", variables.clientId], data);
       queryClient.setQueryData(["portal", data.client.id], data);
     },
   });
@@ -139,8 +169,9 @@ export function useCreateApproval() {
   return useMutation({
     mutationFn: ({ clientId, deliverableId, comment }: { clientId: string; deliverableId: string; comment?: string }) =>
       api.createApproval(clientId, deliverableId, comment),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.setQueryData(["portal", variables.clientId], data);
       queryClient.setQueryData(["portal", data.client.id], data);
     },
   });
@@ -151,8 +182,9 @@ export function useDecideApproval() {
   return useMutation({
     mutationFn: ({ clientId, approvalId, status }: { clientId: string; approvalId: string; status: "approved" | "rejected" }) =>
       api.decideApproval(clientId, approvalId, status),
-    onSuccess: (data) => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["clients"] });
+      queryClient.setQueryData(["portal", variables.clientId], data);
       queryClient.setQueryData(["portal", data.client.id], data);
     },
   });

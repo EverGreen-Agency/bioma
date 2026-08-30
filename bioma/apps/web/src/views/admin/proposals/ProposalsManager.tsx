@@ -40,6 +40,7 @@ import { ProposalWizard } from "./ProposalWizard";
 import { PlanningPortfolioPanel } from "./PlanningPortfolioPanel";
 import { ProposalLifecycleDrawer } from "./ProposalLifecycleDrawer";
 import { SalesCopilotPanel } from "./SalesCopilotPanel";
+import { OpportunityJourneyDrawer } from "./OpportunityJourneyDrawer";
 import {
   api,
   type OpportunitySummary,
@@ -65,6 +66,7 @@ export function ProposalsManager() {
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [isProposalWizardOpen, setIsProposalWizardOpen] = useState(false);
   const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
+  const [selectedOpportunityId, setSelectedOpportunityId] = useState<string | null>(null);
 
   // Form State para Ingestão Manual Rápida
   const [sourcePlatform, setSourcePlatform] = useState("99freelas");
@@ -555,6 +557,13 @@ export function ProposalsManager() {
                   </span>
 
                   <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                    <button
+                      className="ghost-button"
+                      onClick={() => setSelectedOpportunityId(opp.id)}
+                      style={{ padding: "8px 14px", border: "1px solid var(--border)" }}
+                    >
+                      Abrir continuidade
+                    </button>
                     <button
                       className="ghost-button"
                       onClick={() => handleEvaluateAi(opp.id)}
@@ -1274,6 +1283,13 @@ export function ProposalsManager() {
         <ProposalLifecycleDrawer
           proposalId={selectedProposalId}
           onClose={() => setSelectedProposalId(null)}
+          onChanged={loadData}
+        />
+      )}
+      {selectedOpportunityId && (
+        <OpportunityJourneyDrawer
+          opportunityId={selectedOpportunityId}
+          onClose={() => setSelectedOpportunityId(null)}
           onChanged={loadData}
         />
       )}
