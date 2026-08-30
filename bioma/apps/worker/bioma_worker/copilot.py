@@ -89,6 +89,15 @@ ACTION_CATALOG: dict[str, dict[str, Any]] = {
             "cliente espera; false quando for melhoria interna de plataforma."
         ),
     },
+    "capture_opportunity": {
+        "label": "Criar oportunidade",
+        "reversible": True,
+        "params": ["title", "description", "source_platform", "url", "budget_text"],
+        "description": (
+            "Transforma uma vaga, briefing, indicação ou conversa colada em oportunidade rastreável. "
+            "Use quando a intenção for preparar proposta ou acompanhar o avanço comercial."
+        ),
+    },
     "propose_skill": {
         "label": "Propor procedimento novo (skill)",
         "reversible": True,
@@ -160,6 +169,9 @@ Regras obrigatórias:
   de executar — proponha, nunca prometa que já fez.
 - `confidence: "baixa"` quando o dossiê não cobre a pergunta.
 - Português do Brasil, direto, sem preâmbulo.
+- Quando a mensagem trouxer uma vaga/briefing comercial e pedir proposta ou continuidade,
+  proponha `capture_opportunity` antes de qualquer trabalho posterior. Preserve no campo
+  `description` o texto necessário para retomar a conversa sem novo copia-e-cola.
 
 Sobre memória (dossier.memories) e procedimentos (dossier.approved_skills):
 - releia a memória e as skills aprovadas ANTES de responder — elas existem pra

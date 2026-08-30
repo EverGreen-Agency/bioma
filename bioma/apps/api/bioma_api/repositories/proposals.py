@@ -171,8 +171,8 @@ def upsert_platform_config(conn, platform_key: str, data: dict[str, Any]) -> dic
 
 def list_opportunities(conn, status_filter: str | None = None, limit: int = 500) -> list[dict[str, Any]]:
     query = """
-        select id, source_platform, external_id, title, url, description, budget_text,
-               fit_score, fit_analysis, status, raw_payload, created_at, updated_at
+        select id, workspace_id, owner_user_id, source_platform, external_id, title, url, description, budget_text,
+               fit_score, fit_analysis, status, next_action_at, closed_at, raw_payload, created_at, updated_at
         from opportunity_radar
     """
     params = []
@@ -209,12 +209,14 @@ def create_opportunity(conn, data: dict[str, Any]) -> dict[str, Any]:
         cur.execute(
             """
             insert into opportunity_radar (
-                source_platform, external_id, title, url, description,
-                budget_text, fit_score, fit_analysis, status, raw_payload
-            ) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                workspace_id, owner_user_id, source_platform, external_id, title, url, description,
+                budget_text, fit_score, fit_analysis, status, next_action_at, raw_payload
+            ) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             returning *
             """,
             (
+                data.get("workspace_id"),
+                data.get("owner_user_id"),
                 data["source_platform"],
                 data.get("external_id"),
                 data["title"],
@@ -224,8 +226,100 @@ def create_opportunity(conn, data: dict[str, Any]) -> dict[str, Any]:
                 data.get("fit_score"),
                 data.get("fit_analysis"),
                 data.get("status", "new"),
+                data.get("next_action_at"),
                 json.dumps(data.get("raw_payload", {})),
             ),
+        )
+        return dict(cur.fetchone())
+
+
+def update_opportunity(conn, opportunity_id: UUID, fields: dict[str, Any]) -> dict[str, Any] | None:
+    allowed = {"workspace_id", "owner_user_id", "title", "description", "budget_text", "status", "next_action_at", "closed_at"}
+    selected = [(key, value) for key, value in fields.items() if key in allowed]
+    if not selected:
+        return get_opportunity(conn, opportunity_id)
+    assignments = ", ".join(f"{key} = %s" for key, _ in selected)
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            f"update opportunity_radar set {assignments}, updated_at = now() where id = %s returning *",
+            (*[value for _, value in selected], opportunity_id),
+        )
+        row = cur.fetchone()
+        return dict(row) if row else None
+
+
+def list_commercial_activities(conn, opportunity_id: UUID) -> list[dict[str, Any]]:
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            """
+            select id, opportunity_id, activity_type, direction, channel, title, body,
+                   occurred_at, source_kind, source_ref, idempotency_key, metadata,
+                   created_by, created_at
+            from commercial_activities
+            where opportunity_id = %s
+            order by occurred_at desc, created_at desc
+            """,
+            (opportunity_id,),
+        )
+        return list(cur.fetchall())
+
+
+def create_commercial_activity(
+    conn, opportunity_id: UUID, data: dict[str, Any], user_id: UUID
+) -> dict[str, Any]:
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            """
+            insert into commercial_activities (
+              opportunity_id, activity_type, direction, channel, title, body,
+              occurred_at, source_kind, source_ref, idempotency_key, metadata, created_by
+            ) values (%s, %s, %s, %s, %s, %s, coalesce(%s, now()), %s, %s, %s, %s, %s)
+            on conflict (opportunity_id, idempotency_key) do update set
+              title = excluded.title
+            returning id, opportunity_id, activity_type, direction, channel, title, body,
+                      occurred_at, source_kind, source_ref, idempotency_key, metadata,
+                      created_by, created_at
+            """,
+            (
+                opportunity_id, data["activity_type"], data.get("direction", "internal"),
+                data.get("channel"), data["title"], data.get("body"), data.get("occurred_at"),
+                data.get("source_kind", "manual"), data.get("source_ref"), data.get("idempotency_key"),
+                json.dumps(data.get("metadata") or {}), user_id,
+            ),
+        )
+        return dict(cur.fetchone())
+
+
+def list_opportunity_contacts(conn, opportunity_id: UUID) -> list[dict[str, Any]]:
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            """
+            select opportunity_id, lead_id, relationship_role, is_primary, created_by, created_at
+            from opportunity_contacts where opportunity_id = %s
+            order by is_primary desc, created_at
+            """,
+            (opportunity_id,),
+        )
+        return list(cur.fetchall())
+
+
+def add_opportunity_contact(
+    conn, opportunity_id: UUID, data: dict[str, Any], user_id: UUID
+) -> dict[str, Any]:
+    if data.get("is_primary"):
+        conn.execute("update opportunity_contacts set is_primary = false where opportunity_id = %s", (opportunity_id,))
+    with conn.cursor(row_factory=dict_row) as cur:
+        cur.execute(
+            """
+            insert into opportunity_contacts (
+              opportunity_id, lead_id, relationship_role, is_primary, created_by
+            ) values (%s, %s, %s, %s, %s)
+            on conflict (opportunity_id, lead_id) do update set
+              relationship_role = excluded.relationship_role,
+              is_primary = excluded.is_primary
+            returning opportunity_id, lead_id, relationship_role, is_primary, created_by, created_at
+            """,
+            (opportunity_id, data["lead_id"], data.get("relationship_role", "contact"), data.get("is_primary", False), user_id),
         )
         return dict(cur.fetchone())
 

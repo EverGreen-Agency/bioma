@@ -1,4 +1,5 @@
 from typing import Any
+from datetime import datetime, timezone
 from uuid import UUID
 from fastapi import HTTPException, status
 
@@ -13,10 +14,16 @@ from bioma_api.repositories import proposals as proposals_repo
 from bioma_api.schemas.auth import CurrentUserResponse
 from bioma_api.schemas.proposals import (
     OpportunityCreatePayload,
+    OpportunityContact,
+    OpportunityContactCreate,
+    OpportunityDetail,
     OpportunityIngestPayload,
     OpportunityPlatformSummary,
     OpportunityPlatformUpdate,
     OpportunitySummary,
+    OpportunityUpdatePayload,
+    CommercialActivity,
+    CommercialActivityCreate,
     ProposalBriefCreatePayload,
     ProposalCreatePayload,
     ProposalSummary,
@@ -148,6 +155,8 @@ def ingest_opportunity(payload: OpportunityIngestPayload, user: CurrentUserRespo
         created = proposals_repo.create_opportunity(
             conn,
             {
+                "workspace_id": payload.workspace_id,
+                "owner_user_id": payload.owner_user_id or user.id,
                 "source_platform": payload.source_platform,
                 "title": payload.title,
                 "url": payload.url,
@@ -159,7 +168,92 @@ def ingest_opportunity(payload: OpportunityIngestPayload, user: CurrentUserRespo
                 "raw_payload": payload.raw_payload,
             },
         )
+        proposals_repo.create_commercial_activity(
+            conn,
+            created["id"],
+            {
+                "activity_type": "captured",
+                "title": "Oportunidade capturada",
+                "body": payload.description,
+                "source_kind": payload.source_platform,
+                "source_ref": payload.url,
+                "idempotency_key": f"capture:{created['id']}",
+                "metadata": {"external_id": payload.raw_payload.get("external_id")},
+            },
+            user.id,
+        )
         return OpportunitySummary(**created)
+
+
+def get_opportunity_detail(opportunity_id: UUID, user: CurrentUserResponse) -> OpportunityDetail:
+    _require_admin(user)
+    with connect() as conn:
+        row = proposals_repo.get_opportunity(conn, opportunity_id)
+        if not row:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Oportunidade não encontrada.")
+        activities = proposals_repo.list_commercial_activities(conn, opportunity_id)
+        contacts = proposals_repo.list_opportunity_contacts(conn, opportunity_id)
+    return OpportunityDetail(
+        opportunity=OpportunitySummary(**row),
+        activities=[CommercialActivity(**activity) for activity in activities],
+        contacts=[OpportunityContact(**contact) for contact in contacts],
+    )
+
+
+def update_opportunity(
+    opportunity_id: UUID, payload: OpportunityUpdatePayload, user: CurrentUserResponse
+) -> OpportunityDetail:
+    _require_admin(user)
+    updates = payload.model_dump(exclude_unset=True)
+    with connect() as conn:
+        current = proposals_repo.get_opportunity(conn, opportunity_id)
+        if not current:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Oportunidade não encontrada.")
+        if updates.get("status") in {"won", "lost", "rejected", "archived"}:
+            updates["closed_at"] = datetime.now(timezone.utc)
+        elif "status" in updates:
+            updates["closed_at"] = None
+        row = proposals_repo.update_opportunity(conn, opportunity_id, updates)
+        if "status" in updates and updates["status"] != current["status"]:
+            activity_type = updates["status"] if updates["status"] in {"won", "lost"} else "status_changed"
+            proposals_repo.create_commercial_activity(
+                conn,
+                opportunity_id,
+                {
+                    "activity_type": activity_type,
+                    "title": f"Status alterado para {updates['status']}",
+                    "source_kind": "bioma",
+                    "metadata": {"from": current["status"], "to": updates["status"]},
+                },
+                user.id,
+            )
+    assert row is not None
+    return get_opportunity_detail(opportunity_id, user)
+
+
+def add_commercial_activity(
+    opportunity_id: UUID, payload: CommercialActivityCreate, user: CurrentUserResponse
+) -> OpportunityDetail:
+    _require_admin(user)
+    with connect() as conn:
+        if not proposals_repo.get_opportunity(conn, opportunity_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Oportunidade não encontrada.")
+        proposals_repo.create_commercial_activity(conn, opportunity_id, payload.model_dump(), user.id)
+    return get_opportunity_detail(opportunity_id, user)
+
+
+def add_opportunity_contact(
+    opportunity_id: UUID, payload: OpportunityContactCreate, user: CurrentUserResponse
+) -> OpportunityDetail:
+    _require_admin(user)
+    with connect() as conn:
+        if not proposals_repo.get_opportunity(conn, opportunity_id):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Oportunidade não encontrada.")
+        lead = conn.execute("select id from leads where id = %s", (payload.lead_id,)).fetchone()
+        if not lead:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Lead não encontrado.")
+        proposals_repo.add_opportunity_contact(conn, opportunity_id, payload.model_dump(), user.id)
+    return get_opportunity_detail(opportunity_id, user)
 
 
 def agency_skills_inventory(conn) -> list[dict[str, str]]:
@@ -365,6 +459,19 @@ def generate_proposal_for_opportunity(opp_id: UUID, user: CurrentUserResponse) -
     with connect() as conn:
         proposal = proposals_repo.create_proposal(conn, proposal_payload, user_id=user.id)
         proposals_repo.update_opportunity_status(conn, opp_id, status_val="proposal_generated")
+        proposals_repo.create_commercial_activity(
+            conn,
+            opp_id,
+            {
+                "activity_type": "proposal_created",
+                "title": proposal.get("title") or f"Proposta para {title}",
+                "source_kind": "commercial_proposal",
+                "source_ref": str(proposal["id"]),
+                "idempotency_key": f"proposal-created:{proposal['id']}",
+                "metadata": {"proposal_id": str(proposal["id"]), "generation_mode": generation_mode},
+            },
+            user.id,
+        )
 
     return ProposalSummary(**proposal)
 

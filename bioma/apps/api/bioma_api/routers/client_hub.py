@@ -11,6 +11,8 @@ from bioma_api.schemas.client_hub import (
     ArtifactUpdateRequest,
     ClientCreateRequest,
     ClientPortalResponse,
+    ClientRequestCreate,
+    ClientRequestUpdate,
     ClientPurgeRequest,
     ClientSummary,
     ClientUpdateRequest,
@@ -101,6 +103,27 @@ def get_client_portal(
     user: CurrentUserResponse = Depends(current_user_from_request),
 ) -> ClientPortalResponse:
     return client_hub_service.get_client_portal(client_id, user)
+
+
+@router.post("/{client_id}/requests", response_model=ClientPortalResponse, status_code=status.HTTP_201_CREATED)
+@workspace_router.post("/{client_id}/requests", response_model=ClientPortalResponse, status_code=status.HTTP_201_CREATED)
+def create_client_request(
+    client_id: UUID,
+    payload: ClientRequestCreate,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> ClientPortalResponse:
+    return client_hub_service.create_client_request(client_id, payload, user)
+
+
+@router.patch("/{client_id}/requests/{request_id}", response_model=ClientPortalResponse)
+@workspace_router.patch("/{client_id}/requests/{request_id}", response_model=ClientPortalResponse)
+def update_client_request(
+    client_id: UUID,
+    request_id: UUID,
+    payload: ClientRequestUpdate,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> ClientPortalResponse:
+    return client_hub_service.update_client_request(client_id, request_id, payload, user)
 
 
 @router.patch("/{client_id}", response_model=ClientPortalResponse)

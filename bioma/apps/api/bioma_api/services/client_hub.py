@@ -21,7 +21,12 @@ from bioma_api.schemas.client_hub import (
     ArtifactCreateRequest,
     ArtifactUpdateRequest,
     ClientCreateRequest,
+    ClientAttentionItem,
     ClientPortalResponse,
+    ClientProgressSummary,
+    ClientRequestCreate,
+    ClientRequestSummary,
+    ClientRequestUpdate,
     ClientSummary,
     ClientUpdateRequest,
     CockpitPortfolioSummary,
@@ -165,15 +170,113 @@ def get_client_portal(client_id: UUID, user: CurrentUserResponse) -> ClientPorta
         approvals = client_hub_repo.list_approvals(conn, client["organization_id"])
         sync_runs = client_hub_repo.list_sync_runs(conn, client["organization_id"])
         audit_logs = client_hub_repo.list_audit_logs(conn, client["organization_id"])
+        requests = client_hub_repo.list_client_requests(conn, context["workspace_id"])
+
+    deliverable_rows = list(deliverables)
+    approval_rows = list(approvals)
+    request_rows = list(requests)
+    done = sum(item["status"] == "done" for item in deliverable_rows)
+    in_progress = sum(item["status"] in {"in_progress", "waiting_approval"} for item in deliverable_rows)
+    total = len(deliverable_rows)
+
+    attention: list[ClientAttentionItem] = [
+        ClientAttentionItem(
+            kind="approval",
+            entity_id=item["id"],
+            title=item.get("deliverable_title") or "Aprovação pendente",
+            detail=item.get("comment") or "Revise a entrega e registre sua decisão.",
+            action_label="Revisar agora",
+        )
+        for item in approval_rows
+        if item["status"] == "pending"
+    ]
+    attention.extend(
+        ClientAttentionItem(
+            kind="request",
+            entity_id=item["id"],
+            title=item["title"],
+            detail=item.get("resolution_summary") or "A equipe precisa de uma informação sua para continuar.",
+            action_label="Responder solicitação",
+        )
+        for item in request_rows
+        if item["status"] == "waiting_client"
+    )
+    attention.extend(
+        ClientAttentionItem(
+            kind="delivery",
+            entity_id=item["id"],
+            title=item["title"],
+            detail="A entrega está bloqueada; acompanhe o contexto com a equipe.",
+            action_label="Ver entrega",
+            due_at=item.get("due_at"),
+        )
+        for item in deliverable_rows
+        if item["status"] == "blocked"
+    )
 
     return ClientPortalResponse(
         client=ClientSummary(**client),
+        attention=attention,
+        progress=ClientProgressSummary(
+            deliverables_total=total,
+            deliverables_done=done,
+            deliverables_in_progress=in_progress,
+            completion_percentage=round(done * 100 / total) if total else 0,
+        ),
+        requests=[ClientRequestSummary(**item) for item in request_rows],
         artifacts=list(artifacts),
-        deliverables=list(deliverables),
-        approvals=list(approvals),
+        deliverables=deliverable_rows,
+        approvals=approval_rows,
         sync_runs=list(sync_runs),
         audit_logs=list(audit_logs),
     )
+
+
+def create_client_request(
+    client_id: UUID,
+    payload: ClientRequestCreate,
+    user: CurrentUserResponse,
+) -> ClientPortalResponse:
+    title = payload.title.strip()
+    if not title:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Título é obrigatório.")
+    with connect() as conn:
+        client = resolve_accessible_client(conn, client_id, user, capability="view")
+        request_row = client_hub_repo.create_client_request(
+            conn,
+            client["workspace_id"],
+            {**payload.model_dump(), "title": title, "detail": payload.detail.strip() if payload.detail else None},
+            user.id,
+        )
+        client_hub_repo.write_audit(
+            conn,
+            user.id,
+            client["organization_id"],
+            "client_request.created",
+            {"request_id": str(request_row["id"]), "title": title},
+        )
+    return get_client_portal(client_id, user)
+
+
+def update_client_request(
+    client_id: UUID,
+    request_id: UUID,
+    payload: ClientRequestUpdate,
+    user: CurrentUserResponse,
+) -> ClientPortalResponse:
+    updates = payload.model_dump(exclude_unset=True)
+    with connect() as conn:
+        client = resolve_accessible_client(conn, client_id, user, capability="manage_work")
+        if not client_hub_repo.update_client_request(conn, client["workspace_id"], request_id, updates):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Solicitação não encontrada.")
+        client_hub_repo.write_audit(
+            conn,
+            user.id,
+            client["organization_id"],
+            "client_request.updated",
+            {"request_id": str(request_id), "fields": sorted(updates)},
+        )
+    return get_client_portal(client_id, user)
 
 
 def update_client(client_id: UUID, payload: ClientUpdateRequest, user: CurrentUserResponse) -> ClientPortalResponse:

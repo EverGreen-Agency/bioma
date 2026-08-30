@@ -12,6 +12,7 @@ from bioma_api.access import require_platform_admin
 from bioma_api.db import connect
 from bioma_api.repositories import projects as projects_repo
 from bioma_api.repositories import proposal_lifecycle as lifecycle_repo
+from bioma_api.repositories import proposals as proposals_repo
 from bioma_api.repositories import sales_copilot as copilot_repo
 from bioma_api.repositories import tasks as tasks_repo
 from bioma_api.schemas.auth import CurrentUserResponse
@@ -28,6 +29,7 @@ from bioma_api.schemas.sales_copilot import (
     SalesCopilotEventCreate,
     SalesCopilotIngestionAck,
     SalesCopilotIngestionCredential,
+    SalesJourneySnapshot,
     SalesCopilotLiveAnalyzeRequest,
     SalesCopilotLiveSuggestion,
     SalesCopilotMeetingConfigure,
@@ -66,8 +68,10 @@ def create_session(
 ) -> SalesCopilotSession:
     require_platform_admin(user)
     with connect() as conn:
-        context = copilot_repo.get_knowledge_context(conn, payload.workspace_id, payload.proposal_id)
-        _validate_context(payload.workspace_id, payload.proposal_id, context)
+        context = copilot_repo.get_knowledge_context(
+            conn, payload.workspace_id, payload.proposal_id, payload.opportunity_id
+        )
+        _validate_context(payload.workspace_id, payload.proposal_id, context, payload.opportunity_id)
         return _session(conn, copilot_repo.create_session(conn, user.id, payload.model_dump()))
 
 
@@ -75,7 +79,9 @@ def prepare_session(session_id: UUID, user: CurrentUserResponse) -> SalesCopilot
     require_platform_admin(user)
     with connect() as conn:
         row = _find(conn, session_id, for_update=True)
-        context = copilot_repo.get_knowledge_context(conn, row["workspace_id"], row["proposal_id"])
+        context = copilot_repo.get_knowledge_context(
+            conn, row["workspace_id"], row["proposal_id"], row.get("opportunity_id")
+        )
         participants = jsonable_encoder(
             [dict(item) for item in copilot_repo.list_participants(conn, session_id)]
         )
@@ -268,7 +274,7 @@ def analyze_live(
         segments = copilot_repo.list_segments(conn, session_id, payload.window_segments)
         participants = copilot_repo.list_participants(conn, session_id)
         context = row["knowledge_snapshot"] or copilot_repo.get_knowledge_context(
-            conn, row["workspace_id"], row["proposal_id"],
+            conn, row["workspace_id"], row["proposal_id"], row.get("opportunity_id"),
         )
         participants = jsonable_encoder([dict(item) for item in participants])
         context = jsonable_encoder(context)
@@ -377,7 +383,24 @@ def materialize_action(
                 "source_refs": [{"kind": "materialized_ref", **materialized_ref}],
             },
         )
-        return _session(conn, _find(conn, session["id"]))
+        refreshed = _find(conn, session["id"])
+        context = refreshed["knowledge_snapshot"] or copilot_repo.get_knowledge_context(
+            conn,
+            refreshed["workspace_id"],
+            refreshed["proposal_id"],
+            refreshed.get("opportunity_id"),
+        )
+        copilot_repo.upsert_journey_snapshot(
+            conn,
+            refreshed["id"],
+            _build_journey_snapshot(
+                refreshed,
+                context,
+                [dict(item) for item in copilot_repo.list_actions(conn, refreshed["id"])],
+                "derived",
+            ),
+        )
+        return _session(conn, refreshed)
 
 
 def complete_session(
@@ -395,7 +418,7 @@ def complete_session(
             [dict(item) for item in copilot_repo.list_participants(conn, session_id)]
         )
         context = row["knowledge_snapshot"] or copilot_repo.get_knowledge_context(
-            conn, row["workspace_id"], row["proposal_id"],
+            conn, row["workspace_id"], row["proposal_id"], row.get("opportunity_id"),
         )
         context = jsonable_encoder(context)
     if not transcript:
@@ -417,6 +440,7 @@ def complete_session(
         requested_by_user_id=str(user.id),
     )
     output = ai_result["output_data"]
+    action_candidates = _action_candidates(output)
     summary = (
         output.get("script_fechamento")
         or output.get("summary")
@@ -436,7 +460,7 @@ def complete_session(
                 "source_refs": [{"kind": "transcript", "generation_mode": ai_result["generation_mode"]}],
             },
         )
-        for index, item in enumerate(_action_candidates(output), start=1):
+        for index, item in enumerate(action_candidates, start=1):
             copilot_repo.add_action(
                 conn,
                 session_id,
@@ -447,7 +471,57 @@ def complete_session(
                     "source_refs": [{"kind": "transcript", "generation_mode": ai_result["generation_mode"]}],
                 },
             )
+        if completed.get("workspace_id") and not completed.get("opportunity_id"):
+            registration = {
+                "action_type": "opportunity_registration",
+                "title": f"Registrar oportunidade: {completed['title']}",
+                "detail": str(summary),
+                "owner_hint": None,
+                "due_at": None,
+                "idempotency_key": f"opportunity-registration:{session_id}",
+                "source_refs": [{"kind": "sales_copilot_session", "id": str(session_id)}],
+            }
+            copilot_repo.add_action(conn, session_id, user.id, registration)
+            action_candidates.append(registration)
+        copilot_repo.upsert_journey_snapshot(
+            conn,
+            session_id,
+            _build_journey_snapshot(completed, context, action_candidates, ai_result["generation_mode"]),
+        )
+        if completed.get("opportunity_id"):
+            proposals_repo.create_commercial_activity(
+                conn,
+                completed["opportunity_id"],
+                {
+                    "activity_type": "meeting_completed",
+                    "title": completed["title"],
+                    "body": str(summary),
+                    "source_kind": "sales_copilot",
+                    "source_ref": str(session_id),
+                    "idempotency_key": f"meeting-completed:{session_id}",
+                    "metadata": {
+                        "session_id": str(session_id),
+                        "generation_mode": ai_result["generation_mode"],
+                        "duration_seconds": payload.duration_seconds,
+                    },
+                },
+                user.id,
+            )
         return _session(conn, completed)
+
+
+def rebuild_journey(session_id: UUID, user: CurrentUserResponse) -> SalesCopilotSession:
+    require_platform_admin(user)
+    with connect() as conn:
+        row = _find(conn, session_id, for_update=True)
+        context = row["knowledge_snapshot"] or copilot_repo.get_knowledge_context(
+            conn, row["workspace_id"], row["proposal_id"], row.get("opportunity_id"),
+        )
+        actions = [dict(item) for item in copilot_repo.list_actions(conn, session_id)]
+        copilot_repo.upsert_journey_snapshot(
+            conn, session_id, _build_journey_snapshot(row, context, actions, "derived")
+        )
+        return _session(conn, _find(conn, session_id))
 
 
 def metrics(user: CurrentUserResponse) -> SalesCopilotMetrics:
@@ -493,6 +567,7 @@ def _find_open_session(conn, session_id: UUID):
 
 
 def _session(conn, row) -> SalesCopilotSession:
+    snapshot = copilot_repo.get_journey_snapshot(conn, row["id"])
     return SalesCopilotSession(
         **dict(row),
         events=[SalesCopilotEvent(**event) for event in copilot_repo.list_events(conn, row["id"])],
@@ -512,6 +587,7 @@ def _session(conn, row) -> SalesCopilotSession:
             SalesCopilotAction(**action)
             for action in copilot_repo.list_actions(conn, row["id"])
         ],
+        journey_snapshot=SalesJourneySnapshot(**snapshot) if snapshot else None,
     )
 
 
@@ -531,7 +607,7 @@ def _action_candidates(output: dict) -> list[dict]:
             })
         elif isinstance(item, dict) and str(item.get("title") or "").strip():
             action_type = item.get("action_type", "follow_up_task")
-            if action_type not in {"follow_up_task", "proposal_revision", "project_update"}:
+            if action_type not in {"follow_up_task", "proposal_revision", "project_update", "opportunity_registration"}:
                 action_type = "follow_up_task"
             candidates.append({
                 "action_type": action_type,
@@ -544,6 +620,29 @@ def _action_candidates(output: dict) -> list[dict]:
 
 
 def _materialize_action_in_transaction(conn, session, action, user: CurrentUserResponse) -> dict:
+    if action["action_type"] == "opportunity_registration":
+        if not session["workspace_id"]:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Selecione o workspace do cliente antes de registrar a oportunidade.",
+            )
+        if session.get("opportunity_id"):
+            return {"kind": "opportunity", "id": str(session["opportunity_id"]), "idempotent": True}
+        opportunity = proposals_repo.create_opportunity(
+            conn,
+            {
+                "workspace_id": session["workspace_id"],
+                "owner_user_id": user.id,
+                "source_platform": "sales_copilot",
+                "external_id": str(session["id"]),
+                "title": session["title"],
+                "description": action.get("detail") or session.get("participant_context"),
+                "status": "evaluating",
+                "raw_payload": {"session_id": str(session["id"]), "action_id": str(action["id"])},
+            },
+        )
+        copilot_repo.link_opportunity(conn, session["id"], opportunity["id"])
+        return {"kind": "opportunity", "id": str(opportunity["id"]), "workspace_id": str(session["workspace_id"])}
     if action["action_type"] == "follow_up_task":
         if not session["workspace_id"]:
             raise HTTPException(
@@ -594,7 +693,9 @@ def _materialize_action_in_transaction(conn, session, action, user: CurrentUserR
             {"session_id": str(session["id"]), "action_id": str(action["id"])},
         )
         return {"kind": "proposal_revision", "id": str(revision["id"]), "version": revision["version"]}
-    context = copilot_repo.get_knowledge_context(conn, session["workspace_id"], session["proposal_id"])
+    context = copilot_repo.get_knowledge_context(
+        conn, session["workspace_id"], session["proposal_id"], session.get("opportunity_id")
+    )
     conversion = context.get("conversion")
     if not conversion:
         raise HTTPException(
@@ -619,11 +720,108 @@ def _materialize_action_in_transaction(conn, session, action, user: CurrentUserR
     }
 
 
-def _validate_context(workspace_id: UUID | None, proposal_id: UUID | None, context: dict) -> None:
+def _build_journey_snapshot(session: dict, context: dict, actions: list[dict], generation_mode: str) -> dict:
+    opportunity = context.get("opportunity") or {}
+    proposal = context.get("proposal") or {}
+    conversion = context.get("conversion") or {}
+    has_workspace = bool(session.get("workspace_id"))
+    has_opportunity = bool(session.get("opportunity_id") or opportunity)
+    has_proposal = bool(session.get("proposal_id") or proposal)
+    won = opportunity.get("status") == "won" or proposal.get("status") == "won" or bool(conversion)
+
+    if won:
+        current_stage, bottleneck_stage = "post_sale", "advocate"
+        bottleneck = "Consolidar onboarding, valor entregue, recorrência e indicação."
+    elif has_proposal:
+        current_stage, bottleneck_stage = "conversion", "act"
+        bottleneck = "Transformar proposta em decisão com valor, responsáveis e próximo passo explícitos."
+    elif has_opportunity:
+        current_stage, bottleneck_stage = "diagnosis", "ask"
+        bottleneck = "Estruturar diagnóstico, prova e critérios de avanço antes de gerar a proposta."
+    elif has_workspace:
+        current_stage, bottleneck_stage = "capture", "ask"
+        bottleneck = "Registrar a oportunidade e qualificar dor, impacto, decisão e prazo."
+    else:
+        current_stage, bottleneck_stage = "acquisition", "aware"
+        bottleneck = "Identificar o cliente e vinculá-lo a um workspace antes de avançar o funil."
+
+    funnel_def = [
+        ("acquisition", "Aquisição", True),
+        ("capture", "Captação", has_workspace),
+        ("diagnosis", "Diagnóstico", has_opportunity),
+        ("conversion", "Conversão", has_proposal),
+        ("post_sale", "Pós-venda", won),
+    ]
+    reached_current = False
+    funnel_map = []
+    for key, label, completed in funnel_def:
+        if key == current_stage:
+            state = "current"
+            reached_current = True
+        elif completed and not reached_current:
+            state = "completed"
+        else:
+            state = "not_started"
+        funnel_map.append({"key": key, "label": label, "state": state})
+
+    stage_inputs = [
+        ("aware", "Aware", has_opportunity or has_workspace),
+        ("appeal", "Appeal", bool(session.get("transcript"))),
+        ("ask", "Ask", has_proposal),
+        ("act", "Act", won),
+        ("advocate", "Advocate", won),
+    ]
+    order = [key for key, _, _ in stage_inputs]
+    current_index = order.index(bottleneck_stage)
+    journey_stages = []
+    for index, (key, label, completed) in enumerate(stage_inputs):
+        state = "current" if index == current_index else "completed" if completed and index < current_index else "not_started"
+        journey_stages.append({"key": key, "label": label, "state": state, "score": None})
+
+    recommendations = []
+    for action in actions[:10]:
+        title = str(action.get("title") or "").strip()
+        if title:
+            recommendations.append({"title": title, "type": action.get("action_type", "follow_up_task")})
+    if not recommendations:
+        recommendations.append({"title": bottleneck, "type": "next_step"})
+
+    evidence_refs = [{"kind": "sales_copilot_session", "id": str(session["id"])}]
+    if session.get("opportunity_id"):
+        evidence_refs.append({"kind": "opportunity", "id": str(session["opportunity_id"])})
+    if session.get("proposal_id"):
+        evidence_refs.append({"kind": "proposal", "id": str(session["proposal_id"])})
+    return {
+        "workspace_id": session.get("workspace_id"),
+        "opportunity_id": session.get("opportunity_id"),
+        "current_funnel_stage": current_stage,
+        "funnel_map": funnel_map,
+        "journey_stages": journey_stages,
+        "scores": {"offer": None, "demand": None, "conversion": None, "note": "Sem nota inventada; preencher a partir do Raio-X comercial."},
+        "bottlenecks": [{"stage": bottleneck_stage, "title": bottleneck, "severity": "high"}],
+        "recommended_actions": recommendations,
+        "evidence_refs": evidence_refs,
+        "generation_mode": generation_mode,
+    }
+
+
+def _validate_context(
+    workspace_id: UUID | None,
+    proposal_id: UUID | None,
+    context: dict,
+    opportunity_id: UUID | None = None,
+) -> None:
     if workspace_id and "client" not in context:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Cliente ativo não encontrado.")
     if proposal_id and "proposal" not in context:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proposta não encontrada.")
+    if opportunity_id and "opportunity" not in context:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Oportunidade não encontrada.")
+    if workspace_id and opportunity_id and context["opportunity"].get("workspace_id") != workspace_id:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="A oportunidade não pertence ao cliente selecionado.",
+        )
     if workspace_id and proposal_id:
         proposal_workspace_id = context["proposal"].get("workspace_id")
         if proposal_workspace_id != workspace_id:

@@ -3,7 +3,8 @@ from uuid import UUID
 
 
 TASK_COLUMNS = """
-  id, list_id, workspace_id, discipline, project_id, parent_task_id, title, description, status,
+  id, list_id, workspace_id, discipline, project_id, parent_task_id, title, description,
+  acceptance_criteria, definition_of_done, semantic_review_required, status,
   group_status, priority, assignee_id, owner_id, start_date, due_date,
   recurrence, external_source, external_id, client_visible, created_at, updated_at
 """
@@ -129,9 +130,10 @@ def create_task_in_workspace(conn, workspace_id: UUID, values: dict):
         f"""
         insert into eg_tasks (
           workspace_id, discipline, project_id, parent_task_id, title, description,
+          acceptance_criteria, definition_of_done,
           status, group_status, priority, assignee_id, owner_id,
           start_date, due_date, recurrence, client_visible
-        ) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         returning {TASK_COLUMNS}
         """,
         (
@@ -141,6 +143,8 @@ def create_task_in_workspace(conn, workspace_id: UUID, values: dict):
             values.get("parent_task_id"),
             values["title"],
             values.get("description"),
+            values.get("acceptance_criteria"),
+            values.get("definition_of_done"),
             values["status"],
             values["group_status"],
             values.get("priority"),
@@ -301,10 +305,11 @@ def create_task(conn, list_id: UUID, values: dict):
     return conn.execute(
         f"""
         insert into eg_tasks (
-          list_id, project_id, parent_task_id, title, description, status,
+          list_id, project_id, parent_task_id, title, description,
+          acceptance_criteria, definition_of_done, status,
           group_status, priority, assignee_id, owner_id, start_date, due_date,
           recurrence, client_visible
-        ) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        ) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         returning {TASK_COLUMNS}
         """,
         (
@@ -313,6 +318,8 @@ def create_task(conn, list_id: UUID, values: dict):
             values.get("parent_task_id"),
             values["title"],
             values.get("description"),
+            values.get("acceptance_criteria"),
+            values.get("definition_of_done"),
             values["status"],
             values["group_status"],
             values.get("priority"),
@@ -328,7 +335,8 @@ def create_task(conn, list_id: UUID, values: dict):
 
 def update_task(conn, task_id: UUID, updates: dict):
     allowed = {
-        "title", "description", "status", "group_status", "priority",
+        "title", "description", "acceptance_criteria", "definition_of_done",
+        "semantic_review_required", "status", "group_status", "priority",
         "assignee_id", "owner_id", "start_date", "due_date", "recurrence",
         "project_id", "parent_task_id", "client_visible",
     }
@@ -406,14 +414,16 @@ def create_recurring_successor(conn, task: dict):
         return conn.execute(
             """
             insert into eg_tasks (
-              workspace_id, discipline, title, description, status, group_status, priority,
+              workspace_id, discipline, title, description, acceptance_criteria,
+              definition_of_done, status, group_status, priority,
               assignee_id, owner_id, due_date, recurrence, recurrence_source_task_id
-            ) values (%s, %s, %s, %s, 'pending', 'NOT_STARTED', %s, %s, %s, %s, %s, %s)
+            ) values (%s, %s, %s, %s, %s, %s, 'pending', 'NOT_STARTED', %s, %s, %s, %s, %s, %s)
             on conflict (recurrence_source_task_id) where recurrence_source_task_id is not null do nothing
             returning id
             """,
             (
                 task["workspace_id"], task.get("discipline"), task["title"], task.get("description"),
+                task.get("acceptance_criteria"), task.get("definition_of_done"),
                 task.get("priority"), task.get("assignee_id"), task.get("owner_id"),
                 task.get("next_due_date"), task["recurrence"], task["id"],
             ),
@@ -421,14 +431,16 @@ def create_recurring_successor(conn, task: dict):
     return conn.execute(
         """
         insert into eg_tasks (
-          list_id, title, description, status, group_status, priority,
+          list_id, title, description, acceptance_criteria, definition_of_done,
+          status, group_status, priority,
           assignee_id, owner_id, due_date, recurrence, recurrence_source_task_id
-        ) values (%s, %s, %s, 'pending', 'NOT_STARTED', %s, %s, %s, %s, %s, %s)
+        ) values (%s, %s, %s, %s, %s, 'pending', 'NOT_STARTED', %s, %s, %s, %s, %s, %s)
         on conflict (recurrence_source_task_id) where recurrence_source_task_id is not null do nothing
         returning id
         """,
         (
-            task["list_id"], task["title"], task.get("description"), task.get("priority"),
+            task["list_id"], task["title"], task.get("description"),
+            task.get("acceptance_criteria"), task.get("definition_of_done"), task.get("priority"),
             task.get("assignee_id"), task.get("owner_id"), task.get("next_due_date"),
             task["recurrence"], task["id"],
         ),

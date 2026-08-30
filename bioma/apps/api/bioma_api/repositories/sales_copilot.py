@@ -10,13 +10,14 @@ def create_session(conn, actor_user_id: UUID, data: dict[str, Any]):
     return conn.execute(
         """
         insert into sales_copilot_sessions (
-          workspace_id, proposal_id, title, session_type, language, objective,
+          workspace_id, opportunity_id, proposal_id, title, session_type, language, objective,
           participant_context, created_by
-        ) values (%s, %s, %s, %s, %s, %s, %s, %s)
+        ) values (%s, %s, %s, %s, %s, %s, %s, %s, %s)
         returning *
         """,
         (
             data.get("workspace_id"),
+            data.get("opportunity_id"),
             data.get("proposal_id"),
             data["title"],
             data["session_type"],
@@ -449,8 +450,70 @@ def complete_session(
     ).fetchone()
 
 
-def get_knowledge_context(conn, workspace_id: UUID | None, proposal_id: UUID | None):
+def link_opportunity(conn, session_id: UUID, opportunity_id: UUID):
+    return conn.execute(
+        """
+        update sales_copilot_sessions
+        set opportunity_id = %s, updated_at = now()
+        where id = %s returning *
+        """,
+        (opportunity_id, session_id),
+    ).fetchone()
+
+
+def get_journey_snapshot(conn, session_id: UUID):
+    return conn.execute(
+        "select * from sales_journey_snapshots where session_id = %s",
+        (session_id,),
+    ).fetchone()
+
+
+def upsert_journey_snapshot(conn, session_id: UUID, data: dict[str, Any]):
+    return conn.execute(
+        """
+        insert into sales_journey_snapshots (
+          session_id, workspace_id, opportunity_id, current_funnel_stage,
+          funnel_map, journey_stages, scores, bottlenecks, recommended_actions,
+          evidence_refs, generation_mode
+        ) values (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+        on conflict (session_id) do update set
+          workspace_id = excluded.workspace_id,
+          opportunity_id = excluded.opportunity_id,
+          current_funnel_stage = excluded.current_funnel_stage,
+          funnel_map = excluded.funnel_map,
+          journey_stages = excluded.journey_stages,
+          scores = excluded.scores,
+          bottlenecks = excluded.bottlenecks,
+          recommended_actions = excluded.recommended_actions,
+          evidence_refs = excluded.evidence_refs,
+          generation_mode = excluded.generation_mode,
+          updated_at = now()
+        returning *
+        """,
+        (
+            session_id, data.get("workspace_id"), data.get("opportunity_id"),
+            data["current_funnel_stage"], Jsonb(data["funnel_map"]), Jsonb(data["journey_stages"]),
+            Jsonb(data["scores"]), Jsonb(data["bottlenecks"]), Jsonb(data["recommended_actions"]),
+            Jsonb(data["evidence_refs"]), data["generation_mode"],
+        ),
+    ).fetchone()
+
+
+def get_knowledge_context(
+    conn, workspace_id: UUID | None, proposal_id: UUID | None, opportunity_id: UUID | None = None
+):
     context: dict[str, Any] = {}
+    if opportunity_id:
+        opportunity = conn.execute(
+            """
+            select id, workspace_id, owner_user_id, source_platform, title, description, budget_text,
+                   fit_score, fit_analysis, status, next_action_at, closed_at, updated_at
+            from opportunity_radar where id = %s
+            """,
+            (opportunity_id,),
+        ).fetchone()
+        if opportunity:
+            context["opportunity"] = dict(opportunity)
     if workspace_id:
         workspace = conn.execute(
             """

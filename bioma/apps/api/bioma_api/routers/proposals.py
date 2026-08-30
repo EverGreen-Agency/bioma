@@ -5,10 +5,14 @@ from bioma_api.auth import current_user_from_request
 from bioma_api.schemas.auth import CurrentUserResponse
 from bioma_api.schemas.proposals import (
     OpportunityCreatePayload,
+    CommercialActivityCreate,
+    OpportunityContactCreate,
+    OpportunityDetail,
     OpportunityIngestPayload,
     OpportunityPlatformSummary,
     OpportunityPlatformUpdate,
     OpportunitySummary,
+    OpportunityUpdatePayload,
     FreelancerProfileSyncRequest,
     ProposalBriefCreatePayload,
     ProposalCreatePayload,
@@ -45,6 +49,41 @@ def ingest_opportunity(
     user: CurrentUserResponse = Depends(current_user_from_request),
 ):
     return proposals_service.ingest_opportunity(payload, user)
+
+
+@router.get("/opportunities/{opp_id}", response_model=OpportunityDetail)
+def get_opportunity(
+    opp_id: UUID,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+):
+    return proposals_service.get_opportunity_detail(opp_id, user)
+
+
+@router.patch("/opportunities/{opp_id}", response_model=OpportunityDetail)
+def update_opportunity(
+    opp_id: UUID,
+    payload: OpportunityUpdatePayload,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+):
+    return proposals_service.update_opportunity(opp_id, payload, user)
+
+
+@router.post("/opportunities/{opp_id}/activities", response_model=OpportunityDetail, status_code=status.HTTP_201_CREATED)
+def add_opportunity_activity(
+    opp_id: UUID,
+    payload: CommercialActivityCreate,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+):
+    return proposals_service.add_commercial_activity(opp_id, payload, user)
+
+
+@router.post("/opportunities/{opp_id}/contacts", response_model=OpportunityDetail, status_code=status.HTTP_201_CREATED)
+def add_opportunity_contact(
+    opp_id: UUID,
+    payload: OpportunityContactCreate,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+):
+    return proposals_service.add_opportunity_contact(opp_id, payload, user)
 
 
 @router.post("/opportunities/sync")

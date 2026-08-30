@@ -2792,6 +2792,20 @@
         "title": "BenchmarkSettingsUpdate",
         "type": "object"
       },
+      "Body_preview_import_projects__project_id__document_imports_post": {
+        "properties": {
+          "file": {
+            "format": "binary",
+            "title": "File",
+            "type": "string"
+          }
+        },
+        "required": [
+          "file"
+        ],
+        "title": "Body_preview_import_projects__project_id__document_imports_post",
+        "type": "object"
+      },
       "Body_upload_attachment_backoffice_wiki_documents__document_id__attachments_post": {
         "properties": {
           "file": {
@@ -3540,6 +3554,57 @@
         "title": "ChunkToggle",
         "type": "object"
       },
+      "ClientAttentionItem": {
+        "properties": {
+          "action_label": {
+            "title": "Action Label",
+            "type": "string"
+          },
+          "detail": {
+            "title": "Detail",
+            "type": "string"
+          },
+          "due_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due At"
+          },
+          "entity_id": {
+            "format": "uuid",
+            "title": "Entity Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "approval",
+              "request",
+              "delivery"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "entity_id",
+          "title",
+          "detail",
+          "action_label"
+        ],
+        "title": "ClientAttentionItem",
+        "type": "object"
+      },
       "ClientCreateRequest": {
         "properties": {
           "name": {
@@ -3688,6 +3753,14 @@
             "title": "Artifacts",
             "type": "array"
           },
+          "attention": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ClientAttentionItem"
+            },
+            "title": "Attention",
+            "type": "array"
+          },
           "audit_logs": {
             "items": {
               "$ref": "#/components/schemas/AuditLogSummary"
@@ -3705,6 +3778,17 @@
             "title": "Deliverables",
             "type": "array"
           },
+          "progress": {
+            "$ref": "#/components/schemas/ClientProgressSummary"
+          },
+          "requests": {
+            "default": [],
+            "items": {
+              "$ref": "#/components/schemas/ClientRequestSummary"
+            },
+            "title": "Requests",
+            "type": "array"
+          },
           "sync_runs": {
             "items": {
               "$ref": "#/components/schemas/SyncRunSummary"
@@ -3715,6 +3799,7 @@
         },
         "required": [
           "client",
+          "progress",
           "artifacts",
           "deliverables",
           "approvals",
@@ -4186,6 +4271,34 @@
         "title": "ClientProfileSummary",
         "type": "object"
       },
+      "ClientProgressSummary": {
+        "properties": {
+          "completion_percentage": {
+            "title": "Completion Percentage",
+            "type": "integer"
+          },
+          "deliverables_done": {
+            "title": "Deliverables Done",
+            "type": "integer"
+          },
+          "deliverables_in_progress": {
+            "title": "Deliverables In Progress",
+            "type": "integer"
+          },
+          "deliverables_total": {
+            "title": "Deliverables Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "deliverables_total",
+          "deliverables_done",
+          "deliverables_in_progress",
+          "completion_percentage"
+        ],
+        "title": "ClientProgressSummary",
+        "type": "object"
+      },
       "ClientPurgeRequest": {
         "properties": {
           "confirmation": {
@@ -4197,6 +4310,244 @@
           "confirmation"
         ],
         "title": "ClientPurgeRequest",
+        "type": "object"
+      },
+      "ClientRequestCreate": {
+        "properties": {
+          "category": {
+            "default": "request",
+            "enum": [
+              "request",
+              "question",
+              "change",
+              "input"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "priority": {
+            "default": "normal",
+            "enum": [
+              "low",
+              "normal",
+              "high",
+              "urgent"
+            ],
+            "title": "Priority",
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 300,
+            "minLength": 2,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "ClientRequestCreate",
+        "type": "object"
+      },
+      "ClientRequestSummary": {
+        "properties": {
+          "assigned_to": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned To"
+          },
+          "category": {
+            "enum": [
+              "request",
+              "question",
+              "change",
+              "input"
+            ],
+            "title": "Category",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "priority": {
+            "enum": [
+              "low",
+              "normal",
+              "high",
+              "urgent"
+            ],
+            "title": "Priority",
+            "type": "string"
+          },
+          "requested_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested By"
+          },
+          "requested_by_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requested By Name"
+          },
+          "resolution_summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution Summary"
+          },
+          "status": {
+            "enum": [
+              "submitted",
+              "triaged",
+              "in_progress",
+              "waiting_client",
+              "done",
+              "declined"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "title",
+          "status",
+          "priority",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ClientRequestSummary",
+        "type": "object"
+      },
+      "ClientRequestUpdate": {
+        "properties": {
+          "assigned_to": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Assigned To"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "enum": [
+                  "low",
+                  "normal",
+                  "high",
+                  "urgent"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority"
+          },
+          "resolution_summary": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Resolution Summary"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "submitted",
+                  "triaged",
+                  "in_progress",
+                  "waiting_client",
+                  "done",
+                  "declined"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "title": "ClientRequestUpdate",
         "type": "object"
       },
       "ClientSummary": {
@@ -5019,6 +5370,264 @@
           "provider"
         ],
         "title": "CockpitStaleConnection",
+        "type": "object"
+      },
+      "CommercialActivity": {
+        "properties": {
+          "activity_type": {
+            "enum": [
+              "captured",
+              "status_changed",
+              "note",
+              "follow_up_prepared",
+              "follow_up_sent",
+              "message_received",
+              "meeting_scheduled",
+              "meeting_completed",
+              "proposal_created",
+              "proposal_sent",
+              "decision",
+              "won",
+              "lost"
+            ],
+            "title": "Activity Type",
+            "type": "string"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "direction": {
+            "default": "internal",
+            "enum": [
+              "internal",
+              "inbound",
+              "outbound"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "occurred_at": {
+            "format": "date-time",
+            "title": "Occurred At",
+            "type": "string"
+          },
+          "opportunity_id": {
+            "format": "uuid",
+            "title": "Opportunity Id",
+            "type": "string"
+          },
+          "source_kind": {
+            "default": "manual",
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Source Kind",
+            "type": "string"
+          },
+          "source_ref": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Ref"
+          },
+          "title": {
+            "maxLength": 500,
+            "minLength": 2,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "activity_type",
+          "title",
+          "occurred_at",
+          "id",
+          "opportunity_id",
+          "created_at"
+        ],
+        "title": "CommercialActivity",
+        "type": "object"
+      },
+      "CommercialActivityCreate": {
+        "properties": {
+          "activity_type": {
+            "enum": [
+              "captured",
+              "status_changed",
+              "note",
+              "follow_up_prepared",
+              "follow_up_sent",
+              "message_received",
+              "meeting_scheduled",
+              "meeting_completed",
+              "proposal_created",
+              "proposal_sent",
+              "decision",
+              "won",
+              "lost"
+            ],
+            "title": "Activity Type",
+            "type": "string"
+          },
+          "body": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Body"
+          },
+          "channel": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Channel"
+          },
+          "direction": {
+            "default": "internal",
+            "enum": [
+              "internal",
+              "inbound",
+              "outbound"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "idempotency_key": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Idempotency Key"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "occurred_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Occurred At"
+          },
+          "source_kind": {
+            "default": "manual",
+            "maxLength": 80,
+            "minLength": 2,
+            "title": "Source Kind",
+            "type": "string"
+          },
+          "source_ref": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Ref"
+          },
+          "title": {
+            "maxLength": 500,
+            "minLength": 2,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "activity_type",
+          "title"
+        ],
+        "title": "CommercialActivityCreate",
         "type": "object"
       },
       "CommercialPortalResponse": {
@@ -5989,6 +6598,63 @@
         "title": "CopilotAttachment",
         "type": "object"
       },
+      "CopilotBlock": {
+        "description": "Bloco renderizável do catálogo do Bioma — nunca HTML/JS arbitrário.",
+        "properties": {
+          "data": {
+            "additionalProperties": true,
+            "title": "Data",
+            "type": "object"
+          },
+          "id": {
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "markdown",
+              "entity_summary",
+              "action_list",
+              "source_list",
+              "task_list",
+              "timeline",
+              "approval",
+              "form",
+              "metric",
+              "artifact"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "source_refs": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Source Refs",
+            "type": "array"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 240,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "required": [
+          "id",
+          "kind"
+        ],
+        "title": "CopilotBlock",
+        "type": "object"
+      },
       "CopilotCommand": {
         "description": "Item do menu de `/` na interface.",
         "properties": {
@@ -6388,11 +7054,59 @@
             "title": "Dry Run",
             "type": "boolean"
           },
+          "expert": {
+            "anyOf": [
+              {
+                "maxLength": 80,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expert"
+          },
           "message": {
-            "maxLength": 4000,
+            "maxLength": 20000,
             "minLength": 1,
             "title": "Message",
             "type": "string"
+          },
+          "opportunity_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opportunity Id"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "proposal_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Proposal Id"
           },
           "surface": {
             "default": "workspace",
@@ -6458,6 +7172,13 @@
           "answer": {
             "title": "Answer",
             "type": "string"
+          },
+          "blocks": {
+            "items": {
+              "$ref": "#/components/schemas/CopilotBlock"
+            },
+            "title": "Blocks",
+            "type": "array"
           },
           "confidence": {
             "enum": [
@@ -6763,6 +7484,13 @@
               }
             ],
             "title": "Provider"
+          },
+          "response_blocks": {
+            "items": {
+              "$ref": "#/components/schemas/CopilotBlock"
+            },
+            "title": "Response Blocks",
+            "type": "array"
           },
           "routed_account": {
             "anyOf": [
@@ -7484,6 +8212,118 @@
           "updated_at"
         ],
         "title": "DiagnosticAnswerSummary",
+        "type": "object"
+      },
+      "DocumentImportCandidate": {
+        "properties": {
+          "acceptance_criteria": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acceptance Criteria"
+          },
+          "backlog_status": {
+            "const": "candidate",
+            "default": "candidate",
+            "title": "Backlog Status",
+            "type": "string"
+          },
+          "definition_of_done": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition Of Done"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "story",
+              "milestone",
+              "opportunity_event"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "planned_end_at": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned End At"
+          },
+          "planned_start_at": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Start At"
+          },
+          "priority": {
+            "default": "medium",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
+            "title": "Priority",
+            "type": "string"
+          },
+          "source_excerpt": {
+            "title": "Source Excerpt",
+            "type": "string"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "title",
+          "source_excerpt"
+        ],
+        "title": "DocumentImportCandidate",
         "type": "object"
       },
       "EditorialCalendarItemPayload": {
@@ -13571,6 +14411,118 @@
         "title": "OnboardingPlanSummary",
         "type": "object"
       },
+      "OpportunityContact": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "is_primary": {
+            "default": false,
+            "title": "Is Primary",
+            "type": "boolean"
+          },
+          "lead_id": {
+            "format": "uuid",
+            "title": "Lead Id",
+            "type": "string"
+          },
+          "opportunity_id": {
+            "format": "uuid",
+            "title": "Opportunity Id",
+            "type": "string"
+          },
+          "relationship_role": {
+            "default": "contact",
+            "enum": [
+              "contact",
+              "champion",
+              "decision_maker",
+              "influencer",
+              "billing"
+            ],
+            "title": "Relationship Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "lead_id",
+          "opportunity_id",
+          "created_at"
+        ],
+        "title": "OpportunityContact",
+        "type": "object"
+      },
+      "OpportunityContactCreate": {
+        "properties": {
+          "is_primary": {
+            "default": false,
+            "title": "Is Primary",
+            "type": "boolean"
+          },
+          "lead_id": {
+            "format": "uuid",
+            "title": "Lead Id",
+            "type": "string"
+          },
+          "relationship_role": {
+            "default": "contact",
+            "enum": [
+              "contact",
+              "champion",
+              "decision_maker",
+              "influencer",
+              "billing"
+            ],
+            "title": "Relationship Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "lead_id"
+        ],
+        "title": "OpportunityContactCreate",
+        "type": "object"
+      },
+      "OpportunityDetail": {
+        "properties": {
+          "activities": {
+            "items": {
+              "$ref": "#/components/schemas/CommercialActivity"
+            },
+            "title": "Activities",
+            "type": "array"
+          },
+          "contacts": {
+            "items": {
+              "$ref": "#/components/schemas/OpportunityContact"
+            },
+            "title": "Contacts",
+            "type": "array"
+          },
+          "opportunity": {
+            "$ref": "#/components/schemas/OpportunitySummary"
+          }
+        },
+        "required": [
+          "opportunity"
+        ],
+        "title": "OpportunityDetail",
+        "type": "object"
+      },
       "OpportunityIngestPayload": {
         "properties": {
           "budget_text": {
@@ -13596,6 +14548,18 @@
               }
             ],
             "title": "Description"
+          },
+          "owner_user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner User Id"
           },
           "raw_payload": {
             "additionalProperties": true,
@@ -13624,6 +14588,18 @@
               }
             ],
             "title": "Url"
+          },
+          "workspace_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workspace Id"
           }
         },
         "required": [
@@ -13777,6 +14753,18 @@
             ],
             "title": "Budget Text"
           },
+          "closed_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Closed At"
+          },
           "created_at": {
             "format": "date-time",
             "title": "Created At",
@@ -13834,6 +14822,30 @@
             "title": "Id",
             "type": "string"
           },
+          "next_action_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Action At"
+          },
+          "owner_user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner User Id"
+          },
           "raw_payload": {
             "additionalProperties": true,
             "title": "Raw Payload",
@@ -13849,8 +14861,15 @@
             "default": "new",
             "enum": [
               "new",
+              "qualifying",
               "qualified",
+              "contacted",
+              "meeting",
+              "proposal",
               "proposal_generated",
+              "negotiating",
+              "won",
+              "lost",
               "rejected",
               "archived"
             ],
@@ -13878,6 +14897,18 @@
               }
             ],
             "title": "Url"
+          },
+          "workspace_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workspace Id"
           }
         },
         "required": [
@@ -13888,6 +14919,110 @@
           "updated_at"
         ],
         "title": "OpportunitySummary",
+        "type": "object"
+      },
+      "OpportunityUpdatePayload": {
+        "properties": {
+          "budget_text": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Text"
+          },
+          "description": {
+            "anyOf": [
+              {
+                "maxLength": 10000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "next_action_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Action At"
+          },
+          "owner_user_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Owner User Id"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "new",
+                  "qualifying",
+                  "qualified",
+                  "contacted",
+                  "meeting",
+                  "proposal",
+                  "proposal_generated",
+                  "negotiating",
+                  "won",
+                  "lost",
+                  "rejected",
+                  "archived"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "workspace_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workspace Id"
+          }
+        },
+        "title": "OpportunityUpdatePayload",
         "type": "object"
       },
       "OrganizationPerson": {
@@ -16563,6 +17698,182 @@
           "url"
         ],
         "title": "ProjectDocumentCreate",
+        "type": "object"
+      },
+      "ProjectDocumentImport": {
+        "properties": {
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentImportCandidate"
+            },
+            "title": "Candidates",
+            "type": "array"
+          },
+          "content_hash": {
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "content_type": {
+            "title": "Content Type",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "extracted_text": {
+            "title": "Extracted Text",
+            "type": "string"
+          },
+          "extracted_title": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Extracted Title"
+          },
+          "extraction_version": {
+            "title": "Extraction Version",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "materialized_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Materialized At"
+          },
+          "materialized_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Materialized By"
+          },
+          "materialized_item_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "Materialized Item Ids",
+            "type": "array"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "source_name": {
+            "title": "Source Name",
+            "type": "string"
+          },
+          "source_size_bytes": {
+            "title": "Source Size Bytes",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "draft",
+              "materialized",
+              "rejected"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          },
+          "workspace_id": {
+            "format": "uuid",
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "project_id",
+          "source_name",
+          "content_type",
+          "content_hash",
+          "source_size_bytes",
+          "extracted_text",
+          "extraction_version",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ProjectDocumentImport",
+        "type": "object"
+      },
+      "ProjectDocumentImportMaterialize": {
+        "properties": {
+          "candidate_ids": {
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 200,
+            "minItems": 1,
+            "title": "Candidate Ids",
+            "type": "array"
+          },
+          "confirm": {
+            "const": true,
+            "title": "Confirm",
+            "type": "boolean"
+          },
+          "create_tasks": {
+            "default": false,
+            "title": "Create Tasks",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "confirm",
+          "candidate_ids"
+        ],
+        "title": "ProjectDocumentImportMaterialize",
         "type": "object"
       },
       "ProjectDocumentSummary": {
@@ -23086,7 +24397,8 @@
             "enum": [
               "follow_up_task",
               "proposal_revision",
-              "project_update"
+              "project_update",
+              "opportunity_registration"
             ],
             "title": "Action Type",
             "type": "string"
@@ -23246,7 +24558,8 @@
             "enum": [
               "follow_up_task",
               "proposal_revision",
-              "project_update"
+              "project_update",
+              "opportunity_registration"
             ],
             "title": "Action Type",
             "type": "string"
@@ -24093,6 +25406,16 @@
             "title": "Id",
             "type": "string"
           },
+          "journey_snapshot": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SalesJourneySnapshot"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "knowledge_snapshot": {
             "additionalProperties": true,
             "title": "Knowledge Snapshot",
@@ -24138,6 +25461,18 @@
               }
             ],
             "title": "Objective"
+          },
+          "opportunity_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opportunity Id"
           },
           "participant_context": {
             "anyOf": [
@@ -24315,6 +25650,18 @@
               }
             ],
             "title": "Objective"
+          },
+          "opportunity_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opportunity Id"
           },
           "participant_context": {
             "anyOf": [
@@ -24627,6 +25974,117 @@
           "content"
         ],
         "title": "SalesCopilotTranscriptSegmentCreate",
+        "type": "object"
+      },
+      "SalesJourneySnapshot": {
+        "properties": {
+          "bottlenecks": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Bottlenecks",
+            "type": "array"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "current_funnel_stage": {
+            "title": "Current Funnel Stage",
+            "type": "string"
+          },
+          "evidence_refs": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Evidence Refs",
+            "type": "array"
+          },
+          "funnel_map": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Funnel Map",
+            "type": "array"
+          },
+          "generation_mode": {
+            "title": "Generation Mode",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "journey_stages": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Journey Stages",
+            "type": "array"
+          },
+          "opportunity_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opportunity Id"
+          },
+          "recommended_actions": {
+            "items": {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            "title": "Recommended Actions",
+            "type": "array"
+          },
+          "scores": {
+            "additionalProperties": true,
+            "title": "Scores",
+            "type": "object"
+          },
+          "session_id": {
+            "format": "uuid",
+            "title": "Session Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "workspace_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Workspace Id"
+          }
+        },
+        "required": [
+          "id",
+          "session_id",
+          "current_funnel_stage",
+          "generation_mode",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SalesJourneySnapshot",
         "type": "object"
       },
       "SatisfactionScoreCreateRequest": {
@@ -26986,6 +28444,17 @@
       },
       "Task": {
         "properties": {
+          "acceptance_criteria": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acceptance Criteria"
+          },
           "assignee_id": {
             "anyOf": [
               {
@@ -27014,6 +28483,17 @@
             },
             "title": "Custom Fields",
             "type": "array"
+          },
+          "definition_of_done": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition Of Done"
           },
           "dependencies": {
             "items": {
@@ -27178,6 +28658,11 @@
             "default": "none",
             "title": "Recurrence"
           },
+          "semantic_review_required": {
+            "default": false,
+            "title": "Semantic Review Required",
+            "type": "boolean"
+          },
           "start_date": {
             "anyOf": [
               {
@@ -27321,6 +28806,17 @@
       },
       "TaskCreate": {
         "properties": {
+          "acceptance_criteria": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acceptance Criteria"
+          },
           "assignee_id": {
             "anyOf": [
               {
@@ -27344,6 +28840,17 @@
             },
             "title": "Custom Fields",
             "type": "array"
+          },
+          "definition_of_done": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition Of Done"
           },
           "dependencies": {
             "items": {
@@ -27749,6 +29256,17 @@
       },
       "TaskUpdate": {
         "properties": {
+          "acceptance_criteria": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acceptance Criteria"
+          },
           "assignee_id": {
             "anyOf": [
               {
@@ -27785,6 +29303,17 @@
               }
             ],
             "title": "Custom Fields"
+          },
+          "definition_of_done": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition Of Done"
           },
           "dependencies": {
             "anyOf": [
@@ -29917,6 +31446,825 @@
           }
         },
         "title": "WinUpdate",
+        "type": "object"
+      },
+      "WorkEntityRef": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "type": {
+            "enum": [
+              "workspace",
+              "project",
+              "opportunity",
+              "proposal",
+              "task",
+              "document",
+              "document_import",
+              "artifact",
+              "work_item"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "id"
+        ],
+        "title": "WorkEntityRef",
+        "type": "object"
+      },
+      "WorkGraphProjection": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/WorkItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "links": {
+            "items": {
+              "$ref": "#/components/schemas/WorkLink"
+            },
+            "title": "Links",
+            "type": "array"
+          }
+        },
+        "title": "WorkGraphProjection",
+        "type": "object"
+      },
+      "WorkItem": {
+        "properties": {
+          "acceptance_criteria": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acceptance Criteria"
+          },
+          "backlog_status": {
+            "default": "candidate",
+            "enum": [
+              "candidate",
+              "backlog",
+              "ready",
+              "in_progress",
+              "done",
+              "rejected"
+            ],
+            "title": "Backlog Status",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "definition_of_done": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition Of Done"
+          },
+          "external_ref": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Ref"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "goal",
+              "spec",
+              "story",
+              "decision",
+              "plan",
+              "milestone",
+              "opportunity_event",
+              "deliverable",
+              "test",
+              "evidence",
+              "release",
+              "asset"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "materialized_task_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Materialized Task Id"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "planned_end_at": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned End At"
+          },
+          "planned_start_at": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Start At"
+          },
+          "priority": {
+            "default": "medium",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
+            "title": "Priority",
+            "type": "string"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "rank": {
+            "default": 0,
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Rank",
+            "type": "integer"
+          },
+          "source_document_import_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Document Import Id"
+          },
+          "status": {
+            "default": "draft",
+            "enum": [
+              "draft",
+              "active",
+              "done",
+              "superseded",
+              "archived"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "story_points": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Story Points"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "title": {
+            "maxLength": 300,
+            "minLength": 2,
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "workspace_id": {
+            "format": "uuid",
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "title",
+          "id",
+          "workspace_id",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "WorkItem",
+        "type": "object"
+      },
+      "WorkItemCreate": {
+        "properties": {
+          "acceptance_criteria": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acceptance Criteria"
+          },
+          "backlog_status": {
+            "default": "candidate",
+            "enum": [
+              "candidate",
+              "backlog",
+              "ready",
+              "in_progress",
+              "done",
+              "rejected"
+            ],
+            "title": "Backlog Status",
+            "type": "string"
+          },
+          "definition_of_done": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition Of Done"
+          },
+          "external_ref": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Ref"
+          },
+          "kind": {
+            "enum": [
+              "goal",
+              "spec",
+              "story",
+              "decision",
+              "plan",
+              "milestone",
+              "opportunity_event",
+              "deliverable",
+              "test",
+              "evidence",
+              "release",
+              "asset"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "planned_end_at": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned End At"
+          },
+          "planned_start_at": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Start At"
+          },
+          "priority": {
+            "default": "medium",
+            "enum": [
+              "low",
+              "medium",
+              "high",
+              "critical"
+            ],
+            "title": "Priority",
+            "type": "string"
+          },
+          "project_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Project Id"
+          },
+          "rank": {
+            "default": 0,
+            "maximum": 1000000.0,
+            "minimum": 0.0,
+            "title": "Rank",
+            "type": "integer"
+          },
+          "source_document_import_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Document Import Id"
+          },
+          "status": {
+            "default": "draft",
+            "enum": [
+              "draft",
+              "active",
+              "done",
+              "superseded",
+              "archived"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "story_points": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Story Points"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "title": {
+            "maxLength": 300,
+            "minLength": 2,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "title"
+        ],
+        "title": "WorkItemCreate",
+        "type": "object"
+      },
+      "WorkItemMaterializeRequest": {
+        "properties": {
+          "confirm": {
+            "const": true,
+            "title": "Confirm",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "confirm"
+        ],
+        "title": "WorkItemMaterializeRequest",
+        "type": "object"
+      },
+      "WorkItemUpdate": {
+        "properties": {
+          "acceptance_criteria": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acceptance Criteria"
+          },
+          "backlog_status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "candidate",
+                  "backlog",
+                  "ready",
+                  "in_progress",
+                  "done",
+                  "rejected"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Backlog Status"
+          },
+          "definition_of_done": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Definition Of Done"
+          },
+          "external_ref": {
+            "anyOf": [
+              {
+                "maxLength": 2000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Ref"
+          },
+          "metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metadata"
+          },
+          "planned_end_at": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned End At"
+          },
+          "planned_start_at": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Planned Start At"
+          },
+          "priority": {
+            "anyOf": [
+              {
+                "enum": [
+                  "low",
+                  "medium",
+                  "high",
+                  "critical"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Priority"
+          },
+          "rank": {
+            "anyOf": [
+              {
+                "maximum": 1000000.0,
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rank"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "draft",
+                  "active",
+                  "done",
+                  "superseded",
+                  "archived"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "story_points": {
+            "anyOf": [
+              {
+                "maximum": 100.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Story Points"
+          },
+          "summary": {
+            "anyOf": [
+              {
+                "maxLength": 20000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Summary"
+          },
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 300,
+                "minLength": 2,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          }
+        },
+        "title": "WorkItemUpdate",
+        "type": "object"
+      },
+      "WorkLink": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "relation_type": {
+            "enum": [
+              "derives_from",
+              "decomposes_into",
+              "implements",
+              "tests",
+              "evidences",
+              "decides",
+              "blocks",
+              "supersedes",
+              "reuses",
+              "materializes"
+            ],
+            "title": "Relation Type",
+            "type": "string"
+          },
+          "source_id": {
+            "format": "uuid",
+            "title": "Source Id",
+            "type": "string"
+          },
+          "source_type": {
+            "enum": [
+              "workspace",
+              "project",
+              "opportunity",
+              "proposal",
+              "task",
+              "document",
+              "document_import",
+              "artifact",
+              "work_item"
+            ],
+            "title": "Source Type",
+            "type": "string"
+          },
+          "target_id": {
+            "format": "uuid",
+            "title": "Target Id",
+            "type": "string"
+          },
+          "target_type": {
+            "enum": [
+              "workspace",
+              "project",
+              "opportunity",
+              "proposal",
+              "task",
+              "document",
+              "document_import",
+              "artifact",
+              "work_item"
+            ],
+            "title": "Target Type",
+            "type": "string"
+          },
+          "workspace_id": {
+            "format": "uuid",
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "source_type",
+          "source_id",
+          "relation_type",
+          "target_type",
+          "target_id",
+          "created_at"
+        ],
+        "title": "WorkLink",
+        "type": "object"
+      },
+      "WorkLinkCreate": {
+        "properties": {
+          "metadata": {
+            "additionalProperties": true,
+            "title": "Metadata",
+            "type": "object"
+          },
+          "relation": {
+            "enum": [
+              "derives_from",
+              "decomposes_into",
+              "implements",
+              "tests",
+              "evidences",
+              "decides",
+              "blocks",
+              "supersedes",
+              "reuses",
+              "materializes"
+            ],
+            "title": "Relation",
+            "type": "string"
+          },
+          "source": {
+            "$ref": "#/components/schemas/WorkEntityRef"
+          },
+          "target": {
+            "$ref": "#/components/schemas/WorkEntityRef"
+          }
+        },
+        "required": [
+          "source",
+          "relation",
+          "target"
+        ],
+        "title": "WorkLinkCreate",
         "type": "object"
       },
       "WorkflowDefinitionSummary": {
@@ -35422,6 +37770,206 @@
         ]
       }
     },
+    "/backoffice/proposals/opportunities/{opp_id}": {
+      "get": {
+        "operationId": "get_opportunity_backoffice_proposals_opportunities__opp_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "opp_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Opp Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Opportunity",
+        "tags": [
+          "proposals"
+        ]
+      },
+      "patch": {
+        "operationId": "update_opportunity_backoffice_proposals_opportunities__opp_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "opp_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Opp Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpportunityUpdatePayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Opportunity",
+        "tags": [
+          "proposals"
+        ]
+      }
+    },
+    "/backoffice/proposals/opportunities/{opp_id}/activities": {
+      "post": {
+        "operationId": "add_opportunity_activity_backoffice_proposals_opportunities__opp_id__activities_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "opp_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Opp Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommercialActivityCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Opportunity Activity",
+        "tags": [
+          "proposals"
+        ]
+      }
+    },
+    "/backoffice/proposals/opportunities/{opp_id}/contacts": {
+      "post": {
+        "operationId": "add_opportunity_contact_backoffice_proposals_opportunities__opp_id__contacts_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "opp_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Opp Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OpportunityContactCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OpportunityDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Add Opportunity Contact",
+        "tags": [
+          "proposals"
+        ]
+      }
+    },
     "/backoffice/proposals/opportunities/{opp_id}/evaluate-ai": {
       "post": {
         "operationId": "evaluate_opportunity_ai_backoffice_proposals_opportunities__opp_id__evaluate_ai_post",
@@ -37250,6 +39798,49 @@
         ]
       }
     },
+    "/backoffice/sales-copilot/{session_id}/journey/rebuild": {
+      "post": {
+        "operationId": "rebuild_journey_backoffice_sales_copilot__session_id__journey_rebuild_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "session_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Session Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SalesCopilotSession"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Rebuild Journey",
+        "tags": [
+          "sales-copilot"
+        ]
+      }
+    },
     "/backoffice/sales-copilot/{session_id}/meeting": {
       "put": {
         "operationId": "configure_meeting_backoffice_sales_copilot__session_id__meeting_put",
@@ -37929,6 +40520,146 @@
         "summary": "Update Settings",
         "tags": [
           "benchmark-admin"
+        ]
+      }
+    },
+    "/cases": {
+      "get": {
+        "description": "Inclui os retidos, com o porquê — é esta tela que mostra o que falta assinar.",
+        "operationId": "list_all_cases_cases_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "schema": {
+              "default": "pt",
+              "enum": [
+                "pt",
+                "en"
+              ],
+              "title": "Lang",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List All Cases Cases Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List All Cases",
+        "tags": [
+          "cases-admin"
+        ]
+      }
+    },
+    "/cases/{deck}/{slug}/consent": {
+      "patch": {
+        "description": "Registrar a autorização é o que destrava a publicação.\n\nNão publica sozinho: muda o estado de autorização e deixa o caso elegível.\nPublicar segue sendo um ato deliberado.",
+        "operationId": "register_consent_cases__deck___slug__consent_patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "deck",
+            "required": true,
+            "schema": {
+              "enum": [
+                "growth",
+                "tech"
+              ],
+              "title": "Deck",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "slug",
+            "required": true,
+            "schema": {
+              "title": "Slug",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "consent_status",
+            "required": true,
+            "schema": {
+              "enum": [
+                "none",
+                "requested",
+                "granted",
+                "waived",
+                "not_applicable"
+              ],
+              "title": "Consent Status",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "consent_note",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Consent Note"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response Register Consent Cases  Deck   Slug  Consent Patch",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Register Consent",
+        "tags": [
+          "cases-admin"
         ]
       }
     },
@@ -40506,6 +43237,122 @@
         ]
       }
     },
+    "/clients/{client_id}/requests": {
+      "post": {
+        "operationId": "create_client_request_clients__client_id__requests_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientRequestCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientPortalResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Client Request",
+        "tags": [
+          "client-hub"
+        ]
+      }
+    },
+    "/clients/{client_id}/requests/{request_id}": {
+      "patch": {
+        "operationId": "update_client_request_clients__client_id__requests__request_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Client Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientRequestUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientPortalResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Client Request",
+        "tags": [
+          "client-hub"
+        ]
+      }
+    },
     "/contracts/{contract_id}": {
       "patch": {
         "operationId": "update_contract_contracts__contract_id__patch",
@@ -42818,6 +45665,59 @@
         ]
       }
     },
+    "/project-document-imports/{import_id}/materialize": {
+      "post": {
+        "operationId": "materialize_import_project_document_imports__import_id__materialize_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "import_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Import Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectDocumentImportMaterialize"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDocumentImport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Materialize Import",
+        "tags": [
+          "project-document-imports"
+        ]
+      }
+    },
     "/project-phases/{phase_id}": {
       "patch": {
         "operationId": "update_phase_project_phases__phase_id__patch",
@@ -43369,6 +46269,104 @@
         ]
       }
     },
+    "/projects/{project_id}/document-imports": {
+      "get": {
+        "operationId": "list_imports_projects__project_id__document_imports_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectDocumentImport"
+                  },
+                  "title": "Response List Imports Projects  Project Id  Document Imports Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Imports",
+        "tags": [
+          "project-document-imports"
+        ]
+      },
+      "post": {
+        "operationId": "preview_import_projects__project_id__document_imports_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_preview_import_projects__project_id__document_imports_post"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectDocumentImport"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Preview Import",
+        "tags": [
+          "project-document-imports"
+        ]
+      }
+    },
     "/projects/{project_id}/documents": {
       "post": {
         "operationId": "create_document_projects__project_id__documents_post",
@@ -43883,6 +46881,78 @@
         "summary": "Get Public Benchmark",
         "tags": [
           "benchmark-public"
+        ]
+      }
+    },
+    "/public/cases": {
+      "get": {
+        "description": "O formato do item é o mesmo `CaseStudy` que o site já consome.",
+        "operationId": "list_public_cases_public_cases_get",
+        "parameters": [
+          {
+            "description": "growth ou tech; omitido traz os dois",
+            "in": "query",
+            "name": "deck",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "growth",
+                    "tech"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "growth ou tech; omitido traz os dois",
+              "title": "Deck"
+            }
+          },
+          {
+            "in": "query",
+            "name": "lang",
+            "required": false,
+            "schema": {
+              "default": "pt",
+              "enum": [
+                "pt",
+                "en"
+              ],
+              "title": "Lang",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": true,
+                  "title": "Response List Public Cases Public Cases Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Public Cases",
+        "tags": [
+          "cases-public"
         ]
       }
     },
@@ -48282,6 +51352,122 @@
         ]
       }
     },
+    "/workspaces/{client_id}/requests": {
+      "post": {
+        "operationId": "create_client_request_workspaces__client_id__requests_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Client Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientRequestCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientPortalResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Client Request",
+        "tags": [
+          "workspace-client-hub"
+        ]
+      }
+    },
+    "/workspaces/{client_id}/requests/{request_id}": {
+      "patch": {
+        "operationId": "update_client_request_workspaces__client_id__requests__request_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "client_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Client Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Request Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ClientRequestUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientPortalResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Client Request",
+        "tags": [
+          "workspace-client-hub"
+        ]
+      }
+    },
     "/workspaces/{workspace_id}/ai/content": {
       "get": {
         "operationId": "list_requests_workspaces__workspace_id__ai_content_get",
@@ -52620,6 +55806,327 @@
         "summary": "Send Message",
         "tags": [
           "whatsapp-multiprovider"
+        ]
+      }
+    },
+    "/workspaces/{workspace_id}/work-graph": {
+      "get": {
+        "operationId": "projection_workspaces__workspace_id__work_graph_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkGraphProjection"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Projection",
+        "tags": [
+          "work-graph"
+        ]
+      }
+    },
+    "/workspaces/{workspace_id}/work-graph/items": {
+      "post": {
+        "operationId": "create_item_workspaces__workspace_id__work_graph_items_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkItemCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Item",
+        "tags": [
+          "work-graph"
+        ]
+      }
+    },
+    "/workspaces/{workspace_id}/work-graph/items/{item_id}": {
+      "patch": {
+        "operationId": "update_item_workspaces__workspace_id__work_graph_items__item_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkItemUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Item",
+        "tags": [
+          "work-graph"
+        ]
+      }
+    },
+    "/workspaces/{workspace_id}/work-graph/items/{item_id}/materialize-task": {
+      "post": {
+        "operationId": "materialize_item_workspaces__workspace_id__work_graph_items__item_id__materialize_task_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkItemMaterializeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Materialize Item",
+        "tags": [
+          "work-graph"
+        ]
+      }
+    },
+    "/workspaces/{workspace_id}/work-graph/links": {
+      "post": {
+        "operationId": "create_link_workspaces__workspace_id__work_graph_links_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WorkLinkCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WorkLink"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Link",
+        "tags": [
+          "work-graph"
+        ]
+      }
+    },
+    "/workspaces/{workspace_id}/work-graph/links/{link_id}": {
+      "delete": {
+        "operationId": "delete_link_workspaces__workspace_id__work_graph_links__link_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "link_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Link Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Link",
+        "tags": [
+          "work-graph"
         ]
       }
     }

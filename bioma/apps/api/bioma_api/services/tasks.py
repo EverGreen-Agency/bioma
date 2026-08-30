@@ -284,6 +284,9 @@ def create_task(list_id: UUID, data: TaskCreate, user: CurrentUserResponse) -> T
 
 def update_task(task_id: UUID, data: TaskUpdate, user: CurrentUserResponse) -> Task:
     updates = data.model_dump(exclude_unset=True)
+    if {"description", "acceptance_criteria", "definition_of_done"} & updates.keys():
+        # Abrir e salvar a separação semântica é a revisão humana do backfill.
+        updates["semantic_review_required"] = False
     custom_fields = updates.pop("custom_fields", None)
     dependencies = updates.pop("dependencies", None)
     subtasks = updates.pop("subtasks", None)

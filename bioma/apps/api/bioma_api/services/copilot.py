@@ -29,6 +29,7 @@ from bioma_api.repositories import copilot_attachments as attachments_repo
 from bioma_api.repositories import copilot_traces as trace_repo
 from bioma_api.repositories import improvement_requests as improvement_repo
 from bioma_api.repositories import knowledge as knowledge_repo
+from bioma_api.repositories import proposals as proposals_repo
 from bioma_api.repositories import tasks as tasks_repo
 from bioma_api.repositories import workspaces as workspaces_repo
 from bioma_api.services import copilot_attachments as attachments_service
@@ -36,6 +37,7 @@ from bioma_api.services.ai_operations import _eg_organization_id
 from bioma_api.schemas.auth import CurrentUserResponse
 from bioma_api.schemas.copilot import (
     CopilotAction,
+    CopilotBlock,
     CopilotRequest,
     CopilotResponse,
     CopilotSource,
@@ -57,7 +59,7 @@ SURFACE_ACTIONS = {
     ],
     "workspace": [
         "answer_only", "summarize_thread", "remember_fact", "propose_skill",
-        "request_improvement",
+        "request_improvement", "capture_opportunity",
     ],
 }
 
@@ -194,6 +196,14 @@ def run(payload: CopilotRequest, user: CurrentUserResponse) -> CopilotResponse:
 
             action_started = time.monotonic()
             action = _execute(name, spec, params, proposed.get("why", ""), task_row, user, payload.workspace_id)
+            if action.status == "executed" and name == "capture_opportunity" and params.get("opportunity_id"):
+                with connect() as conn:
+                    trace_repo.bind_thread_entities(
+                        conn,
+                        thread["id"],
+                        user.id,
+                        [("opportunity", params["opportunity_id"])],
+                    )
             steps.record(
                 "action", spec["label"],
                 "ok" if action.status == "executed" else "failed",
@@ -215,6 +225,7 @@ def run(payload: CopilotRequest, user: CurrentUserResponse) -> CopilotResponse:
             for source in output.get("sources", [])
             if source.get("reference")
         ]
+        blocks = _response_blocks(output.get("answer", ""), actions, sources, context)
 
         usage = result.get("usage") or {}
         model = result.get("model")
@@ -258,6 +269,7 @@ def run(payload: CopilotRequest, user: CurrentUserResponse) -> CopilotResponse:
                 "skills_used": used_skill_names,
                 "sources": [source.model_dump() for source in sources],
                 "actions": [action.model_dump() for action in actions],
+                "response_blocks": [block.model_dump() for block in blocks],
                 "attachments": attachments_for_trace,
                 "input_tokens": input_tokens,
                 "output_tokens": output_tokens,
@@ -275,6 +287,7 @@ def run(payload: CopilotRequest, user: CurrentUserResponse) -> CopilotResponse:
             confidence=output.get("confidence", "baixa"),
             actions=actions,
             sources=sources,
+            blocks=blocks,
         )
     except HTTPException:
         raise
@@ -380,6 +393,18 @@ def _open_run(payload: CopilotRequest, user: CurrentUserResponse) -> tuple[dict,
         # O anexo é enviado enquanto a pessoa ainda escreve, antes de a thread
         # existir. Nasce solto e é adotado aqui.
         attachments_repo.bind_to_thread(conn, payload.attachment_ids, thread["id"])
+        entities = [
+            (kind, entity_id)
+            for kind, entity_id in (
+                ("workspace", payload.workspace_id),
+                ("project", payload.project_id),
+                ("opportunity", payload.opportunity_id),
+                ("proposal", payload.proposal_id),
+                ("task", payload.task_id),
+            )
+            if entity_id is not None
+        ]
+        trace_repo.bind_thread_entities(conn, thread["id"], user.id, entities)
         run_row = trace_repo.start_run(
             conn,
             {
@@ -491,6 +516,9 @@ def _build_dossier(
     """Só dado real, e só do escopo que o usuário pode ver."""
     dossier: dict = {}
     context: dict = {"surface": payload.surface}
+    expert = payload.expert or _expert_from_message(payload.message)
+    if expert:
+        context["expert"] = expert
     task_row = None
 
     with connect() as conn:
@@ -507,6 +535,8 @@ def _build_dossier(
                 "start_date": task_row.get("start_date"),
                 "due_date": task_row.get("due_date"),
                 "description": (task_row.get("description") or "")[:2000],
+                "acceptance_criteria": (task_row.get("acceptance_criteria") or "")[:2000],
+                "definition_of_done": (task_row.get("definition_of_done") or "")[:2000],
             }
             dossier["task_comments"] = [
                 {"author": row.get("author_name"), "body": row["body"][:600]} for row in comments[-10:]
@@ -521,6 +551,48 @@ def _build_dossier(
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace não encontrado.")
             context["workspace_id"] = str(client["workspace_id"])
             context["client_name"] = client["name"]
+
+        if payload.project_id:
+            project = conn.execute(
+                "select id, workspace_id, name, code, status, objective from projects where id = %s",
+                (payload.project_id,),
+            ).fetchone()
+            if not project or (payload.workspace_id and project["workspace_id"] != payload.workspace_id):
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projeto não encontrado.")
+            dossier["project"] = dict(project)
+            context["project_id"] = str(project["id"])
+
+        if payload.opportunity_id:
+            opportunity = proposals_repo.get_opportunity(conn, payload.opportunity_id)
+            if not opportunity or (
+                payload.workspace_id and opportunity.get("workspace_id") != payload.workspace_id
+            ):
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Oportunidade não encontrada.")
+            dossier["opportunity"] = {
+                key: opportunity.get(key)
+                for key in (
+                    "id", "workspace_id", "title", "description", "budget_text", "fit_score",
+                    "fit_analysis", "status", "next_action_at", "updated_at",
+                )
+            }
+            dossier["commercial_timeline"] = proposals_repo.list_commercial_activities(
+                conn, payload.opportunity_id
+            )[:30]
+            context["opportunity_id"] = str(payload.opportunity_id)
+
+        if payload.proposal_id:
+            proposal = conn.execute(
+                """
+                select id, workspace_id, opportunity_id, title, client_name, status,
+                       executive_summary, pricing_cents, delivery_days, updated_at
+                from commercial_proposals where id = %s and archived_at is null
+                """,
+                (payload.proposal_id,),
+            ).fetchone()
+            if not proposal or (payload.workspace_id and proposal["workspace_id"] != payload.workspace_id):
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proposta não encontrada.")
+            dossier["proposal"] = dict(proposal)
+            context["proposal_id"] = str(payload.proposal_id)
 
         # "O que priorizar hoje" precisa das tarefas da pessoa, não da carteira toda.
         my_tasks = tasks_repo.list_my_tasks(conn, user.id, is_platform_admin(user))
@@ -598,6 +670,66 @@ def _is_overdue(value) -> bool:
     if isinstance(value, date):
         return value < date.today()
     return False
+
+
+def _expert_from_message(message: str) -> str | None:
+    first = message.lstrip().split(maxsplit=1)[0] if message.strip() else ""
+    if first.startswith("@") and len(first) > 1:
+        return first[1:81]
+    return None
+
+
+def _response_blocks(
+    answer: str,
+    actions: list[CopilotAction],
+    sources: list[CopilotSource],
+    context: dict,
+) -> list[CopilotBlock]:
+    """Transforma saída já validada em componentes do catálogo seguro."""
+    blocks = [
+        CopilotBlock(
+            id="answer",
+            kind="markdown",
+            data={"text": answer},
+            source_refs=[source.reference for source in sources],
+        )
+    ]
+    entity = next(
+        (
+            (kind, context.get(f"{kind}_id"))
+            for kind in ("opportunity", "proposal", "project", "task", "workspace")
+            if context.get(f"{kind}_id")
+        ),
+        None,
+    )
+    if entity:
+        blocks.append(
+            CopilotBlock(
+                id=f"context-{entity[0]}",
+                kind="entity_summary",
+                title="Contexto ativo",
+                data={"entity_type": entity[0], "entity_id": entity[1]},
+            )
+        )
+    if actions:
+        blocks.append(
+            CopilotBlock(
+                id="actions",
+                kind="action_list",
+                title="Ações",
+                data={"items": [action.model_dump(mode="json") for action in actions]},
+            )
+        )
+    if sources:
+        blocks.append(
+            CopilotBlock(
+                id="sources",
+                kind="source_list",
+                title="Fontes",
+                data={"items": [source.model_dump() for source in sources]},
+            )
+        )
+    return blocks
 
 
 def _execute(
@@ -682,6 +814,62 @@ def _execute(
         return done(
             f'Skill "{skill_name}" proposta — aguardando aprovação de um admin EG.',
             "Rejeite a skill na fila de revisão para descartar.",
+        )
+
+    if name == "capture_opportunity":
+        title = (params.get("title") or "").strip()
+        description = (params.get("description") or "").strip()
+        if not title or not description:
+            return failed("Título e descrição são obrigatórios para criar a oportunidade.")
+        with connect() as conn:
+            commercial_workspace_id = workspace_id
+            if commercial_workspace_id is None:
+                organization_id = _eg_organization_id(user)
+                workspace = conn.execute(
+                    """
+                    select id from workspaces
+                    where status = 'active' and kind = 'agency_internal'
+                      and (subject_organization_id = %s or tenant_organization_id = %s)
+                    order by created_at
+                    limit 1
+                    """,
+                    (organization_id, organization_id),
+                ).fetchone()
+                commercial_workspace_id = workspace["id"] if workspace else None
+            created = proposals_repo.create_opportunity(
+                conn,
+                {
+                    "workspace_id": commercial_workspace_id,
+                    "owner_user_id": user.id,
+                    "source_platform": (params.get("source_platform") or "manual")[:50],
+                    "external_id": params.get("external_id"),
+                    "title": title[:255],
+                    "url": params.get("url"),
+                    "description": description[:10_000],
+                    "budget_text": (params.get("budget_text") or "")[:100] or None,
+                    "fit_score": None,
+                    "fit_analysis": None,
+                    "status": "new",
+                    "raw_payload": {"captured_via": "copilot"},
+                },
+            )
+            proposals_repo.create_commercial_activity(
+                conn,
+                created["id"],
+                {
+                    "activity_type": "captured",
+                    "title": "Oportunidade capturada pela conversa",
+                    "body": description[:20_000],
+                    "source_kind": "copilot",
+                    "idempotency_key": f"copilot-capture:{created['id']}",
+                    "metadata": {"expert": "Propostas"},
+                },
+                user.id,
+            )
+        params["opportunity_id"] = str(created["id"])
+        return done(
+            f'Oportunidade "{title}" criada e ligada à continuidade comercial.',
+            "Arquive a oportunidade para desfazer sem apagar o histórico.",
         )
 
     if not task_row:

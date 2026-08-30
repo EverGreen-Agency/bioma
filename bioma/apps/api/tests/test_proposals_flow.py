@@ -40,6 +40,7 @@ def test_proposal_generation_consumes_all_three_pillars(eg_admin, monkeypatch):
     }
     saved_payload = {}
     called_pillars = []
+    commercial_activities = []
 
     outputs = {
         "oferta": {"headline": "Evolução do aplicativo", "mecanismo_unico": "Escopo por fases"},
@@ -84,6 +85,11 @@ def test_proposal_generation_consumes_all_three_pillars(eg_admin, monkeypatch):
     monkeypatch.setattr(proposals_repo, "get_opportunity", lambda _conn, _id: opportunity)
     monkeypatch.setattr(proposals_repo, "create_proposal", fake_create)
     monkeypatch.setattr(proposals_repo, "update_opportunity_status", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        proposals_repo,
+        "create_commercial_activity",
+        lambda _conn, _opportunity_id, payload, _user_id: commercial_activities.append(payload),
+    )
 
     proposal = proposals_service.generate_proposal_for_opportunity(opportunity_id, eg_admin)
 
@@ -95,6 +101,7 @@ def test_proposal_generation_consumes_all_three_pillars(eg_admin, monkeypatch):
     assert proposal.delivery_days == 0
     assert proposal.generation_mode == "live"
     assert saved_payload["attached_cases"] == []
+    assert commercial_activities[0]["activity_type"] == "proposal_created"
 
 
 def test_proposal_analytics_only_counts_decisions_and_never_invents_roi(monkeypatch):

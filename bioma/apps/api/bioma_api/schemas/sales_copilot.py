@@ -13,11 +13,12 @@ ParticipantGroup = Literal["eg_team", "client", "partner", "unknown"]
 ParticipantSeniority = Literal["individual", "manager", "director", "c_level", "owner", "unknown"]
 ParticipantDecisionRole = Literal["champion", "decision_maker", "influencer", "technical", "user", "unknown"]
 SuggestionType = Literal["question", "objection_response", "risk", "opportunity", "next_step"]
-ActionType = Literal["follow_up_task", "proposal_revision", "project_update"]
+ActionType = Literal["follow_up_task", "proposal_revision", "project_update", "opportunity_registration"]
 
 
 class SalesCopilotSessionCreate(BaseModel):
     workspace_id: UUID | None = None
+    opportunity_id: UUID | None = None
     proposal_id: UUID | None = None
     title: str = Field(min_length=2, max_length=255)
     session_type: SessionType = "sales_call"
@@ -199,9 +200,27 @@ class SalesCopilotActionMaterialize(BaseModel):
     idempotency_key: str = Field(min_length=8, max_length=255)
 
 
+class SalesJourneySnapshot(BaseModel):
+    id: UUID
+    session_id: UUID
+    workspace_id: UUID | None = None
+    opportunity_id: UUID | None = None
+    current_funnel_stage: str
+    funnel_map: list[dict[str, Any]] = Field(default_factory=list)
+    journey_stages: list[dict[str, Any]] = Field(default_factory=list)
+    scores: dict[str, Any] = Field(default_factory=dict)
+    bottlenecks: list[dict[str, Any]] = Field(default_factory=list)
+    recommended_actions: list[dict[str, Any]] = Field(default_factory=list)
+    evidence_refs: list[dict[str, Any]] = Field(default_factory=list)
+    generation_mode: str
+    created_at: datetime
+    updated_at: datetime
+
+
 class SalesCopilotSession(BaseModel):
     id: UUID
     workspace_id: UUID | None = None
+    opportunity_id: UUID | None = None
     proposal_id: UUID | None = None
     title: str
     session_type: SessionType
@@ -232,6 +251,7 @@ class SalesCopilotSession(BaseModel):
     segments: list[SalesCopilotTranscriptSegment] = Field(default_factory=list)
     suggestions: list[SalesCopilotLiveSuggestion] = Field(default_factory=list)
     actions: list[SalesCopilotAction] = Field(default_factory=list)
+    journey_snapshot: SalesJourneySnapshot | None = None
 
 
 class SalesCopilotCompleteRequest(BaseModel):

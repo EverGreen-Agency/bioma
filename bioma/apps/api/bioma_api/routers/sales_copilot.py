@@ -166,6 +166,14 @@ def complete_session(
     return copilot_service.complete_session(session_id, payload, user)
 
 
+@router.post("/{session_id}/journey/rebuild", response_model=SalesCopilotSession)
+def rebuild_journey(
+    session_id: UUID,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+):
+    return copilot_service.rebuild_journey(session_id, user)
+
+
 @router.get("/fathom/meetings", response_model=list[FathomMeeting])
 def list_fathom_meetings(
     limit: int = 20,

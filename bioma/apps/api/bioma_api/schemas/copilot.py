@@ -30,10 +30,14 @@ class CopilotAttachment(BaseModel):
 
 
 class CopilotRequest(BaseModel):
-    message: str = Field(min_length=1, max_length=4000)
+    message: str = Field(min_length=1, max_length=20_000)
     surface: CopilotSurface = "workspace"
     task_id: UUID | None = None
     workspace_id: UUID | None = None
+    project_id: UUID | None = None
+    opportunity_id: UUID | None = None
+    proposal_id: UUID | None = None
+    expert: str | None = Field(default=None, max_length=80)
     # Continua uma conversa existente. Ausente = abre uma nova.
     thread_id: UUID | None = None
     # Anexos enviados antes desta mensagem, adotados pela thread no envio.
@@ -62,6 +66,18 @@ class CopilotSource(BaseModel):
     reference: str
 
 
+class CopilotBlock(BaseModel):
+    """Bloco renderizável do catálogo do Bioma — nunca HTML/JS arbitrário."""
+    id: str = Field(min_length=1, max_length=120)
+    kind: Literal[
+        "markdown", "entity_summary", "action_list", "source_list",
+        "task_list", "timeline", "approval", "form", "metric", "artifact",
+    ]
+    title: str | None = Field(default=None, max_length=240)
+    data: dict[str, Any] = Field(default_factory=dict)
+    source_refs: list[str] = Field(default_factory=list)
+
+
 class CopilotResponse(BaseModel):
     thread_id: UUID
     # Chave da trilha desta resposta: com ela a interface abre a auditoria do
@@ -72,6 +88,7 @@ class CopilotResponse(BaseModel):
     confidence: Literal["alta", "media", "baixa"]
     actions: list[CopilotAction] = Field(default_factory=list)
     sources: list[CopilotSource] = Field(default_factory=list)
+    blocks: list[CopilotBlock] = Field(default_factory=list)
 
 
 class CopilotThreadSummary(BaseModel):
@@ -140,6 +157,7 @@ class CopilotRunTrace(BaseModel):
     skills_used: list[str] = Field(default_factory=list)
     sources: list[dict[str, Any]] = Field(default_factory=list)
     actions: list[dict[str, Any]] = Field(default_factory=list)
+    response_blocks: list[CopilotBlock] = Field(default_factory=list)
     # Índice do que estava anexado NAQUELE turno. Anexar depois não pode
     # reescrever a história de uma resposta dada sem o arquivo.
     attachments: list[dict[str, Any]] = Field(default_factory=list)

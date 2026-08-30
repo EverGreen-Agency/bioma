@@ -132,6 +132,60 @@ def list_audit_logs(conn, organization_id: UUID):
     ).fetchall()
 
 
+def list_client_requests(conn, workspace_id: UUID):
+    return conn.execute(
+        """
+        select r.id, r.category, r.title, r.detail, r.status, r.priority,
+          r.requested_by, u.display_name as requested_by_name, r.assigned_to,
+          r.resolution_summary, r.created_at, r.updated_at
+        from client_requests r
+        left join users u on u.id = r.requested_by
+        where r.workspace_id = %s
+        order by
+          case r.status
+            when 'waiting_client' then 0
+            when 'submitted' then 1
+            when 'triaged' then 2
+            when 'in_progress' then 3
+            else 4
+          end,
+          r.updated_at desc
+        limit 100
+        """,
+        (workspace_id,),
+    ).fetchall()
+
+
+def create_client_request(conn, workspace_id: UUID, payload: dict[str, Any], user_id: UUID):
+    return conn.execute(
+        """
+        insert into client_requests (
+          workspace_id, category, title, detail, priority, requested_by
+        ) values (%s, %s, %s, %s, %s, %s)
+        returning id
+        """,
+        (
+            workspace_id,
+            payload["category"],
+            payload["title"],
+            payload.get("detail"),
+            payload["priority"],
+            user_id,
+        ),
+    ).fetchone()
+
+
+def update_client_request(conn, workspace_id: UUID, request_id: UUID, updates: dict[str, Any]) -> bool:
+    if not updates:
+        return True
+    set_clause = ", ".join(f"{column} = %s" for column in updates)
+    result = conn.execute(
+        f"update client_requests set {set_clause}, updated_at = now() where id = %s and workspace_id = %s",
+        [*updates.values(), request_id, workspace_id],
+    )
+    return result.rowcount > 0
+
+
 def update_client(conn, client_id: UUID, updates: dict[str, Any]) -> None:
     if not updates:
         return

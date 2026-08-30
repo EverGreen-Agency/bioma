@@ -164,3 +164,35 @@ Rotas adicionais do Copiloto:
 - `POST /backoffice/sales-copilot/ingest/{id}` com `X-Copilot-Ingest-Token`.
 
 O último endpoint não usa sessão de usuário: autentica o adaptador por token rotacionável, exige consentimento e nunca retorna o conteúdo da sessão. O bot/STT é externo e ainda precisa ser selecionado.
+
+### Experience V2 — migration 0106
+
+`0106_experience_v2_foundation.sql` é aditiva e liga conversa, oportunidade,
+reunião, proposta, tarefa, documentação e evidência sem trocar as fontes de
+verdade existentes.
+
+- `GET/PATCH /backoffice/proposals/opportunities/{id}` e
+  `POST /backoffice/proposals/opportunities/{id}/activities|contacts` expõem a
+  continuidade comercial e sua timeline;
+- sessões de `/backoffice/sales-copilot` podem receber `opportunity_id`;
+- `/workspaces/{workspace_id}/work-graph` cria itens e relações de
+  rastreabilidade; relações nunca concedem acesso;
+- `POST /workspaces/{workspace_id}/requests` permite ao cliente solicitar um
+  resultado sem acessar tarefas internas; a equipe atualiza a triagem por
+  `PATCH /requests/{request_id}`;
+- tarefas separam `description` (contexto), `acceptance_criteria` e
+  `definition_of_done`; registros legados copiados para DoD ficam marcados com
+  `semantic_review_required` até revisão humana;
+- respostas do Copilot persistem `response_blocks` tipados e as threads podem
+  ser vinculadas a múltiplas entidades.
+
+O OpenAPI é parte do corte e deve continuar sincronizado com
+`python scripts/export_openapi.py --check`.
+
+### Backlog, importação documental e jornada — migration 0107
+
+`0107_backlog_document_imports_and_sales_journey.sql` torna `work_items` o
+backlog canônico, adiciona preview/materialização HITL de HTML de projeto e
+grava o funil/jornada derivados das reuniões comerciais. A especificação,
+user stories, Definition of Done e limites operacionais estão em
+[`SPEC-BACKLOG-IMPORTACAO-JORNADA-V1.md`](../../../docs/SPEC-BACKLOG-IMPORTACAO-JORNADA-V1.md).

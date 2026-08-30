@@ -10,12 +10,17 @@ from bioma_api.proposal_catalog import (
     URGENCY_KEYS,
 )
 
-OpportunityStatus = Literal["new", "qualified", "proposal_generated", "rejected", "archived"]
+OpportunityStatus = Literal[
+    "new", "qualifying", "qualified", "contacted", "meeting", "proposal",
+    "proposal_generated", "negotiating", "won", "lost", "rejected", "archived",
+]
 ProposalStatus = Literal["draft", "approved", "sent", "negotiating", "won", "lost"]
 PlatformStatus = Literal["active", "paused", "not_configured"]
 GenerationMode = Literal["live", "preview", "manual"]
 
 class OpportunityBase(BaseModel):
+    workspace_id: UUID | None = None
+    owner_user_id: UUID | None = None
     source_platform: str = Field(min_length=2, max_length=50)
     external_id: str | None = None
     title: str = Field(min_length=2, max_length=255)
@@ -26,12 +31,16 @@ class OpportunityBase(BaseModel):
     fit_score: int | None = Field(default=None, ge=0, le=100)
     fit_analysis: str | None = None
     status: OpportunityStatus = "new"
+    next_action_at: datetime | None = None
+    closed_at: datetime | None = None
     raw_payload: dict[str, Any] = Field(default_factory=dict)
 
 class OpportunityCreatePayload(OpportunityBase):
     pass
 
 class OpportunityIngestPayload(BaseModel):
+    workspace_id: UUID | None = None
+    owner_user_id: UUID | None = None
     source_platform: str = Field(min_length=2, max_length=50)
     title: str = Field(min_length=2, max_length=255)
     url: str | None = None
@@ -39,10 +48,64 @@ class OpportunityIngestPayload(BaseModel):
     budget_text: str | None = Field(default=None, max_length=100)
     raw_payload: dict[str, Any] = Field(default_factory=dict)
 
+
+class OpportunityUpdatePayload(BaseModel):
+    workspace_id: UUID | None = None
+    owner_user_id: UUID | None = None
+    title: str | None = Field(default=None, min_length=2, max_length=255)
+    description: str | None = Field(default=None, max_length=10_000)
+    budget_text: str | None = Field(default=None, max_length=100)
+    status: OpportunityStatus | None = None
+    next_action_at: datetime | None = None
+
+
+class CommercialActivityCreate(BaseModel):
+    activity_type: Literal[
+        "captured", "status_changed", "note", "follow_up_prepared", "follow_up_sent",
+        "message_received", "meeting_scheduled", "meeting_completed", "proposal_created",
+        "proposal_sent", "decision", "won", "lost",
+    ]
+    direction: Literal["internal", "inbound", "outbound"] = "internal"
+    channel: str | None = Field(default=None, max_length=80)
+    title: str = Field(min_length=2, max_length=500)
+    body: str | None = Field(default=None, max_length=20_000)
+    occurred_at: datetime | None = None
+    source_kind: str = Field(default="manual", min_length=2, max_length=80)
+    source_ref: str | None = Field(default=None, max_length=2_000)
+    idempotency_key: str | None = Field(default=None, max_length=255)
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class CommercialActivity(CommercialActivityCreate):
+    id: UUID
+    opportunity_id: UUID
+    occurred_at: datetime
+    created_by: UUID | None = None
+    created_at: datetime
+
+
+class OpportunityContactCreate(BaseModel):
+    lead_id: UUID
+    relationship_role: Literal["contact", "champion", "decision_maker", "influencer", "billing"] = "contact"
+    is_primary: bool = False
+
+
+class OpportunityContact(OpportunityContactCreate):
+    opportunity_id: UUID
+    created_by: UUID | None = None
+    created_at: datetime
+
+
 class OpportunitySummary(OpportunityBase):
     id: UUID
     created_at: datetime
     updated_at: datetime
+
+
+class OpportunityDetail(BaseModel):
+    opportunity: OpportunitySummary
+    activities: list[CommercialActivity] = Field(default_factory=list)
+    contacts: list[OpportunityContact] = Field(default_factory=list)
 
 class ProposalBase(BaseModel):
     opportunity_id: UUID | None = None

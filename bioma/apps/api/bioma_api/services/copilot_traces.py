@@ -17,6 +17,7 @@ from bioma_api.repositories import copilot_traces as repo
 from bioma_api.schemas.auth import CurrentUserResponse
 from bioma_api.schemas.copilot import (
     CopilotDailyUsage,
+    CopilotBlock,
     CopilotProviderUsage,
     CopilotQuotaBucket,
     CopilotRoutedAccountQuota,
@@ -126,6 +127,7 @@ def _trace(conn, run: dict, steps: list[dict]) -> CopilotRunTrace:
             "dossier_summary", "memories_used", "skills_used", "sources", "actions", "attachments",
             "input_tokens", "output_tokens", "cost_cents", "duration_ms", "created_at",
         )},
+        response_blocks=[CopilotBlock(**item) for item in (run.get("response_blocks") or [])],
         steps=[CopilotRunStep(**{key: step[key] for key in (
             "position", "kind", "label", "status", "detail", "payload", "duration_ms",
         )}) for step in steps],

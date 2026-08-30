@@ -44,6 +44,8 @@ from bioma_api.routers import (
     vault,
     wiki,
     wins,
+    work_graph,
+    document_imports,
     workspaces,
     tasks,
     whatsapp,
@@ -140,6 +142,8 @@ app.include_router(proposal_lifecycle.public_router)
 app.include_router(sales_copilot.router)
 app.include_router(platform_studies.router)
 app.include_router(wins.router)
+app.include_router(work_graph.router)
+app.include_router(document_imports.router)
 app.include_router(mcp_http.router)
 
 

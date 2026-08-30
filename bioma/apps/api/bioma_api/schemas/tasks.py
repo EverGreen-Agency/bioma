@@ -81,9 +81,10 @@ class TaskComment(BaseModel):
 
 class TaskBase(BaseModel):
     title: str
-    # A descrição é a Definição de Pronto (Manual Operacional Bioma v2): é o
-    # critério que autoriza mover a tarefa para DONE, não um campo livre.
+    # Contexto, problema e resultado esperado. Aceite e DoD são campos próprios.
     description: Optional[str] = None
+    acceptance_criteria: Optional[str] = None
+    definition_of_done: Optional[str] = None
     status: str
     group_status: Literal["NOT_STARTED", "ACTIVE", "DONE", "CLOSED"]
     priority: Optional[Literal["Alta", "Média", "Baixa"]] = None
@@ -114,6 +115,8 @@ class TaskCreate(TaskBase):
 class TaskUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
+    acceptance_criteria: Optional[str] = None
+    definition_of_done: Optional[str] = None
     status: Optional[str] = None
     group_status: Optional[Literal["NOT_STARTED", "ACTIVE", "DONE", "CLOSED"]] = None
     priority: Optional[Literal["Alta", "Média", "Baixa"]] = None
@@ -136,6 +139,7 @@ class Task(TaskBase):
     workspace_id: Optional[UUID] = None
     external_source: Optional[str] = None
     external_id: Optional[str] = None
+    semantic_review_required: bool = False
     created_at: datetime
     updated_at: datetime
     custom_fields: list[TaskCustomField] = Field(default_factory=list)

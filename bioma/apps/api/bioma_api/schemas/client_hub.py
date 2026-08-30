@@ -3,7 +3,7 @@ from uuid import UUID
 
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 ClientStatus = Literal["onboarding", "active", "paused", "completed", "archived"]
 ArtifactVisibility = Literal["internal", "client"]
@@ -12,6 +12,8 @@ ApprovalStatus = Literal["pending", "approved", "rejected", "cancelled"]
 LeadStage = Literal["new", "qualifying", "meeting", "proposal", "won", "lost"]
 FinancialRecordKind = Literal["contract", "invoice"]
 FinancialRecordStatus = Literal["draft", "open", "paid", "overdue", "cancelled"]
+ClientRequestCategory = Literal["request", "question", "change", "input"]
+ClientRequestStatus = Literal["submitted", "triaged", "in_progress", "waiting_client", "done", "declined"]
 
 
 class ClientSummary(BaseModel):
@@ -79,8 +81,56 @@ class AuditLogSummary(BaseModel):
     created_at: datetime
 
 
+class ClientRequestCreate(BaseModel):
+    category: ClientRequestCategory = "request"
+    title: str = Field(min_length=2, max_length=300)
+    detail: str | None = Field(default=None, max_length=5_000)
+    priority: Literal["low", "normal", "high", "urgent"] = "normal"
+
+
+class ClientRequestUpdate(BaseModel):
+    status: ClientRequestStatus | None = None
+    priority: Literal["low", "normal", "high", "urgent"] | None = None
+    assigned_to: UUID | None = None
+    resolution_summary: str | None = Field(default=None, max_length=5_000)
+
+
+class ClientRequestSummary(BaseModel):
+    id: UUID
+    category: ClientRequestCategory
+    title: str
+    detail: str | None = None
+    status: ClientRequestStatus
+    priority: Literal["low", "normal", "high", "urgent"]
+    requested_by: UUID | None = None
+    requested_by_name: str | None = None
+    assigned_to: UUID | None = None
+    resolution_summary: str | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class ClientAttentionItem(BaseModel):
+    kind: Literal["approval", "request", "delivery"]
+    entity_id: UUID
+    title: str
+    detail: str
+    action_label: str
+    due_at: datetime | None = None
+
+
+class ClientProgressSummary(BaseModel):
+    deliverables_total: int
+    deliverables_done: int
+    deliverables_in_progress: int
+    completion_percentage: int
+
+
 class ClientPortalResponse(BaseModel):
     client: ClientSummary
+    attention: list[ClientAttentionItem] = []
+    progress: ClientProgressSummary
+    requests: list[ClientRequestSummary] = []
     artifacts: list[ArtifactSummary]
     deliverables: list[DeliverableSummary]
     approvals: list[ApprovalSummary]
