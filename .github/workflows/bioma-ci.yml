@@ -4,11 +4,17 @@ on:
   push:
     branches: [develop, main]
     paths:
-      - "bioma/**"
+      - "apps/**"
+      - "packages/**"
+      - "infra/**"
+      - "scripts/**"
       - ".github/workflows/bioma-ci.yml"
   pull_request:
     paths:
-      - "bioma/**"
+      - "apps/**"
+      - "packages/**"
+      - "infra/**"
+      - "scripts/**"
       - ".github/workflows/bioma-ci.yml"
 
 concurrency:
@@ -25,23 +31,23 @@ jobs:
         with:
           python-version: "3.13"
           cache: pip
-          cache-dependency-path: bioma/apps/api/requirements-dev.txt
-      - run: pip install -r bioma/apps/api/requirements-dev.txt
+          cache-dependency-path: apps/api/requirements-dev.txt
+      - run: pip install -r apps/api/requirements-dev.txt
       - run: python -m pytest
-        working-directory: bioma/apps/api
+        working-directory: apps/api
 
   web:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: bioma/apps/web
+        working-directory: apps/web
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: bioma/apps/web/package-lock.json
+          cache-dependency-path: apps/web/package-lock.json
       - run: npm ci
       # CONTRACT-001: os tipos gerados precisam bater com o openapi.json
       # versionado. Se o commit mexeu no contrato mas esqueceu de rodar
@@ -80,20 +86,20 @@ jobs:
           python-version: "3.13"
           cache: pip
           cache-dependency-path: |
-            bioma/apps/api/requirements.txt
-            bioma/apps/worker/requirements.txt
-      - run: pip install -r bioma/apps/api/requirements.txt -r bioma/apps/worker/requirements.txt
-      - run: python -m compileall bioma/apps/api/bioma_api bioma/apps/api/scripts bioma/apps/worker/bioma_worker bioma/apps/worker/scripts
-      - run: python bioma/apps/api/scripts/migrate.py
+            apps/api/requirements.txt
+            apps/worker/requirements.txt
+      - run: pip install -r apps/api/requirements.txt -r apps/worker/requirements.txt
+      - run: python -m compileall apps/api/bioma_api apps/api/scripts apps/worker/bioma_worker apps/worker/scripts
+      - run: python apps/api/scripts/migrate.py
       # CONTRACT-001: o openapi.json versionado precisa refletir a API atual.
-      - run: python bioma/apps/api/scripts/export_openapi.py --check
-      - run: python bioma/apps/api/scripts/seed_dev.py
+      - run: python apps/api/scripts/export_openapi.py --check
+      - run: python apps/api/scripts/seed_dev.py
       # SMOKE-DISCOVERY: a CI listava 4 smokes na mao enquanto o repositorio tinha
       # 40+. Todo smoke novo nascia fora da CI — foi assim que um 500 em toda a
       # ingestao de transcricao do copiloto de vendas passou meses invisivel.
       # O runner descobre os smokes automaticamente; exclusoes ficam declaradas
-      # com motivo em bioma/scripts/run_smokes.py.
-      - run: python bioma/scripts/run_smokes.py --group standard
+      # com motivo em scripts/run_smokes.py.
+      - run: python scripts/run_smokes.py --group standard
       # Os smokes mutáveis (queue/vault/reaper) exigem banco isolado com sufixo
       # _smoke. A CI nunca o provisionava, então esses passos falhavam. Cria,
       # migra e semeia o banco dedicado antes de rodá-los.
@@ -108,9 +114,10 @@ jobs:
         env:
           DATABASE_URL: postgresql://bioma:bioma@localhost:5432/bioma_smoke
         run: |
-          python bioma/apps/api/scripts/migrate.py
-          python bioma/apps/api/scripts/seed_dev.py
+          python apps/api/scripts/migrate.py
+          python apps/api/scripts/seed_dev.py
       - name: Smokes que exigem banco isolado
         env:
           DATABASE_URL: postgresql://bioma:bioma@localhost:5432/bioma_smoke
-        run: python bioma/scripts/run_smokes.py --group mutable
+        run: python scripts/run_smokes.py --group mutable
+
