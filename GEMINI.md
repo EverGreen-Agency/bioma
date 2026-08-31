@@ -1,16 +1,3 @@
-# Bioma — Project Instructions
-
-**Bioma** is the product: FastAPI API (`apps/api`), background worker
-(`apps/worker`), and React/Vite web app (`apps/web`). Everything the agency
-used to run through Opensquad squads is now implemented natively inside Bioma.
-
-Opensquad (`_opensquad/`, `squads/`, `skills/`, `scratch/`, and the `/opensquad` command
-across `.agent/`, `.agents/`, `.claude/`) was retired on 2026-08-05. Its knowledge content
-was migrated to `apps/api/seed_data/` and is seeded into Postgres on every API boot
-(`scripts/seed_knowledge.py`, called by `scripts/start.py`). Do not recreate `/opensquad`
-commands or reference `_opensquad/` paths in new code — if you find a leftover reference,
-it's dead and safe to remove.
-
 ## graphify
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
