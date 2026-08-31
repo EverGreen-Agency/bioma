@@ -2,8 +2,10 @@ node_modules
 .DS_Store
 *.bak
 
-# Índice local do CodeGraph (regenerado por repo; não versionar)
+# Índice local do CodeGraph e Pytest Cache (não versionar)
 .codegraph/
+.pytest_cache/
+**/.pytest_cache/
 
 # Variáveis globais / locais
 .env
