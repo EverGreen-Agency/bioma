@@ -1,0 +1,548 @@
+/* ==========================================================================
+   CRAFT DESIGN SYSTEM - MALLEABLE SOCIAL STUDIO
+   Estética: Paper / Ink / Orange (#ff6b1a), Dot Matrix Grid, 4px Hard Shadows
+   ========================================================================== */
+
+:root {
+  --craft-paper: #f2efe8;
+  --craft-paper-card: #ffffff;
+  --craft-ink: #1c1a16;
+  --craft-ink-muted: #5a5751;
+  --craft-ink-faint: #d5d1c8;
+  --craft-orange: #ff6b1a;
+  --craft-orange-light: #fff0e6;
+  --craft-border: 2px solid #1c1a16;
+  --craft-shadow: 4px 4px 0px #1c1a16;
+  --craft-shadow-sm: 2px 2px 0px #1c1a16;
+  --craft-shadow-lg: 6px 6px 0px #1c1a16;
+  --craft-font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --craft-font-mono: 'Doto', 'SF Mono', Monaco, Consolas, monospace;
+}
+
+[data-craft-theme="dark"] {
+  --craft-paper: #131211;
+  --craft-paper-card: #1c1b18;
+  --craft-ink: #f2efe8;
+  --craft-ink-muted: #a8a49c;
+  --craft-ink-faint: #34322d;
+  --craft-orange: #ff7e38;
+  --craft-orange-light: #2b1c12;
+  --craft-border: 2px solid #3c3933;
+  --craft-shadow: 4px 4px 0px #0a0908;
+  --craft-shadow-sm: 2px 2px 0px #0a0908;
+  --craft-shadow-lg: 6px 6px 0px #0a0908;
+}
+
+/* Base Container */
+.craft-studio-root {
+  min-height: 100vh;
+  width: 100%;
+  background-color: var(--craft-paper);
+  background-image: radial-gradient(var(--craft-ink-faint) 1.2px, transparent 1.2px);
+  background-size: 18px 18px;
+  color: var(--craft-ink);
+  font-family: var(--craft-font-sans);
+  display: flex;
+  flex-direction: column;
+  box-sizing: border-box;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Header */
+.craft-header {
+  height: 64px;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: var(--craft-border);
+  background-color: var(--craft-paper-card);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.craft-brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.craft-brand-badge {
+  background: var(--craft-orange);
+  color: #ffffff;
+  font-weight: 900;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  padding: 2px 8px;
+  border-radius: 2px;
+  border: 1.5px solid var(--craft-ink);
+  box-shadow: 2px 2px 0px var(--craft-ink);
+  text-transform: uppercase;
+}
+
+.craft-brand-title {
+  font-size: 1.25rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.craft-brand-subtitle {
+  font-size: 0.85rem;
+  color: var(--craft-ink-muted);
+  font-weight: 500;
+}
+
+.craft-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Navigation Tabs (Paginações) */
+.craft-nav-bar {
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  background-color: var(--craft-paper);
+  border-bottom: var(--craft-border);
+  overflow-x: auto;
+  gap: 8px;
+}
+
+.craft-nav-tab {
+  padding: 14px 18px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--craft-ink-muted);
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.craft-nav-tab:hover {
+  color: var(--craft-ink);
+}
+
+.craft-nav-tab.active {
+  color: var(--craft-ink);
+  border-bottom-color: var(--craft-orange);
+}
+
+.craft-nav-tab-badge {
+  background: var(--craft-ink);
+  color: var(--craft-paper);
+  font-size: 0.7rem;
+  font-family: var(--craft-font-mono);
+  padding: 1px 6px;
+  border-radius: 99px;
+}
+
+.craft-nav-tab.active .craft-nav-tab-badge {
+  background: var(--craft-orange);
+  color: #ffffff;
+}
+
+/* Content Viewport */
+.craft-view-container {
+  flex: 1;
+  padding: 28px 24px;
+  max-width: 1600px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+}
+
+/* Buttons */
+.craft-btn {
+  font-family: var(--craft-font-sans);
+  font-weight: 700;
+  font-size: 0.88rem;
+  padding: 8px 16px;
+  border: var(--craft-border);
+  box-shadow: var(--craft-shadow-sm);
+  background: var(--craft-paper-card);
+  color: var(--craft-ink);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: transform 0.1s ease, box-shadow 0.1s ease, background-color 0.15s ease;
+  border-radius: 3px;
+}
+
+.craft-btn:hover {
+  transform: translate(-1px, -1px);
+  box-shadow: var(--craft-shadow);
+}
+
+.craft-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.craft-btn-primary {
+  background: var(--craft-ink);
+  color: var(--craft-paper);
+}
+
+[data-craft-theme="dark"] .craft-btn-primary {
+  background: var(--craft-orange);
+  color: #131211;
+  border-color: #ff7e38;
+}
+
+.craft-btn-orange {
+  background: var(--craft-orange);
+  color: #ffffff;
+  border-color: var(--craft-ink);
+}
+
+.craft-btn-icon {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+}
+
+/* Card Container */
+.craft-card {
+  background: var(--craft-paper-card);
+  border: var(--craft-border);
+  box-shadow: var(--craft-shadow);
+  border-radius: 4px;
+  padding: 20px;
+  box-sizing: border-box;
+  transition: transform 0.15s ease;
+}
+
+.craft-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.craft-card-title {
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+/* Workbench Cards Layout */
+.craft-workbench-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.craft-prompt-bar {
+  display: flex;
+  gap: 12px;
+  background: var(--craft-paper-card);
+  border: var(--craft-border);
+  box-shadow: var(--craft-shadow);
+  padding: 16px;
+  border-radius: 4px;
+  align-items: center;
+}
+
+.craft-prompt-input {
+  flex: 1;
+  font-family: var(--craft-font-sans);
+  font-size: 0.95rem;
+  padding: 10px 14px;
+  border: var(--craft-border);
+  background: var(--craft-paper);
+  color: var(--craft-ink);
+  border-radius: 2px;
+  outline: none;
+}
+
+.craft-prompt-input:focus {
+  border-color: var(--craft-orange);
+}
+
+.craft-idea-card {
+  background: var(--craft-paper-card);
+  border: var(--craft-border);
+  box-shadow: var(--craft-shadow);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.craft-idea-header {
+  padding: 14px 20px;
+  background: var(--craft-paper);
+  border-bottom: var(--craft-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.craft-idea-number {
+  background: var(--craft-ink);
+  color: var(--craft-paper);
+  font-family: var(--craft-font-mono);
+  font-weight: 900;
+  font-size: 0.85rem;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  border-radius: 2px;
+}
+
+.craft-idea-columns {
+  display: grid;
+  grid-template-columns: 280px 1.2fr 1fr;
+  gap: 0;
+}
+
+@media (max-width: 1100px) {
+  .craft-idea-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.craft-idea-col {
+  padding: 20px;
+  border-right: var(--craft-border);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.craft-idea-col:last-child {
+  border-right: none;
+}
+
+.craft-col-tag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--craft-ink-muted);
+  text-transform: uppercase;
+}
+
+/* Visual Idea Preview Box */
+.craft-preview-box {
+  width: 100%;
+  aspect-ratio: 4/5;
+  background: var(--craft-paper);
+  border: var(--craft-border);
+  box-shadow: var(--craft-shadow-sm);
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.craft-preview-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.craft-preview-box:hover img {
+  transform: scale(1.03);
+}
+
+/* Photo Asset Tray */
+.craft-asset-tray {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.craft-asset-thumb {
+  aspect-ratio: 1/1;
+  border: var(--craft-border);
+  background: var(--craft-paper);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.craft-asset-thumb:hover {
+  transform: translateY(-2px);
+}
+
+.craft-asset-thumb.selected {
+  border-color: var(--craft-orange);
+  box-shadow: 2px 2px 0px var(--craft-orange);
+}
+
+.craft-asset-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.craft-asset-index {
+  position: absolute;
+  bottom: 2px;
+  left: 2px;
+  background: var(--craft-ink);
+  color: var(--craft-paper);
+  font-family: var(--craft-font-mono);
+  font-size: 0.65rem;
+  padding: 1px 4px;
+}
+
+/* Slider Controls */
+.craft-slider-group {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 8px;
+}
+
+.craft-slider-track {
+  flex: 1;
+  accent-color: var(--craft-orange);
+  cursor: pointer;
+}
+
+.craft-slider-val {
+  font-family: var(--craft-font-mono);
+  font-weight: 900;
+  font-size: 0.9rem;
+}
+
+/* Modals */
+.craft-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(19, 18, 17, 0.7);
+  backdrop-filter: blur(4px);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.craft-modal-dialog {
+  background: var(--craft-paper);
+  border: var(--craft-border);
+  box-shadow: var(--craft-shadow-lg);
+  border-radius: 4px;
+  max-width: 900px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.craft-modal-header {
+  padding: 18px 24px;
+  background: var(--craft-paper-card);
+  border-bottom: var(--craft-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.craft-modal-body {
+  padding: 24px;
+}
+
+/* 3D Image Cloud Styles */
+.craft-cloud-viewport {
+  position: relative;
+  width: 100%;
+  height: 650px;
+  background: var(--craft-paper);
+  border: var(--craft-border);
+  box-shadow: var(--craft-shadow);
+  border-radius: 4px;
+  overflow: hidden;
+  perspective: 1200px;
+  cursor: grab;
+  user-select: none;
+}
+
+.craft-cloud-viewport:active {
+  cursor: grabbing;
+}
+
+.craft-cloud-sphere {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  transform-style: preserve-3d;
+}
+
+.craft-cloud-item {
+  position: absolute;
+  top: -100px;
+  left: -80px;
+  width: 160px;
+  height: 200px;
+  background: var(--craft-paper-card);
+  border: 1.5px solid var(--craft-ink);
+  box-shadow: 2px 2px 0px rgba(28, 26, 22, 0.3);
+  border-radius: 3px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: filter 0.2s ease, opacity 0.2s ease;
+}
+
+.craft-cloud-item:hover {
+  border-color: var(--craft-orange);
+  box-shadow: 3px 3px 0px var(--craft-orange);
+  z-index: 999;
+}
+
+.craft-cloud-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.craft-cloud-controls {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  right: 20px;
+  background: var(--craft-paper-card);
+  border: var(--craft-border);
+  box-shadow: var(--craft-shadow);
+  border-radius: 4px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  z-index: 20;
+}
