@@ -68,14 +68,20 @@ def _connection(
     display_name: str,
     metadata: str = '{"mode":"seed"}',
 ) -> None:
+    workspace_row = conn.execute(
+        "select id from workspaces where subject_organization_id = %s limit 1",
+        (organization_id,),
+    ).fetchone()
+    workspace_id = workspace_row[0] if workspace_row else organization_id
+
     conn.execute(
         """
         insert into performance_connections (
-          client_id, organization_id, provider, external_account_id, display_name,
+          workspace_id, client_id, organization_id, provider, external_account_id, display_name,
           status, credentials_ref, metadata
         )
-        values (%s, %s, %s, %s, %s, 'active', 'env:GOOGLE_SERVICE_ACCOUNT_JSON', %s::jsonb)
-        on conflict (client_id, provider, external_account_id)
+        values (%s, %s, %s, %s, %s, %s, 'active', 'env:GOOGLE_SERVICE_ACCOUNT_JSON', %s::jsonb)
+        on conflict (workspace_id, provider, external_account_id)
         do update set
           display_name = excluded.display_name,
           status = excluded.status,
@@ -87,7 +93,7 @@ def _connection(
           end,
           updated_at = now()
         """,
-        (client_id, organization_id, provider, external_account_id, display_name, metadata),
+        (workspace_id, client_id, organization_id, provider, external_account_id, display_name, metadata),
     )
 
 
