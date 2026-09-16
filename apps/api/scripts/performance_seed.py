@@ -72,7 +72,7 @@ def _connection(
         "select id from workspaces where subject_organization_id = %s limit 1",
         (organization_id,),
     ).fetchone()
-    workspace_id = workspace_row[0] if workspace_row else organization_id
+    workspace_id = workspace_row["id"] if workspace_row else organization_id
 
     conn.execute(
         """
