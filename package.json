@@ -2,6 +2,10 @@
   "name": "opensquad-project",
   "version": "1.0.0",
   "private": true,
+  "scripts": {
+    "dev": "npm run dev --prefix apps/web",
+    "build": "npm run build --prefix apps/web"
+  },
   "dependencies": {
     "opensquad": "^0.1.15",
     "playwright": "^1.58.2"

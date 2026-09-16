@@ -1,0 +1,1389 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Univet Loupes × EverGreen — Apresentação Executiva & Kickoff</title>
+  <style>
+    /* ==========================================================================
+       UNIVET LOUPES x EVERGREEN — EXECUTIVE PRESENTATION SYSTEM (STANDALONE DECK)
+       Co-Branding: Univet Deep Forest (#00491E), Moka (#4E4B48), Sand (#C8C3B3)
+       ========================================================================== */
+    :root {
+      --uv-green: #00491E;
+      --uv-green-hover: #003616;
+      --uv-green-glow: rgba(0, 73, 30, 0.35);
+      --uv-moka: #4E4B48;
+      --uv-sand: #C8C3B3;
+      --uv-sand-subtle: rgba(200, 195, 179, 0.12);
+      --uv-dark: #0A0D0A;
+      --uv-surface-card: #141915;
+      --uv-surface-hover: #1A221C;
+      --uv-border: rgba(200, 195, 179, 0.2);
+      --uv-border-light: rgba(200, 195, 179, 0.4);
+      --uv-text-primary: #F3F4F6;
+      --uv-text-secondary: #C8C3B3;
+      --uv-text-muted: #8E8A82;
+      --uv-emerald: #10B981;
+      --uv-amber: #F59E0B;
+      --uv-blue: #3B82F6;
+      --uv-red: #EF4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--uv-dark);
+      color: var(--uv-text-primary);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      line-height: 1.5;
+    }
+
+    /* Header */
+    .top-bar {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(10, 13, 10, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--uv-border);
+      height: 64px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 clamp(16px, 3vw, 40px);
+    }
+
+    .brand-box {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .univet-logo-badge {
+      background: var(--uv-green);
+      color: #FFFFFF;
+      font-weight: 700;
+      font-size: 15px;
+      letter-spacing: 0.08em;
+      padding: 5px 12px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .co-separator {
+      color: var(--uv-border-light);
+      font-size: 14px;
+    }
+
+    .eg-signature {
+      font-size: 12px;
+      color: var(--uv-text-secondary);
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .slide-badge-num {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--uv-text-secondary);
+      background: rgba(200, 195, 179, 0.08);
+      border: 1px solid var(--uv-border);
+      padding: 5px 12px;
+      border-radius: 9999px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .btn-nav {
+      background: var(--uv-surface-card);
+      border: 1px solid var(--uv-border);
+      color: var(--uv-text-primary);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+
+    .btn-nav:hover:not(:disabled) {
+      background: var(--uv-green);
+      border-color: var(--uv-green);
+      color: #FFFFFF;
+    }
+
+    .btn-nav:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    .btn-toggle-view {
+      background: transparent;
+      border: 1px solid var(--uv-border);
+      color: var(--uv-text-secondary);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .btn-toggle-view:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: #FFFFFF;
+    }
+
+    .progress-bar-track {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 3px;
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--uv-green), var(--uv-emerald));
+      transition: width 0.3s ease;
+    }
+
+    /* Container */
+    .deck-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: clamp(20px, 3vh, 48px) clamp(16px, 4vw, 48px);
+      max-width: 1360px;
+      width: 100%;
+      margin: 0 auto;
+      min-height: calc(100dvh - 64px);
+    }
+
+    .slide-page {
+      display: none;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    .slide-page.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Continuous Scroll Mode */
+    body.mode-scroll .deck-container {
+      display: block;
+      min-height: auto;
+      padding-top: 40px;
+    }
+
+    body.mode-scroll .slide-page {
+      display: block !important;
+      margin-bottom: 70px;
+      padding-bottom: 60px;
+      border-bottom: 1px solid var(--uv-border);
+    }
+
+    body.mode-scroll .slide-page:last-child {
+      border-bottom: none;
+      margin-bottom: 20px;
+    }
+
+    /* Typography & Hierarchy */
+    .slide-header {
+      margin-bottom: clamp(16px, 2.5vh, 28px);
+    }
+
+    .badge-label {
+      display: inline-block;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      font-weight: 700;
+      color: var(--uv-sand);
+      background: rgba(200, 195, 179, 0.08);
+      border: 1px solid var(--uv-border);
+      padding: 4px 10px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+    }
+
+    .slide-title {
+      font-size: clamp(24px, 3.2vw, 42px);
+      font-weight: 700;
+      color: #FFFFFF;
+      line-height: 1.15;
+      margin-bottom: 8px;
+      letter-spacing: -0.02em;
+    }
+
+    .slide-subtitle {
+      font-size: clamp(14px, 1.2vw, 17px);
+      color: var(--uv-text-secondary);
+      max-width: 78ch;
+      line-height: 1.5;
+    }
+
+    /* Layout Grids */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: clamp(16px, 2.5vw, 28px);
+      align-items: stretch;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: clamp(16px, 2vw, 24px);
+      align-items: stretch;
+    }
+
+    /* Cards */
+    .card {
+      background: var(--uv-surface-card);
+      border: 1px solid var(--uv-border);
+      border-radius: 12px;
+      padding: clamp(16px, 2.2vh, 26px);
+      display: flex;
+      flex-direction: column;
+      transition: all 0.2s;
+    }
+
+    .card:hover {
+      border-color: var(--uv-border-light);
+      background: var(--uv-surface-hover);
+    }
+
+    .card-title {
+      font-size: 17px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 8px;
+    }
+
+    .card-text {
+      font-size: 13.5px;
+      color: var(--uv-text-secondary);
+      line-height: 1.55;
+    }
+
+    /* Slide 1 - Mindset */
+    .mindset-card {
+      border-radius: 10px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+
+    .mindset-old {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+    }
+
+    .mindset-new {
+      background: rgba(0, 73, 30, 0.2);
+      border: 1px solid var(--uv-green);
+    }
+
+    .tag-mindset {
+      font-size: 10.5px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+    }
+
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: auto;
+      padding-top: 14px;
+    }
+
+    .stat-pill {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--uv-border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .stat-num {
+      font-size: 22px;
+      font-weight: 800;
+      color: #FFFFFF;
+      display: block;
+    }
+
+    .stat-desc {
+      font-size: 11px;
+      color: var(--uv-text-muted);
+      text-transform: uppercase;
+      margin-top: 2px;
+      display: block;
+    }
+
+    /* Slide 2 - Method */
+    .method-item {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--uv-border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      margin-bottom: 10px;
+    }
+
+    .method-item:last-child {
+      margin-bottom: 0;
+    }
+
+    .method-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: #FFFFFF;
+      margin-bottom: 4px;
+    }
+
+    .method-desc {
+      font-size: 12.5px;
+      color: var(--uv-text-secondary);
+      line-height: 1.45;
+    }
+
+    /* Slide 3 - Fronts */
+    .front-border-growth { border-top: 4px solid var(--uv-emerald); }
+    .front-border-infra { border-top: 4px solid var(--uv-blue); }
+    .front-border-seo { border-top: 4px solid var(--uv-amber); }
+
+    .front-tagline {
+      font-size: 12.5px;
+      color: var(--uv-text-muted);
+      font-style: italic;
+      margin-bottom: 12px;
+    }
+
+    .front-ul {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .front-ul li {
+      font-size: 13px;
+      color: var(--uv-text-secondary);
+      line-height: 1.45;
+      position: relative;
+      padding-left: 16px;
+    }
+
+    .front-ul li::before {
+      content: '•';
+      position: absolute;
+      left: 0;
+      color: var(--uv-sand);
+      font-size: 16px;
+      line-height: 1;
+    }
+
+    .kpis-container {
+      margin-top: auto;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid var(--uv-border);
+    }
+
+    .kpi-title {
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--uv-text-muted);
+      margin-bottom: 6px;
+    }
+
+    .kpi-pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .kpi-chip {
+      font-size: 11px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 2px 7px;
+      border-radius: 4px;
+      color: #FFFFFF;
+    }
+
+    /* Slide 4 - Simulator */
+    .sim-layout {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 24px;
+    }
+
+    .seg-switcher {
+      display: flex;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--uv-border);
+      margin-bottom: 14px;
+    }
+
+    .seg-btn {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--uv-text-secondary);
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .seg-btn.active {
+      background: var(--uv-green);
+      color: #FFFFFF;
+    }
+
+    .slider-row {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+
+    .slider-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: #FFFFFF;
+    }
+
+    .slider-val {
+      color: var(--uv-emerald);
+      font-family: monospace;
+      font-size: 12.5px;
+      background: rgba(16, 185, 129, 0.1);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--uv-green);
+      cursor: pointer;
+    }
+
+    .results-box {
+      background: linear-gradient(180deg, #151D16 0%, #0F1310 100%);
+      border: 1px solid rgba(0, 73, 30, 0.4);
+      border-radius: 12px;
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .rev-card {
+      background: rgba(0, 73, 30, 0.2);
+      border: 1px solid var(--uv-green);
+      border-radius: 10px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .rev-tag {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: var(--uv-emerald);
+    }
+
+    .rev-num {
+      font-size: clamp(26px, 3.2vw, 38px);
+      font-weight: 800;
+      color: #FFFFFF;
+      margin: 4px 0;
+      letter-spacing: -0.02em;
+    }
+
+    .mini-metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+    }
+
+    .mini-metric {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid var(--uv-border);
+      border-radius: 6px;
+      padding: 8px;
+      text-align: center;
+    }
+
+    .mini-metric-num {
+      font-size: 15px;
+      font-weight: 700;
+      color: #FFFFFF;
+    }
+
+    .mini-metric-lbl {
+      font-size: 10px;
+      color: var(--uv-text-muted);
+      text-transform: uppercase;
+    }
+
+    .bottleneck-card {
+      background: rgba(245, 158, 11, 0.08);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 8px;
+      padding: 12px 14px;
+    }
+
+    .bottleneck-title {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--uv-amber);
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .bottleneck-desc {
+      font-size: 12px;
+      color: var(--uv-text-secondary);
+      line-height: 1.45;
+    }
+
+    /* Slide 5 - Backlog */
+    .filter-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .pill-btn-group {
+      display: flex;
+      gap: 6px;
+    }
+
+    .pill-btn {
+      background: var(--uv-surface-card);
+      border: 1px solid var(--uv-border);
+      color: var(--uv-text-secondary);
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .pill-btn.active {
+      background: var(--uv-green);
+      border-color: var(--uv-green);
+      color: #FFFFFF;
+    }
+
+    .badge-sprint {
+      font-size: 11.5px;
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid var(--uv-emerald);
+      color: var(--uv-emerald);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+
+    .tasks-table-scroll {
+      background: var(--uv-surface-card);
+      border: 1px solid var(--uv-border);
+      border-radius: 10px;
+      max-height: clamp(320px, 46vh, 500px);
+      overflow-y: auto;
+    }
+
+    .task-row {
+      display: grid;
+      grid-template-columns: 75px 85px 1fr 130px 100px;
+      gap: 12px;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(200, 195, 179, 0.08);
+      font-size: 12.5px;
+    }
+
+    .task-row:last-child {
+      border-bottom: none;
+    }
+
+    .badge-p0 {
+      background: rgba(239, 68, 68, 0.18);
+      color: #FCA5A5;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 10px;
+      text-align: center;
+      width: fit-content;
+    }
+
+    .badge-p1 {
+      background: rgba(245, 158, 11, 0.18);
+      color: #FCD34D;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 10px;
+      text-align: center;
+      width: fit-content;
+    }
+
+    .badge-p2 {
+      background: rgba(59, 130, 246, 0.18);
+      color: #93C5FD;
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 700;
+      font-size: 10px;
+      text-align: center;
+      width: fit-content;
+    }
+
+    .task-front-lbl {
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--uv-text-muted);
+    }
+
+    .task-title {
+      font-weight: 600;
+      color: #FFFFFF;
+      display: block;
+    }
+
+    .task-criteria {
+      font-size: 11px;
+      color: var(--uv-text-muted);
+      margin-top: 2px;
+      display: block;
+    }
+
+    .task-timeline {
+      color: var(--uv-sand);
+      font-size: 11.5px;
+    }
+
+    .task-owner {
+      color: var(--uv-text-muted);
+      font-size: 11px;
+      text-align: right;
+    }
+
+    /* Footer */
+    .bottom-bar {
+      padding: 14px clamp(16px, 4vw, 40px);
+      border-top: 1px solid var(--uv-border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(10, 13, 10, 0.95);
+      font-size: 12px;
+      color: var(--uv-text-muted);
+    }
+
+    kbd {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--uv-border);
+      border-radius: 4px;
+      padding: 1px 5px;
+      font-family: monospace;
+      color: var(--uv-text-secondary);
+      font-size: 11px;
+    }
+
+    /* ==========================================================================
+       RESPONSIVIDADE CIRÚRGICA
+       ========================================================================== */
+    @media (max-height: 780px) {
+      .deck-container {
+        padding-top: 14px;
+        padding-bottom: 14px;
+      }
+      .slide-header {
+        margin-bottom: 12px;
+      }
+      .slide-title {
+        font-size: 24px;
+      }
+      .card {
+        padding: 14px;
+      }
+      .tasks-table-scroll {
+        max-height: 260px;
+      }
+      .rev-num {
+        font-size: 26px;
+      }
+    }
+
+    @media (max-width: 1024px) {
+      .grid-3 { grid-template-columns: 1fr; }
+      .sim-layout { grid-template-columns: 1fr; }
+      .task-row { grid-template-columns: 70px 75px 1fr 100px; }
+      .task-owner { display: none; }
+    }
+
+    @media (max-width: 768px) {
+      .top-bar { height: auto; padding: 10px 16px; flex-wrap: wrap; gap: 8px; }
+      .grid-2 { grid-template-columns: 1fr; }
+      .task-row { grid-template-columns: 60px 1fr; }
+      .task-front-lbl, .task-timeline { display: none; }
+      .mini-metrics-grid { grid-template-columns: repeat(2, 1fr); }
+      .bottom-bar { flex-direction: column; gap: 8px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar -->
+  <header class="top-bar">
+    <div class="brand-box">
+      <div class="univet-logo-badge">UNIVET LOUPES</div>
+      <span class="co-separator">×</span>
+      <div class="eg-signature">EverGreen Agency</div>
+    </div>
+
+    <div class="nav-actions">
+      <span class="slide-badge-num" id="slideIndicator">1 / 5</span>
+      <button class="btn-nav" id="btnPrev" title="Slide anterior (←)">←</button>
+      <button class="btn-nav" id="btnNext" title="Próximo slide (→ ou Espaço)">→</button>
+      <button class="btn-toggle-view" id="btnToggleView">Alternar Modo Scroll</button>
+    </div>
+
+    <div class="progress-bar-track">
+      <div class="progress-bar-fill" id="progressFill" style="width: 20%;"></div>
+    </div>
+  </header>
+
+  <!-- Deck Container -->
+  <main class="deck-container">
+
+    <!-- SLIDE 1 -->
+    <div class="slide-page active" data-slide="1">
+      <div class="slide-header">
+        <span class="badge-label">Slide 01 · Eixo do Projeto</span>
+        <h1 class="slide-title">Da Métrica de Vaidade ao Faturamento Real</h1>
+        <p class="slide-subtitle">
+          O foco central do projeto da Univet Loupes é conectar mídia, site novo e Kommo CRM para transformar investimento em vendas fechadas de lupas, superando a lógica de apenas contar leads.
+        </p>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <div class="mindset-card mindset-old">
+            <span class="tag-mindset" style="color: #F87171;">Lógica Antiga (Métrica de Vaidade)</span>
+            <strong style="color: #FFF; font-size: 16px;">"O Google / Meta gerou 150 leads este mês."</strong>
+            <p style="font-size: 13px; color: var(--uv-text-secondary);">
+              Foco isolado em cliques e formulários. Não se sabe quantos eram cirurgiões reais, se houve contato no tempo certo, se a demonstração prática foi feita ou se gerou receita.
+            </p>
+          </div>
+
+          <div class="mindset-card mindset-new">
+            <span class="tag-mindset" style="color: var(--uv-emerald);">Eixo EverGreen (Receita & Vendas)</span>
+            <strong style="color: #FFF; font-size: 16px;">"A campanha X gerou 18 demonstrações e R$ 138k em vendas."</strong>
+            <p style="font-size: 13px; color: var(--uv-text-secondary);">
+              Rastreamento de ponta a ponta: do anúncio por especialidade ao agendamento de teste prático com o representante no Kommo CRM, até o dinheiro no caixa.
+            </p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">As 4 Metas Críticas da Operação</div>
+          <p class="card-text">
+            Estruturação desenhada para resolver os gargalos reais da venda consultiva de lupas de alta precisão cirúrgica e odontológica:
+          </p>
+
+          <div class="stats-row">
+            <div class="stat-pill">
+              <span class="stat-num">&lt; 15 min</span>
+              <span class="stat-desc">SLA de Primeiro Contato</span>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-num">100%</span>
+              <span class="stat-desc">Leads com UTM no CRM</span>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-num">R$ 11k - 18k+</span>
+              <span class="stat-desc">Ticket Médio Protegido</span>
+            </div>
+            <div class="stat-pill">
+              <span class="stat-num">Semana 01</span>
+              <span class="stat-desc">Início das 3 Frentes</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 2 -->
+    <div class="slide-page" data-slide="2">
+      <div class="slide-header">
+        <span class="badge-label">Slide 02 · Método Raiz</span>
+        <h2 class="slide-title">O Sistema EverGreen Aplicado à Univet</h2>
+        <p class="slide-subtitle">
+          Crescimento previsível não depende de "sorte" em anúncios. É a sincronia exata entre 3 pilares de receita e 4 sustentações operacionais.
+        </p>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--uv-border); padding-bottom: 8px; margin-bottom: 12px;">
+            <strong style="color: #FFF; font-size: 15px;">Os 3 Pilares da Receita</strong>
+            <span style="color: var(--uv-emerald); font-size: 12px; font-weight: 600;">Onde a receita acontece</span>
+          </div>
+
+          <div class="method-item">
+            <div class="method-title-row">
+              <span>1. Oferta</span>
+              <span style="color: var(--uv-sand); font-size: 11px;">Clareza de Valor</span>
+            </div>
+            <p class="method-desc">
+              Posicionamento técnico de saúde e ergonomia cirúrgica, blindando as lupas italianas Univet contra cópias genéricas.
+            </p>
+          </div>
+
+          <div class="method-item">
+            <div class="method-title-row">
+              <span>2. Demanda</span>
+              <span style="color: var(--uv-sand); font-size: 11px;">Tráfego Qualificado</span>
+            </div>
+            <p class="method-desc">
+              Captação direcionada para médicos e dentistas com poder aquisitivo no Google Search e Meta Ads, sem volume vazio.
+            </p>
+          </div>
+
+          <div class="method-item">
+            <div class="method-title-row">
+              <span>3. Conversão</span>
+              <span style="color: var(--uv-sand); font-size: 11px;">Jornada Sem Fricção</span>
+            </div>
+            <p class="method-desc">
+              Site veloz, WhatsApp roteado para o representante por estado e acompanhamento rigoroso no Kommo CRM.
+            </p>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; border-bottom: 1px solid var(--uv-border); padding-bottom: 8px; margin-bottom: 12px;">
+            <strong style="color: #FFF; font-size: 15px;">As 4 Sustentações Técnicas</strong>
+            <span style="color: var(--uv-sand); font-size: 12px; font-weight: 600;">O que sustenta a escala</span>
+          </div>
+
+          <div class="method-item">
+            <div class="method-title-row">
+              <span>📊 Dados</span>
+              <span style="color: var(--uv-text-muted); font-size: 11px;">Tracking Server-Side</span>
+            </div>
+            <p class="method-desc">
+              GTM, GA4, Meta CAPI e Google Ads com notas máximas de correspondência para orientar as decisões.
+            </p>
+          </div>
+
+          <div class="method-item">
+            <div class="method-title-row">
+              <span>⚙️ Tecnologia</span>
+              <span style="color: var(--uv-text-muted); font-size: 11px;">Infraestrutura Ágil</span>
+            </div>
+            <p class="method-desc">
+              Site em produção ultra-rápido no mobile, webhooks automáticos e integração limpa com CRM.
+            </p>
+          </div>
+
+          <div class="method-item">
+            <div class="method-title-row">
+              <span>👥 Pessoas</span>
+              <span style="color: var(--uv-text-muted); font-size: 11px;">Papéis Definidos</span>
+            </div>
+            <p class="method-desc">
+              Sincronia entre time de mídia da EverGreen, representantes regionais e liderança comercial Univet.
+            </p>
+          </div>
+
+          <div class="method-item">
+            <div class="method-title-row">
+              <span>🔁 Processo</span>
+              <span style="color: var(--uv-text-muted); font-size: 11px;">Cadência & SLAs</span>
+            </div>
+            <p class="method-desc">
+              Etapas claras no CRM, reuniões semanais de performance e testes contínuos de anúncios e páginas.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 3 -->
+    <div class="slide-page" data-slide="3">
+      <div class="slide-header">
+        <span class="badge-label">Slide 03 · Estrutura Operacional</span>
+        <h2 class="slide-title">As 3 Frentes Paralelas de Execução</h2>
+        <p class="slide-subtitle">
+          Trabalho simultâneo para evitar semanas paradas em setup. A mídia já começa a rodar enquanto a infraestrutura e o SEO técnico são finalizados.
+        </p>
+      </div>
+
+      <div class="grid-3">
+        <!-- Growth -->
+        <div class="card front-border-growth">
+          <div class="card-title" style="color: var(--uv-emerald);">Growth & Mídia</div>
+          <div class="front-tagline">Demanda intencional e ROI de campanhas</div>
+          <ul class="front-ul">
+            <li><strong>Segmentação Odonto vs Medicina:</strong> Comunicação personalizada por especialidade cirúrgica.</li>
+            <li><strong>Funil Oficial de Aquisição:</strong> Anúncio focado em dor → Site → WhatsApp/Lead → Representante.</li>
+            <li><strong>Backlog de Criativos Contínuo:</strong> Testes constantes de vídeos com produto, ergonomia e depoimentos.</li>
+            <li><strong>Rotina Semanal de Análise:</strong> Ajuste de verba baseado em vendas reais e não apenas em CPL.</li>
+          </ul>
+          <div class="kpis-container">
+            <div class="kpi-title">KPIs de Sucesso</div>
+            <div class="kpi-pills">
+              <span class="kpi-chip">CPL Qualificado</span>
+              <span class="kpi-chip">Taxa de Demos</span>
+              <span class="kpi-chip">CAC Real</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Infra -->
+        <div class="card front-border-infra">
+          <div class="card-title" style="color: var(--uv-blue);">Infra & Implementação</div>
+          <div class="front-tagline">Integrações seguras e dados sem perda</div>
+          <ul class="front-ul">
+            <li><strong>Site Novo em Produção:</strong> QA minucioso em mobile, velocidade de carregamento e formulários.</li>
+            <li><strong>Integração com Kommo CRM:</strong> Envio automático de UTMs, especialidade e cidade para a esteira certa.</li>
+            <li><strong>Stack de Tracking Completa:</strong> GTM + GA4 + Meta Pixel/CAPI server-side + Ads + Clarity.</li>
+            <li><strong>Dashboard de Vendas:</strong> Visão clara de quanto cada campanha devolve em faturamento.</li>
+          </ul>
+          <div class="kpis-container">
+            <div class="kpi-title">KPIs de Sucesso</div>
+            <div class="kpi-pills">
+              <span class="kpi-chip">SLA &lt; 15 min</span>
+              <span class="kpi-chip">100% UTMs no CRM</span>
+              <span class="kpi-chip">PageSpeed 90+</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- SEO -->
+        <div class="card front-border-seo">
+          <div class="card-title" style="color: var(--uv-amber);">SEO & Autoridade</div>
+          <div class="front-tagline">Aquisição orgânica de longo prazo</div>
+          <ul class="front-ul">
+            <li><strong>Auditoria Técnica de Indexação:</strong> Sitemap, robots, canonicals e correções de links.</li>
+            <li><strong>Setup do Google Search Console:</strong> Monitoramento de palavras-chave com maior intenção.</li>
+            <li><strong>Arquitetura de Produtos:</strong> Otimização on-page das linhas Galileanas e Prismáticas.</li>
+            <li><strong>Backlog Editorial Estratégico:</strong> Artigos técnicos sobre ergonomia cirúrgica e magnificação.</li>
+          </ul>
+          <div class="kpis-container">
+            <div class="kpi-title">KPIs de Sucesso</div>
+            <div class="kpi-pills">
+              <span class="kpi-chip">Top 3 Termos Comerciais</span>
+              <span class="kpi-chip">Leads Orgânicos</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 4 -->
+    <div class="slide-page" data-slide="4">
+      <div class="slide-header">
+        <span class="badge-label">Slide 04 · Unit Economics</span>
+        <h2 class="slide-title">Simulador de Funil & Diagnóstico de Gargalos</h2>
+        <p class="slide-subtitle">
+          Altere os parâmetros do funil de vendas de lupas para projetar o faturamento mensal e identificar onde a operação precisa agir.
+        </p>
+      </div>
+
+      <div class="sim-layout">
+        <div class="card">
+          <div class="seg-switcher">
+            <button class="seg-btn active" id="btnSegOdonto" onclick="selectSegment('odonto')">Odontologia (Endo/Perio/Estética)</button>
+            <button class="seg-btn" id="btnSegMed" onclick="selectSegment('medicina')">Medicina (Plástica/Vascular/Neuro)</button>
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-header">
+              <span>1. Volume de Leads / Mês</span>
+              <span class="slider-val" id="valLeads">120 leads</span>
+            </div>
+            <input type="range" id="rangeLeads" min="20" max="400" step="10" value="120" oninput="updateFunnel()" />
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-header">
+              <span>2. Contato Efetivo pelo Representante (SLA)</span>
+              <span class="slider-val" id="valContact">75%</span>
+            </div>
+            <input type="range" id="rangeContact" min="30" max="95" step="5" value="75" oninput="updateFunnel()" />
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-header">
+              <span>3. Qualificação de Perfil (Poder/Especialidade)</span>
+              <span class="slider-val" id="valQual">55%</span>
+            </div>
+            <input type="range" id="rangeQual" min="20" max="85" step="5" value="55" oninput="updateFunnel()" />
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-header">
+              <span>4. Agendamento de Demonstração / Teste</span>
+              <span class="slider-val" id="valDemo">45%</span>
+            </div>
+            <input type="range" id="rangeDemo" min="15" max="80" step="5" value="45" oninput="updateFunnel()" />
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-header">
+              <span>5. Fechamento Pós-Demonstração</span>
+              <span class="slider-val" id="valClose">35%</span>
+            </div>
+            <input type="range" id="rangeClose" min="10" max="70" step="5" value="35" oninput="updateFunnel()" />
+          </div>
+
+          <div class="slider-row">
+            <div class="slider-header">
+              <span>Ticket Médio por Conjunto (R$)</span>
+              <span class="slider-val" id="valTicket">R$ 11.500</span>
+            </div>
+            <input type="range" id="rangeTicket" min="7000" max="35000" step="500" value="11500" oninput="updateFunnel()" />
+          </div>
+        </div>
+
+        <div class="results-box">
+          <div class="rev-card">
+            <span class="rev-tag">Faturamento Estimado / Mês</span>
+            <div class="rev-num" id="resRevenue">R$ 92.000</div>
+            <small style="color: var(--uv-sand); font-size: 12.5px;" id="resSummary">
+              8 lupas vendidas · Conversão Lead → Venda: 6.67%
+            </small>
+          </div>
+
+          <div class="mini-metrics-grid">
+            <div class="mini-metric">
+              <div class="mini-metric-num" id="resContatados">90</div>
+              <div class="mini-metric-lbl">Contatados</div>
+            </div>
+            <div class="mini-metric">
+              <div class="mini-metric-num" id="resQualificados">50</div>
+              <div class="mini-metric-lbl">Qualificados</div>
+            </div>
+            <div class="mini-metric">
+              <div class="mini-metric-num" id="resDemos">23</div>
+              <div class="mini-metric-lbl">Demos Feitas</div>
+            </div>
+            <div class="mini-metric">
+              <div class="mini-metric-num" id="resVendas">8</div>
+              <div class="mini-metric-lbl">Vendas</div>
+            </div>
+          </div>
+
+          <div class="bottleneck-card">
+            <div class="bottleneck-title" id="resBottleneckTitle">⚠️ Gargalo: Contato Inicial (Velocidade)</div>
+            <div class="bottleneck-desc" id="resBottleneckDesc">
+              Maior perda na passagem do lead para o representante. Reduzir o tempo de atendimento inicial para menos de 15 minutos.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SLIDE 5 -->
+    <div class="slide-page" data-slide="5">
+      <div class="slide-header">
+        <span class="badge-label">Slide 05 · Plano de Ação</span>
+        <h2 class="slide-title">Roadmap de Execução & Backlog Transparente</h2>
+        <p class="slide-subtitle">
+          Checklist imediato dos primeiros 7 dias e visão completa das entregas priorizadas para os próximos 90 dias de operação.
+        </p>
+      </div>
+
+      <div class="filter-bar">
+        <div class="pill-btn-group">
+          <button class="pill-btn active" onclick="filterTasks('front', 'all', this)">Todas as Frentes</button>
+          <button class="pill-btn" onclick="filterTasks('front', 'growth', this)">Growth</button>
+          <button class="pill-btn" onclick="filterTasks('front', 'infra', this)">Infra & CRM</button>
+          <button class="pill-btn" onclick="filterTasks('front', 'seo', this)">SEO</button>
+        </div>
+
+        <div class="pill-btn-group">
+          <button class="pill-btn active" onclick="filterTasks('priority', 'all', this)">Todas Prioridades</button>
+          <button class="pill-btn" onclick="filterTasks('priority', 'P0', this)">P0 (Imediato)</button>
+          <button class="pill-btn" onclick="filterTasks('priority', 'P1', this)">P1</button>
+          <button class="pill-btn" onclick="filterTasks('priority', 'P2', this)">P2</button>
+        </div>
+
+        <div class="badge-sprint">✓ Sprint Kickoff (Dias 1-7) Ativo</div>
+      </div>
+
+      <div class="tasks-table-scroll" id="tasksTableContainer">
+        <!-- Itens inseridos via JavaScript com dados completos -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="bottom-bar">
+    <div>
+      Navegação: <kbd>←</kbd> <kbd>→</kbd> passar slides &nbsp;|&nbsp; <kbd>Espaço</kbd> avançar &nbsp;|&nbsp; <kbd>C</kbd> alternar scroll
+    </div>
+    <div>Univet Loupes Brasil · Reunião Executiva de Alinhamento</div>
+  </footer>
+
+  <!-- Scripts Interativos do Deck -->
+  <script>
+    // Gerenciador de Slides
+    let currentSlide = 1;
+    const totalSlides = 5;
+    let isScrollMode = false;
+
+    const btnPrev = document.getElementById('btnPrev');
+    const btnNext = document.getElementById('btnNext');
+    const slideIndicator = document.getElementById('slideIndicator');
+    const progressFill = document.getElementById('progressFill');
+    const btnToggleView = document.getElementById('btnToggleView');
+
+    function goToSlide(n) {
+      if (n < 1 || n > totalSlides) return;
+      currentSlide = n;
+
+      document.querySelectorAll('.slide-page').forEach(page => {
+        page.classList.remove('active');
+        if (parseInt(page.getAttribute('data-slide')) === currentSlide) {
+          page.classList.add('active');
+        }
+      });
+
+      slideIndicator.textContent = `${currentSlide} / ${totalSlides}`;
+      progressFill.style.width = `${(currentSlide / totalSlides) * 100}%`;
+      btnPrev.disabled = currentSlide === 1;
+      btnNext.disabled = currentSlide === totalSlides;
+    }
+
+    btnPrev.addEventListener('click', () => goToSlide(currentSlide - 1));
+    btnNext.addEventListener('click', () => goToSlide(currentSlide + 1));
+
+    btnToggleView.addEventListener('click', () => {
+      isScrollMode = !isScrollMode;
+      if (isScrollMode) {
+        document.body.classList.add('mode-scroll');
+        btnToggleView.textContent = 'Modo Slides';
+      } else {
+        document.body.classList.remove('mode-scroll');
+        btnToggleView.textContent = 'Alternar Modo Scroll';
+        goToSlide(currentSlide);
+      }
+    });
+
+    window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') {
+        e.preventDefault();
+        goToSlide(currentSlide + 1);
+      } else if (e.key === 'ArrowLeft' || e.key === 'PageUp') {
+        e.preventDefault();
+        goToSlide(currentSlide - 1);
+      } else if (e.key.toLowerCase() === 'c') {
+        btnToggleView.click();
+      }
+    });
+
+    // Simulador de Funil
+    const segments = {
+      odonto: { leads: 120, contact: 75, qual: 55, demo: 45, close: 35, ticket: 11500 },
+      medicina: { leads: 60, contact: 70, qual: 50, demo: 40, close: 40, ticket: 18500 }
+    };
+
+    function selectSegment(seg) {
+      document.getElementById('btnSegOdonto').classList.toggle('active', seg === 'odonto');
+      document.getElementById('btnSegMed').classList.toggle('active', seg === 'medicina');
+      const data = segments[seg];
+      document.getElementById('rangeLeads').value = data.leads;
+      document.getElementById('rangeContact').value = data.contact;
+      document.getElementById('rangeQual').value = data.qual;
+      document.getElementById('rangeDemo').value = data.demo;
+      document.getElementById('rangeClose').value = data.close;
+      document.getElementById('rangeTicket').value = data.ticket;
+      updateFunnel();
+    }
+
+    function updateFunnel() {
+      const leads = parseInt(document.getElementById('rangeLeads').value);
+      const contact = parseInt(document.getElementById('rangeContact').value);
+      const qual = parseInt(document.getElementById('rangeQual').value);
+      const demo = parseInt(document.getElementById('rangeDemo').value);
+      const close = parseInt(document.getElementById('rangeClose').value);
+      const ticket = parseInt(document.getElementById('rangeTicket').value);
+
+      document.getElementById('valLeads').textContent = `${leads} leads`;
+      document.getElementById('valContact').textContent = `${contact}%`;
+      document.getElementById('valQual').textContent = `${qual}%`;
+      document.getElementById('valDemo').textContent = `${demo}%`;
+      document.getElementById('valClose').textContent = `${close}%`;
+      document.getElementById('valTicket').textContent = ticket.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+      const contatados = Math.round(leads * (contact / 100));
+      const qualificados = Math.round(contatados * (qual / 100));
+      const demos = Math.round(qualificados * (demo / 100));
+      const vendas = Math.round(demos * (close / 100));
+      const receita = vendas * ticket;
+      const convTotal = leads > 0 ? ((vendas / leads) * 100).toFixed(2) : '0';
+
+      document.getElementById('resRevenue').textContent = receita.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      document.getElementById('resSummary').textContent = `${vendas} lupas vendidas · Conversão Lead → Venda: ${convTotal}%`;
+      document.getElementById('resContatados').textContent = contatados;
+      document.getElementById('resQualificados').textContent = qualificados;
+      document.getElementById('resDemos').textContent = demos;
+      document.getElementById('resVendas').textContent = vendas;
+
+      // Diagnóstico de Gargalos
+      const p1 = leads - contatados;
+      const p2 = contatados - qualificados;
+      const p3 = qualificados - demos;
+      const p4 = demos - vendas;
+
+      if (p1 >= p2 && p1 >= p3 && p1 >= p4) {
+        document.getElementById('resBottleneckTitle').textContent = '⚠️ Gargalo: Contato Inicial (SLA de Resposta)';
+        document.getElementById('resBottleneckDesc').textContent = 'Maior perda na passagem do lead para o representante. Reduzir tempo de atendimento para menos de 15 minutos.';
+      } else if (p2 >= p3 && p2 >= p4) {
+        document.getElementById('resBottleneckTitle').textContent = '⚠️ Gargalo: Qualificação de Perfil';
+        document.getElementById('resBottleneckDesc').textContent = 'Muitos leads sem poder aquisitivo ou fora da especialidade. Refinar a segmentação dos anúncios pagos.';
+      } else if (p3 >= p4) {
+        document.getElementById('resBottleneckTitle').textContent = '⚠️ Gargalo: Agendamento de Demonstração';
+        document.getElementById('resBottleneckDesc').textContent = 'Fricção para marcar teste prático presencial. Facilitar a agenda dos representantes e envio de maletas de teste.';
+      } else {
+        document.getElementById('resBottleneckTitle').textContent = '⚠️ Gargalo: Fechamento Pós-Demonstração';
+        document.getElementById('resBottleneckDesc').textContent = 'Objeções de preço ou parcelamento pós-teste. Melhorar a cadência de proposta e follow-up.';
+      }
+    }
+
+    // Backlog de Tarefas
+    const tasks = [
+      { id: 'P0-01', front: 'infra', title: 'Coleta e validação de acessos das plataformas (Meta, Google, CRM, Domínio)', priority: 'P0', timeline: 'Dias 1 a 3', criteria: 'Acessos validados em cofre seguro', owner: 'EverGreen + Univet' },
+      { id: 'P0-02', front: 'infra', title: 'Auditoria técnica e QA do novo site em produção', priority: 'P0', timeline: 'Dias 2 a 5', criteria: 'Zero erros de envio e mobile 100% responsivo', owner: 'EverGreen Tech' },
+      { id: 'P0-03', front: 'infra', title: 'Integração Site Novo → Kommo CRM com UTMs e especialidade', priority: 'P0', timeline: 'Dias 3 a 7', criteria: 'Leads teste na esteira correta com parâmetros', owner: 'EverGreen Tech' },
+      { id: 'P0-04', front: 'infra', title: 'Setup da stack de tracking (GTM, GA4, Meta CAPI, Clarity)', priority: 'P0', timeline: 'Dias 3 a 7', criteria: 'Eventos de conversão validados no Tag Assistant', owner: 'EverGreen Tech' },
+      { id: 'P0-05', front: 'growth', title: 'Auditoria do histórico de mídia paga e definição de funil', priority: 'P0', timeline: 'Dias 4 a 7', criteria: 'Relatório entregue com CPL baseline e gargalos', owner: 'EverGreen Growth' },
+      { id: 'P0-06', front: 'seo', title: 'Setup do Google Search Console & Auditoria de Indexação', priority: 'P0', timeline: 'Dias 5 a 7', criteria: 'GSC verificado, sitemap enviado e zero 404', owner: 'EverGreen SEO' },
+      { id: 'P1-01', front: 'growth', title: 'Estruturação e lançamento das campanhas prioritárias (Search + Meta)', priority: 'P1', timeline: 'Dias 8 a 15', criteria: 'Campanhas ativas gerando leads qualificados', owner: 'EverGreen Growth' },
+      { id: 'P1-02', front: 'growth', title: 'Levantamento de materiais e backlog de novos criativos', priority: 'P1', timeline: 'Dias 10 a 20', criteria: 'Lote de 6 novos criativos em testes A/B', owner: 'EverGreen Growth' },
+      { id: 'P1-03', front: 'infra', title: 'Treinamento de CRM e cadência comercial com representantes', priority: 'P1', timeline: 'Dias 8 a 15', criteria: 'Representantes atualizando status no Kommo', owner: 'EverGreen + Univet' },
+      { id: 'P1-04', front: 'seo', title: 'Pesquisa aprofundada de palavras-chave por especialidade', priority: 'P1', timeline: 'Dias 10 a 25', criteria: 'Mapeamento de termos transacionais concluído', owner: 'EverGreen SEO' },
+      { id: 'P1-05', front: 'infra', title: 'Dashboard de Aquisição Integrada (Mídia → CRM → Vendas R$)', priority: 'P1', timeline: 'Dias 15 a 30', criteria: 'Painel visual operacional para a diretoria', owner: 'EverGreen Tech' },
+      { id: 'P2-01', front: 'seo', title: 'Produção e publicação dos 4 primeiros conteúdos pilares', priority: 'P2', timeline: 'Dias 31 a 60', criteria: 'Guias de ergonomia e lupas rankeando no Google', owner: 'EverGreen SEO' },
+      { id: 'P2-02', front: 'growth', title: 'Otimização com feedback de conversões offline (CAPI)', priority: 'P2', timeline: 'Dias 31 a 60', criteria: 'Algoritmo otimizando para compradores reais', owner: 'EverGreen Tech' },
+      { id: 'P2-03', front: 'growth', title: 'Campanhas geolocalizadas alinhadas à rota de representantes', priority: 'P2', timeline: 'Dias 45 a 75', criteria: 'Agendas de visitas presenciais lotadas', owner: 'EverGreen Growth' },
+      { id: 'P2-04', front: 'seo', title: 'Schema Markup Médico e Otimização Core Web Vitals', priority: 'P2', timeline: 'Dias 60 a 90', criteria: 'Rich snippets ativos e PageSpeed > 90', owner: 'EverGreen SEO' }
+    ];
+
+    let currentFrontFilter = 'all';
+    let currentPriorityFilter = 'all';
+
+    function filterTasks(type, val, btn) {
+      if (type === 'front') {
+        currentFrontFilter = val;
+        btn.parentElement.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+      } else {
+        currentPriorityFilter = val;
+        btn.parentElement.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
+      }
+      btn.classList.add('active');
+      renderTasks();
+    }
+
+    function renderTasks() {
+      const container = document.getElementById('tasksTableContainer');
+      const filtered = tasks.filter(t => {
+        const mF = currentFrontFilter === 'all' || t.front === currentFrontFilter;
+        const mP = currentPriorityFilter === 'all' || t.priority === currentPriorityFilter;
+        return mF && mP;
+      });
+
+      container.innerHTML = filtered.map(t => {
+        const badgeClass = t.priority === 'P0' ? 'badge-p0' : t.priority === 'P1' ? 'badge-p1' : 'badge-p2';
+        const frontName = t.front === 'growth' ? 'Growth' : t.front === 'infra' ? 'Infra' : 'SEO';
+        return `
+          <div class="task-row">
+            <div><span class="${badgeClass}">${t.priority} · ${t.id}</span></div>
+            <div class="task-front-lbl">${frontName}</div>
+            <div>
+              <span class="task-title">${t.title}</span>
+              <span class="task-criteria">Critério: ${t.criteria}</span>
+            </div>
+            <div class="task-timeline">📅 ${t.timeline}</div>
+            <div class="task-owner">${t.owner}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // Inicialização
+    renderTasks();
+    updateFunnel();
+  </script>
+</body>
+</html>

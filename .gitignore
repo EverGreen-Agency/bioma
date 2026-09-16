@@ -4,6 +4,7 @@ node_modules
 
 # Índice local do CodeGraph e Pytest Cache (não versionar)
 .codegraph/
+.worktrees/
 .pytest_cache/
 **/.pytest_cache/
 

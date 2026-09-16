@@ -1,0 +1,948 @@
+/* ==========================================================================
+   UNIVET LOUPES x EVERGREEN — EXECUTIVE PRESENTATION SYSTEM
+   Design System: Medical Precision + Agency Engineering
+   Palette: Deep Forest (#00491E), Moka (#4E4B48), Sand (#C8C3B3), Black, White
+   ========================================================================== */
+
+:root {
+  --uv-green: #00491E;
+  --uv-green-hover: #003616;
+  --uv-green-subtle: rgba(0, 73, 30, 0.08);
+  --uv-green-glow: rgba(0, 73, 30, 0.25);
+  --uv-moka: #4E4B48;
+  --uv-sand: #C8C3B3;
+  --uv-sand-subtle: rgba(200, 195, 179, 0.15);
+  --uv-concrete: #D9D9D6;
+  --uv-dark: #0A0D0A;
+  --uv-surface-dark: #121613;
+  --uv-surface-card: #1A1F1B;
+  --uv-surface-card-hover: #222A24;
+  --uv-border: rgba(200, 195, 179, 0.18);
+  --uv-border-light: rgba(200, 195, 179, 0.35);
+  --uv-text-primary: #F3F4F6;
+  --uv-text-secondary: #C8C3B3;
+  --uv-text-muted: #8E8A82;
+  --uv-emerald: #10B981;
+  --uv-amber: #F59E0B;
+  --uv-blue: #3B82F6;
+  --uv-red: #EF4444;
+}
+
+/* Base Wrapper */
+.presentationWrapper {
+  min-height: 100dvh;
+  background-color: var(--uv-dark);
+  color: var(--uv-text-primary);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  line-height: 1.5;
+}
+
+/* Header & Control Bar */
+.topControlBar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10, 13, 10, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--uv-border);
+  height: 68px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(16px, 3vw, 40px);
+}
+
+.brandGroup {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.univetBadge {
+  font-family: 'Oswald', -apple-system, sans-serif;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  font-size: 17px;
+  color: #FFFFFF;
+  background: var(--uv-green);
+  padding: 4px 12px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.coBrandSeparator {
+  color: var(--uv-border-light);
+  font-size: 14px;
+}
+
+.egSignature {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--uv-text-secondary);
+  letter-spacing: 0.04em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.navControls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.slideIndicator {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--uv-text-secondary);
+  background: rgba(200, 195, 179, 0.08);
+  border: 1px solid var(--uv-border);
+  padding: 6px 14px;
+  border-radius: 9999px;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.navBtn {
+  background: var(--uv-surface-card);
+  border: 1px solid var(--uv-border);
+  color: var(--uv-text-primary);
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.navBtn:hover:not(:disabled) {
+  background: var(--uv-green);
+  border-color: var(--uv-green);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+.navBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.viewModeToggle {
+  background: transparent;
+  border: 1px solid var(--uv-border);
+  color: var(--uv-text-secondary);
+  padding: 6px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.viewModeToggle:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #FFFFFF;
+}
+
+.viewModeToggleActive {
+  background: var(--uv-sand-subtle);
+  border-color: var(--uv-sand);
+  color: #FFFFFF;
+}
+
+/* Progress Line on Top */
+.progressBarTrack {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.progressBarFill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--uv-green), var(--uv-emerald));
+  transition: width 0.3s ease-in-out;
+}
+
+/* Slide Deck Container (PPTX Mode) */
+.deckContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: clamp(20px, 3vh, 48px) clamp(16px, 4vw, 56px);
+  max-width: 1360px;
+  width: 100%;
+  margin: 0 auto;
+  min-height: calc(100dvh - 68px);
+  position: relative;
+}
+
+/* Continuous Mode (Scroll View) */
+.continuousContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 80px;
+  padding: clamp(24px, 4vw, 56px) clamp(16px, 4vw, 56px);
+  max-width: 1360px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.sectionBlock {
+  position: relative;
+  scroll-margin-top: 90px;
+}
+
+/* Slide Header Elements */
+.slideHeader {
+  margin-bottom: clamp(20px, 3vh, 36px);
+}
+
+.slideBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  font-weight: 700;
+  color: var(--uv-sand);
+  background: rgba(200, 195, 179, 0.08);
+  border: 1px solid var(--uv-border);
+  padding: 4px 12px;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.slideTitle {
+  font-size: clamp(26px, 3.2vw, 44px);
+  font-weight: 700;
+  line-height: 1.15;
+  color: #FFFFFF;
+  margin: 0 0 10px 0;
+  letter-spacing: -0.02em;
+}
+
+.slideSubtitle {
+  font-size: clamp(14px, 1.2vw, 17px);
+  color: var(--uv-text-secondary);
+  max-width: 78ch;
+  line-height: 1.55;
+  margin: 0;
+}
+
+/* Grid Layouts */
+.gridTwoCol {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(16px, 2.5vw, 32px);
+  align-items: stretch;
+}
+
+.gridThreeCol {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: clamp(16px, 2vw, 24px);
+  align-items: stretch;
+}
+
+/* Cards & Surfaces */
+.card {
+  background: var(--uv-surface-card);
+  border: 1px solid var(--uv-border);
+  border-radius: 12px;
+  padding: clamp(18px, 2.2vh, 28px);
+  transition: all 0.2s ease;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.card:hover {
+  border-color: var(--uv-border-light);
+  background: var(--uv-surface-card-hover);
+}
+
+.cardHighlight {
+  border-color: rgba(0, 73, 30, 0.6);
+  box-shadow: 0 8px 32px rgba(0, 73, 30, 0.16);
+}
+
+.cardTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0 0 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cardText {
+  font-size: 14px;
+  color: var(--uv-text-secondary);
+  line-height: 1.6;
+  margin: 0 0 16px 0;
+}
+
+/* Slide 1: Alinhamento Estratégico */
+.comparisonBox {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.mindsetCard {
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mindsetOld {
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+
+.mindsetNew {
+  background: rgba(0, 73, 30, 0.16);
+  border: 1px solid var(--uv-green);
+}
+
+.mindsetTag {
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.mindsetTagRed {
+  color: #F87171;
+}
+
+.mindsetTagGreen {
+  color: var(--uv-emerald);
+}
+
+.mindsetHeading {
+  font-size: 17px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin: 0;
+}
+
+.mindsetDescription {
+  font-size: 13.5px;
+  color: var(--uv-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.statHighlightRow {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+  margin-top: auto;
+}
+
+.statBox {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--uv-border);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.statValue {
+  font-size: 24px;
+  font-weight: 800;
+  color: #FFFFFF;
+  font-variant-numeric: tabular-nums;
+}
+
+.statLabel {
+  font-size: 11.5px;
+  color: var(--uv-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 4px;
+}
+
+/* Slide 2: Método EverGreen */
+.methodCol {
+  background: var(--uv-surface-card);
+  border: 1px solid var(--uv-border);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.methodHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--uv-border);
+  padding-bottom: 12px;
+}
+
+.methodPillarsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.methodItem {
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--uv-border);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.methodItemTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.methodItemDesc {
+  font-size: 12.5px;
+  color: var(--uv-text-secondary);
+  line-height: 1.45;
+}
+
+/* Slide 3: 3 Frentes Paralelas */
+.frontCard {
+  border-top: 4px solid var(--uv-green);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.frontCardGrowth {
+  border-top-color: var(--uv-emerald);
+}
+
+.frontCardInfra {
+  border-top-color: var(--uv-blue);
+}
+
+.frontCardSeo {
+  border-top-color: var(--uv-amber);
+}
+
+.frontTagline {
+  font-size: 13px;
+  color: var(--uv-text-muted);
+  font-style: italic;
+  margin-top: -6px;
+}
+
+.frontList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.frontListItem {
+  font-size: 13px;
+  color: var(--uv-text-secondary);
+  line-height: 1.45;
+  padding-left: 18px;
+  position: relative;
+}
+
+.frontListItem::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--uv-sand);
+  font-size: 18px;
+  line-height: 1;
+  top: 1px;
+}
+
+.frontKpisBox {
+  margin-top: auto;
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  padding: 12px;
+  border: 1px solid var(--uv-border);
+}
+
+.frontKpisTitle {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--uv-text-muted);
+  margin-bottom: 6px;
+}
+
+.frontKpisBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.kpiBadge {
+  font-size: 11px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 2px 8px;
+  border-radius: 4px;
+  color: #FFFFFF;
+}
+
+/* Slide 4: Simulador de Funil Interativo */
+.simulatorLayout {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 24px;
+  align-items: stretch;
+}
+
+.simulatorControlsCard {
+  background: var(--uv-surface-card);
+  border: 1px solid var(--uv-border);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.segmentSelector {
+  display: flex;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  padding: 4px;
+  border-radius: 8px;
+  border: 1px solid var(--uv-border);
+}
+
+.segmentBtn {
+  flex: 1;
+  background: transparent;
+  border: none;
+  color: var(--uv-text-secondary);
+  padding: 8px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.segmentBtnActive {
+  background: var(--uv-green);
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 73, 30, 0.4);
+}
+
+.controlGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.controlLabelRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.controlValueBadge {
+  color: var(--uv-emerald);
+  font-family: monospace;
+  font-size: 13px;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.sliderInput {
+  width: 100%;
+  accent-color: var(--uv-green);
+  cursor: pointer;
+}
+
+.simulatorResultsCard {
+  background: linear-gradient(180deg, #161D17 0%, #101411 100%);
+  border: 1px solid rgba(0, 73, 30, 0.4);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  justify-content: space-between;
+}
+
+.revenueBigBox {
+  text-align: center;
+  background: rgba(0, 73, 30, 0.18);
+  border: 1px solid var(--uv-green);
+  border-radius: 10px;
+  padding: 16px;
+}
+
+.revenueBigLabel {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--uv-emerald);
+  font-weight: 700;
+}
+
+.revenueBigValue {
+  font-size: clamp(28px, 3.5vw, 42px);
+  font-weight: 800;
+  color: #FFFFFF;
+  margin: 4px 0;
+  letter-spacing: -0.02em;
+}
+
+.funnelMiniStages {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.miniStage {
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--uv-border);
+  border-radius: 6px;
+  padding: 8px;
+  text-align: center;
+}
+
+.miniStageVal {
+  font-size: 16px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.miniStageLab {
+  font-size: 10.5px;
+  color: var(--uv-text-muted);
+  text-transform: uppercase;
+}
+
+.bottleneckAlertBox {
+  background: rgba(245, 158, 11, 0.1);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+.bottleneckHeader {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--uv-amber);
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.bottleneckText {
+  font-size: 12.5px;
+  color: var(--uv-text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+/* Slide 5: Roadmap & Backlog */
+.backlogFiltersRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.filterPillsGroup {
+  display: flex;
+  gap: 6px;
+}
+
+.filterPill {
+  background: var(--uv-surface-card);
+  border: 1px solid var(--uv-border);
+  color: var(--uv-text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filterPill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #FFFFFF;
+}
+
+.filterPillActive {
+  background: var(--uv-green);
+  border-color: var(--uv-green);
+  color: #FFFFFF;
+}
+
+.sprintHighlightBadge {
+  font-size: 12px;
+  background: rgba(16, 185, 129, 0.12);
+  border: 1px solid var(--uv-emerald);
+  color: var(--uv-emerald);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.backlogScrollTable {
+  background: var(--uv-surface-card);
+  border: 1px solid var(--uv-border);
+  border-radius: 10px;
+  overflow: hidden;
+  max-height: clamp(340px, 48vh, 520px);
+  overflow-y: auto;
+}
+
+.taskItem {
+  display: grid;
+  grid-template-columns: 80px 100px 1fr 140px 100px;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(200, 195, 179, 0.08);
+  font-size: 13px;
+  transition: background 0.15s ease;
+}
+
+.taskItem:last-child {
+  border-bottom: none;
+}
+
+.taskItem:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.priorityBadge {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-align: center;
+  letter-spacing: 0.05em;
+  width: fit-content;
+}
+
+.priorityP0 {
+  background: rgba(239, 68, 68, 0.18);
+  color: #FCA5A5;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.priorityP1 {
+  background: rgba(245, 158, 11, 0.18);
+  color: #FCD34D;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.priorityP2 {
+  background: rgba(59, 130, 246, 0.18);
+  color: #93C5FD;
+  border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.frontTag {
+  font-size: 11px;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--uv-text-muted);
+}
+
+.taskTitleCol {
+  display: flex;
+  flex-direction: column;
+}
+
+.taskTitleText {
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.taskCriteriaText {
+  font-size: 11.5px;
+  color: var(--uv-text-muted);
+  margin-top: 2px;
+}
+
+.timelineCol {
+  color: var(--uv-sand);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ownerCol {
+  color: var(--uv-text-muted);
+  font-size: 11.5px;
+  text-align: right;
+}
+
+/* Footer Controls */
+.bottomDeckBar {
+  padding: 16px clamp(16px, 4vw, 40px);
+  border-top: 1px solid var(--uv-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(10, 13, 10, 0.95);
+  font-size: 12.5px;
+  color: var(--uv-text-muted);
+}
+
+.deckShortcuts {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.keyKbd {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--uv-border);
+  border-radius: 4px;
+  padding: 1px 6px;
+  font-family: monospace;
+  font-size: 11px;
+  color: var(--uv-text-secondary);
+}
+
+/* ==========================================================================
+   RESPONSIVIDADE CIRÚRGICA (Telas menores, Laptops 13", Tablets e Mobile)
+   ========================================================================== */
+
+/* Telas com altura restrita (ex: Laptop 1366x768 ou 1280x800) */
+@media (max-height: 800px) {
+  .deckContainer {
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+  .slideHeader {
+    margin-bottom: 16px;
+  }
+  .slideTitle {
+    font-size: 26px;
+  }
+  .card {
+    padding: 16px;
+  }
+  .revenueBigBox {
+    padding: 10px;
+  }
+  .revenueBigValue {
+    font-size: 28px;
+  }
+  .backlogScrollTable {
+    max-height: 280px;
+  }
+}
+
+/* Tablets (<= 1024px) */
+@media (max-width: 1024px) {
+  .gridThreeCol {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .simulatorLayout {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+  .taskItem {
+    grid-template-columns: 70px 80px 1fr 100px;
+  }
+  .ownerCol {
+    display: none;
+  }
+}
+
+/* Smartphones (<= 768px) */
+@media (max-width: 768px) {
+  .topControlBar {
+    height: auto;
+    padding: 12px 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .brandGroup {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .navControls {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .gridTwoCol {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  .slideTitle {
+    font-size: 24px;
+  }
+  .slideSubtitle {
+    font-size: 14px;
+  }
+  .funnelMiniStages {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .taskItem {
+    grid-template-columns: 60px 1fr;
+    gap: 8px;
+    align-items: flex-start;
+  }
+  .frontTag, .timelineCol {
+    display: none;
+  }
+  .bottomDeckBar {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+}
