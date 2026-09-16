@@ -10,6 +10,7 @@ import { InviteView } from "./views/InviteView";
 import { ResetPasswordView } from "./views/ResetPasswordView";
 import { PrivacyView } from "./views/PrivacyView";
 import { PublicProposalView } from "./views/PublicProposalView";
+import { UnivetPresentationView } from "./views/univet/UnivetPresentationView";
 import { ArtifactModal } from "./components/ArtifactModal";
 import { CopilotPanel } from "./components/CopilotPanel";
 import { Sidebar } from "./components/Sidebar";
@@ -75,6 +76,9 @@ const PlatformStudiesView = lazy(() =>
 );
 const PlanningPortfolioView = lazy(() =>
   import("./views/admin/proposals/PlanningPortfolioView").then((module) => ({ default: module.PlanningPortfolioView })),
+);
+const MalleableStudioView = lazy(() =>
+  import("./views/malleable-studio/MalleableStudioView").then((module) => ({ default: module.MalleableStudioView })),
 );
 
 function ViewLoadingFallback() {
@@ -148,6 +152,8 @@ export function App() {
       !user &&
       location.pathname !== "/" &&
       location.pathname !== "/privacidade" &&
+      location.pathname !== "/univet" &&
+      !location.pathname.startsWith("/propostas/public/") &&
       !location.pathname.startsWith("/convite/") &&
       !location.pathname.startsWith("/redefinir/")
     ) {
@@ -262,6 +268,7 @@ export function App() {
         <Route path="/redefinir/:token" element={<ResetPasswordView />} />
         <Route path="/privacidade" element={<PrivacyView />} />
         <Route path="/propostas/public/:token" element={<PublicProposalView />} />
+        <Route path="/univet" element={<UnivetPresentationView />} />
         <Route
           path="*"
           element={
@@ -322,6 +329,17 @@ export function App() {
             }
           />
           <Route path="/configuracoes" element={<SettingsView />} />
+          <Route path="/univet" element={<UnivetPresentationView />} />
+          <Route
+            path="/malleable-studio"
+            element={
+              <Suspense fallback={<ViewLoadingFallback />}>
+                <MalleableStudioView />
+              </Suspense>
+            }
+          />
+          <Route path="/social-studio" element={<Navigate to="/malleable-studio" replace />} />
+          <Route path="/render-studio" element={<Navigate to="/malleable-studio" replace />} />
 
           <Route path="/operacao" element={guardSurface("operacao",
             <Suspense fallback={<ViewLoadingFallback />}>
