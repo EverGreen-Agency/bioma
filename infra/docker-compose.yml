@@ -104,8 +104,26 @@ services:
       postgres:
         condition: service_healthy
     command: ["python", "-m", "bioma_worker.cli", "--drain"]
+  n8n:
+    profiles: ["automation"]
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: bioma_n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=false
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+    volumes:
+      - bioma_n8n_data:/home/node/.n8n
 
 volumes:
   bioma_postgres_data:
   bioma_redis_data:
   bioma_storage_data:
+  bioma_n8n_data:
