@@ -254,7 +254,7 @@ def seed_cases(conn) -> int:
         if row is None:
             # já existe e foi editado dentro do produto: não mexemos
             continue
-        case_id = row[0]
+        case_id = row["id"]
         for lang, body in case["langs"].items():
             conn.execute(
                 """
