@@ -259,6 +259,8 @@ class CopilotPlanContext:
         self.surface = "workspace"
         self.task_id = None
         self.workspace_id = workspace_id
+        self.expert = None
+        self.message = ""
 
 
 def _plan(row: dict, steps: list[dict], open_questions: list[str] | None = None) -> CopilotPlan:

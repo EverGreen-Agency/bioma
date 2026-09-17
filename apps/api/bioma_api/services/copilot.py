@@ -516,7 +516,7 @@ def _build_dossier(
     """Só dado real, e só do escopo que o usuário pode ver."""
     dossier: dict = {}
     context: dict = {"surface": payload.surface}
-    expert = payload.expert or _expert_from_message(payload.message)
+    expert = getattr(payload, "expert", None) or _expert_from_message(getattr(payload, "message", ""))
     if expert:
         context["expert"] = expert
     task_row = None
