@@ -1,0 +1,32 @@
+# Cobertura do Bioma — inclui os SMOKES, nao so os testes puros.
+#
+# Por que importa: `pytest --cov` sozinho mede ~23%, e esse numero mente por
+# omissao. Os 59 smokes exercitam a maior parte do sistema contra Postgres
+# real, mas rodam em SUBPROCESSOS — e subprocesso so entra na conta com
+# COVERAGE_PROCESS_START mais o hook de startup (ver scripts/coverage_report.py).
+#
+# Sem isso, qualquer meta de cobertura seria perseguida no lugar errado: gente
+# escrevendo teste unitario para codigo que ja tem smoke, so para levantar um
+# numero que ignorava o smoke.
+#
+# NOTA DE FORMATO: comentario DENTRO de valor multilinha quebra o parser ini
+# (foi o que derrubou a primeira versao deste arquivo). Comentarios so aqui em
+# cima, nunca entre os itens de `omit`/`exclude_lines`.
+
+[run]
+source = bioma_api
+branch = true
+parallel = true
+omit =
+    */__pycache__/*
+    */.venv/*
+    scripts/*
+
+[report]
+show_missing = true
+skip_covered = true
+exclude_lines =
+    pragma: no cover
+    if __name__ == .__main__.:
+    raise NotImplementedError
+    if TYPE_CHECKING:

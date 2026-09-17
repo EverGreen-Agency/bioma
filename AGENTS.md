@@ -1,4 +1,4 @@
-# EG OS Agents Rules
+# Bioma Agents Rules
 
 ## graphify
 

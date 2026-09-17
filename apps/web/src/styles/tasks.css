@@ -1,0 +1,1071 @@
+/* === Merged from 04-artefatos-calendario-analytics.css === */
+/* Extraído de styles.css (linhas 2112-2811) na quebra por domínio.
+ * A ordem dos @import em styles.css reproduz a ordem original — CSS
+ * depende de cascata, então reordenar mudaria o resultado visual. */
+.status-pill.paused,
+.status-pill.archived,
+.status-pill.blocked {
+  color: var(--text-dim);
+  background: rgba(255, 244, 199, 0.1);
+}
+
+.status-pill.danger {
+  color: var(--danger-soft);
+  background: rgba(242, 160, 142, 0.18);
+}
+
+.hub-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 16px;
+}
+
+.hub-block {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.hub-block.highlight {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-color: rgba(58, 201, 123, 0.35);
+  color: var(--text);
+  background: var(--bg-deep);
+}
+
+.hub-block.highlight p {
+  margin: 10px 0 0;
+  color: var(--text-dim);
+}
+
+.hub-block.highlight .status-pill {
+  margin-bottom: 12px;
+  color: var(--moss-900);
+  background: var(--accent);
+}
+
+.hub-block-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--accent);
+}
+
+.sync-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  max-width: 100%;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-dim);
+  background: var(--bg-deep);
+}
+
+.sync-summary span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sync-button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(58, 201, 123, 0.42);
+  color: var(--moss-900);
+  background: var(--accent);
+  font-size: 12px;
+}
+
+.hub-block-list {
+  display: grid;
+  gap: 8px;
+}
+
+.work-row,
+.artifact-row {
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 10px;
+  border-radius: 8px;
+  background: rgba(255, 244, 199, 0.05);
+}
+
+.work-row {
+  grid-template-columns: auto minmax(0, 1fr) minmax(128px, auto);
+}
+
+.artifact-row {
+  grid-template-columns: minmax(0, 1fr) auto;
+  width: 100%;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.work-row strong,
+.artifact-row strong {
+  display: block;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.work-row small,
+.artifact-row small,
+.work-row span {
+  color: var(--text-dim);
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+
+.row-tail {
+  display: grid;
+  justify-items: end;
+  gap: 6px;
+}
+
+.row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.status-select {
+  max-width: 180px;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.decision-pill {
+  justify-self: end;
+  width: fit-content;
+  padding: 4px 8px;
+  border-radius: 999px;
+  color: var(--text);
+  background: rgba(255, 244, 199, 0.12);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.decision-pill.approved {
+  color: var(--mint-soft);
+  background: rgba(58, 201, 123, 0.28);
+}
+
+.decision-pill.rejected {
+  color: var(--cream);
+  background: var(--danger);
+}
+
+.artifact-board {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.artifact-tile {
+  display: grid;
+  gap: 10px;
+  min-height: 176px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface-soft);
+  text-align: left;
+  cursor: pointer;
+}
+
+.artifact-tile:hover {
+  border-color: rgba(58, 201, 123, 0.45);
+}
+
+.artifact-tile span {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.artifact-tile strong,
+.artifact-tile small {
+  overflow-wrap: anywhere;
+}
+
+.artifact-tile small {
+  color: var(--text-dim);
+  line-height: 1.45;
+}
+
+.admin-dock {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.dock-panel {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.dock-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--accent);
+}
+
+.empty-state {
+  display: grid;
+  min-height: 120px;
+  place-items: center;
+  padding: 16px;
+  border: 1px dashed rgba(255, 244, 199, 0.22);
+  border-radius: 8px;
+  color: var(--text-dim);
+  text-align: center;
+  line-height: 1.45;
+}
+
+.empty-state.compact {
+  min-height: 70px;
+  font-size: 13px;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(3, 12, 9, 0.78);
+}
+
+.artifact-modal {
+  position: relative;
+  width: min(100%, 640px);
+  max-height: min(760px, calc(100vh - 48px));
+  overflow: auto;
+  padding: 24px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--text);
+  background: var(--surface);
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.34);
+}
+
+.artifact-modal .form-grid label {
+  color: var(--text-dim);
+}
+
+.artifact-modal .form-grid input,
+.artifact-modal .form-grid select,
+.artifact-modal .form-grid textarea {
+  color: var(--text);
+  background: rgba(255, 244, 199, 0.08);
+  border-color: rgba(255, 244, 199, 0.2);
+}
+
+.artifact-modal h2 {
+  margin-bottom: 14px;
+}
+
+.artifact-modal p {
+  color: var(--text-dim);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.artifact-modal small {
+  color: var(--text-faint);
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--text);
+  background: transparent;
+  cursor: pointer;
+}
+
+/* --- Documentos estratégicos (brand book, mapas, planos) --- */
+.doc-card {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 24px;
+  margin-top: 16px;
+}
+
+.doc-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.doc-card-header h3 {
+  font-size: 20px;
+  color: var(--text);
+  margin: 4px 0 0;
+}
+
+.doc-kind {
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.doc-card-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.doc-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.doc-section {
+  background: rgba(6, 26, 19, 0.55);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.doc-section h4 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 8px 0;
+  color: var(--accent);
+  font-size: 14px;
+}
+
+.doc-section h4 svg {
+  flex: 0 0 auto;
+}
+
+.doc-section p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 244, 199, 0.85);
+}
+
+.doc-section p:last-child {
+  margin-bottom: 0;
+}
+
+.doc-section ul {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: rgba(255, 244, 199, 0.85);
+}
+
+.doc-section ul:last-child {
+  margin-bottom: 0;
+}
+
+/* --- Calendário editorial --- */
+.section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.calendar-range {
+  font-size: 14px;
+  text-transform: capitalize;
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.calendar-scroll {
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.calendar-grid {
+  display: flex;
+  gap: 12px;
+  min-width: 840px;
+}
+
+.calendar-day {
+  flex: 1;
+  min-width: 0;
+  min-height: 140px;
+  background: rgba(255, 244, 199, 0.02);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.calendar-day.today {
+  border-color: rgba(58, 201, 123, 0.45);
+}
+
+.calendar-day h5 {
+  margin: 0 0 12px 0;
+  color: var(--text-dim);
+  font-size: 14px;
+  text-transform: capitalize;
+}
+
+.calendar-item {
+  background: rgba(6, 26, 19, 0.6);
+  border-left: 3px solid var(--accent);
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 10px;
+}
+
+.calendar-item.planned { border-left-color: var(--mint-deep); }
+.calendar-item.in_progress { border-left-color: var(--mint); }
+.calendar-item.waiting_approval { border-left-color: var(--amber); }
+.calendar-item.done { border-left-color: rgba(255, 244, 199, 0.55); }
+.calendar-item.blocked { border-left-color: var(--danger); }
+
+.calendar-note {
+  margin: 10px 0 0;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.item-type {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  margin-bottom: 4px;
+  display: block;
+}
+
+.calendar-item p {
+  margin: 0 0 6px 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.calendar-item small {
+  color: var(--text-faint);
+}
+
+/* --- Demo / dados não reais --- */
+.demo-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(217, 172, 75, 0.45);
+  border-radius: 8px;
+  color: var(--amber-soft);
+  background: rgba(217, 172, 75, 0.12);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.demo-banner svg {
+  flex: 0 0 auto;
+}
+
+.demo-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: var(--amber-soft);
+  background: rgba(217, 172, 75, 0.22);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+}
+
+/* --- Analytics --- */
+.analytics-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding: 24px 32px;
+}
+
+.analytics-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.analytics-header h2 {
+  font-size: 28px;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.analytics-header p {
+  color: var(--text-dim);
+  margin: 0;
+}
+
+.analytics-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.analytics-card {
+  background: var(--surface-soft);
+  border: 1px solid var(--border);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+}
+
+.analytics-card span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.analytics-card .demo-badge {
+  margin-left: auto;
+}
+
+.analytics-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+.module-fieldset {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.module-fieldset legend {
+  padding: 0 6px;
+  color: var(--text-dim);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.module-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.module-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.module-toggle input {
+  accent-color: var(--accent);
+}
+
+.invite-link-row {
+  display: flex;
+  gap: 8px;
+}
+
+.invite-link-row input {
+  flex: 1;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--text);
+  background: rgba(255, 244, 199, 0.06);
+  font-size: 12px;
+}
+
+.files-upload-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+
+.files-upload-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--text-dim);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.files-upload-form input,
+.files-upload-form select {
+  min-height: 40px;
+  padding: 0 11px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  color: var(--text);
+  background: rgba(255, 244, 199, 0.04);
+}
+
+.performance-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+
+.performance-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-dim);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.performance-tab.active {
+  background: var(--surface-soft);
+  border-color: var(--accent);
+  color: var(--text);
+}
+
+.performance-tab-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* --- Estilos do leitor Markdown da Wiki EG --- */
+.wiki-markdown {
+  color: var(--text);
+  line-height: 1.7;
+  font-size: 0.92rem;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.wiki-markdown h1,
+.wiki-markdown h2,
+.wiki-markdown h3,
+.wiki-markdown h4,
+.wiki-markdown h5,
+.wiki-markdown h6 {
+  color: var(--text-main);
+  font-weight: 700;
+  margin-top: 1.4em;
+  margin-bottom: 0.5em;
+  line-height: 1.3;
+}
+
+.wiki-markdown h1 {
+  font-size: 1.5rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.4em;
+  color: var(--brand-accent);
+}
+
+.wiki-markdown h2 {
+  font-size: 1.25rem;
+  border-bottom: 1px solid var(--border-light);
+  padding-bottom: 0.3em;
+  color: var(--amber-soft);
+}
+
+.wiki-markdown h3 {
+  font-size: 1.1rem;
+  color: var(--mint-soft);
+}
+
+.wiki-markdown h4,
+.wiki-markdown h5,
+.wiki-markdown h6 {
+  font-size: 0.98rem;
+  color: var(--text);
+}
+
+.wiki-markdown p {
+  margin-bottom: 1em;
+  color: var(--text-dim);
+}
+
+.wiki-markdown strong {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.wiki-markdown ul,
+.wiki-markdown ol {
+  padding-left: 1.4em;
+  margin-bottom: 1em;
+  color: var(--text-dim);
+}
+
+.wiki-markdown li {
+  margin-bottom: 0.35em;
+}
+
+.wiki-markdown code {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--mint-soft);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  font-family: monospace;
+}
+
+.wiki-markdown pre {
+  background: var(--bg-deep);
+  border: 1px solid var(--border);
+  padding: 14px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin-bottom: 1em;
+  max-width: 100%;
+}
+
+.wiki-markdown pre code {
+  background: transparent;
+  padding: 0;
+  color: var(--text);
+}
+
+.wiki-markdown blockquote {
+  border-left: 3px solid var(--brand-accent);
+  padding-left: 12px;
+  margin: 1em 0;
+  color: var(--text-dim);
+  font-style: italic;
+  background: rgba(58, 201, 123, 0.05);
+  border-radius: 0 6px 6px 0;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.wiki-markdown table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1em;
+  display: block;
+  overflow-x: auto;
+}
+
+.wiki-markdown th,
+.wiki-markdown td {
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  text-align: left;
+}
+
+.wiki-markdown th {
+  background: var(--surface-soft);
+  color: var(--cream);
+}
+
+/* Responsividade e impressão de PDFs da Wiki */
+@media (max-width: 1024px) {
+  .content-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .wiki-print-area,
+  .wiki-print-area * {
+    visibility: visible !important;
+  }
+  .wiki-print-area {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    color: #111 !important;
+    background: #fff !important;
+    padding: 24px !important;
+  }
+  .wiki-print-area h1,
+  .wiki-print-area h2,
+  .wiki-print-area h3,
+  .wiki-print-area p,
+  .wiki-print-area li,
+  .wiki-print-area span,
+  .wiki-print-area strong {
+    color: #111 !important;
+  }
+}
+
+
+
+
+/* === Lista de tarefas agrupada por status + criação inline ===
+ * Substitui a tabela plana e o "Nova tarefa" que abria o formulário inteiro.
+ * Tokens: usar os que existem em tokens.css (--border, --surface-soft,
+ * --text-dim, --mint). Variáveis como --surface-sunken/--border-color aparecem
+ * em estilos inline antigos destes componentes mas nunca foram definidas. */
+
+.task-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.task-section {
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.task-section-header {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  text-align: left;
+  background: transparent;
+  cursor: pointer;
+}
+
+.task-section-header:hover {
+  background: rgba(255, 244, 199, 0.04);
+}
+
+.task-section-label {
+  flex: 1;
+}
+
+.task-section-count {
+  padding: 1px 8px;
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(255, 244, 199, 0.08);
+}
+
+.task-table {
+  width: 100%;
+  font-size: 13px;
+  border-collapse: collapse;
+}
+
+.task-table thead th {
+  padding: 8px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 500;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.task-table td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.task-row {
+  cursor: pointer;
+}
+
+.task-row:hover {
+  background: rgba(255, 244, 199, 0.04);
+}
+
+.task-row.done {
+  opacity: 0.6;
+}
+
+.task-row.done .task-cell-title {
+  text-decoration: line-through;
+}
+
+.task-cell-title {
+  font-weight: 500;
+}
+
+.task-cell-title small {
+  display: block;
+  color: var(--text-faint);
+  font-size: 11px;
+}
+
+.task-cell-dim {
+  color: var(--text-dim);
+}
+
+/* Composer inline: some visualmente até o hover/foco na lista, para não
+ * competir com as tarefas de verdade; no kanban ele já nasce focado. */
+.inline-task-composer {
+  padding: 8px 14px;
+}
+
+.inline-task-composer-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--text-dim);
+}
+
+.inline-task-composer-row input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  background: transparent;
+}
+
+.inline-task-composer-row input::placeholder {
+  color: var(--text-faint);
+}
+
+.inline-task-composer-row input:hover {
+  border-color: var(--border);
+}
+
+.inline-task-composer-row input:focus {
+  border-color: var(--mint);
+  background: rgba(255, 244, 199, 0.04);
+  outline: none;
+}
+
+/* O botão Salvar só aparece quando o campo está em uso — Enter é o caminho
+ * principal, e um botão permanente em cada seção poluiria a lista. */
+.inline-task-composer-row .mini-button {
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.inline-task-composer:focus-within .mini-button {
+  opacity: 1;
+}
+
+.inline-task-composer-error {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 6px 0 0;
+  color: var(--danger-soft, #f2a08e);
+  font-size: 12px;
+}
+
+/* Decisao 13: cliente sem projeto nao ganha campo de titulo, ganha o caminho.
+   Deliberadamente NAO usa a cor de erro — nao e erro da pessoa, e um passo que
+   falta. Tokens conferidos contra tokens.css: `var()` de token inexistente e
+   descartado em silencio e o texto sairia invisivel. */
+.inline-task-composer-blocked {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin: 6px 0 0;
+  padding: 8px 10px;
+  border: 1px dashed var(--border-strong);
+  border-radius: 6px;
+  background: var(--bg-inset);
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* No kanban o composer vira um card, alinhado com os TaskCard da coluna. */
+.task-column .inline-task-composer {
+  padding: 8px;
+  border: 1px solid var(--mint);
+  border-radius: 8px;
+  background: var(--surface-soft);
+}
+
+.task-column .inline-task-composer .mini-button {
+  opacity: 1;
+}
+
+/* Coluna do kanban destacada enquanto um card paira sobre ela. Sem retorno
+ * visual, arrastar vira adivinhação: a pessoa solta e torce. */
+.task-column {
+  border: 1px solid transparent;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.task-column.drop-target {
+  border-color: var(--mint);
+  background: rgba(58, 201, 123, 0.08);
+}

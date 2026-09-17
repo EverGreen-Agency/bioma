@@ -1,0 +1,129 @@
+name: bioma
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: bioma_postgres
+    environment:
+      POSTGRES_DB: bioma
+      POSTGRES_USER: bioma
+      POSTGRES_PASSWORD: bioma
+    ports:
+      - "5433:5432"
+    volumes:
+      - bioma_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U bioma -d bioma"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: bioma_redis
+    ports:
+      - "6380:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - bioma_redis_data:/data
+
+  storage:
+    profiles: ["storage"]
+    image: minio/minio:latest
+    container_name: bioma_storage
+    environment:
+      MINIO_ROOT_USER: bioma-local
+      MINIO_ROOT_PASSWORD: bioma-local-secret
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: ["server", "/data", "--console-address", ":9001"]
+    volumes:
+      - bioma_storage_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    profiles: ["app"]
+    build:
+      context: ../apps/api
+    environment:
+      APP_ENV: local
+      API_NAME: Bioma API
+      DATABASE_URL: postgresql://bioma:bioma@postgres:5432/bioma
+      REDIS_URL: redis://redis:6379/0
+      CORS_ORIGINS: http://localhost:5173,http://127.0.0.1:5173
+      SESSION_COOKIE_SECURE: "false"
+      SESSION_COOKIE_SAMESITE: lax
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../apps/api:/app
+    command:
+      [
+        "sh",
+        "-c",
+        "python scripts/migrate.py && python scripts/seed_dev.py && python -m uvicorn bioma_api.main:app --host 0.0.0.0 --port 8000 --reload"
+      ]
+
+  web:
+    profiles: ["app"]
+    build:
+      context: ../apps/web
+    environment:
+      VITE_APP_ENV: local
+      VITE_API_BASE_URL: http://127.0.0.1:8000
+    ports:
+      - "5173:5173"
+    depends_on:
+      - api
+    volumes:
+      - ../apps/web:/app
+      - /app/node_modules
+    command: ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "5173"]
+
+  worker:
+    profiles: ["worker"]
+    build:
+      context: ../apps/worker
+    environment:
+      DATABASE_URL: postgresql://bioma:bioma@postgres:5432/bioma
+      GOOGLE_SERVICE_ACCOUNT_JSON: ${GOOGLE_SERVICE_ACCOUNT_JSON:-}
+      GOOGLE_ADS_DEVELOPER_TOKEN: ${GOOGLE_ADS_DEVELOPER_TOKEN:-}
+      GOOGLE_ADS_LOGIN_CUSTOMER_ID: ${GOOGLE_ADS_LOGIN_CUSTOMER_ID:-}
+      GOOGLE_ADS_API_VERSION: ${GOOGLE_ADS_API_VERSION:-v21}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_MODEL: ${OPENAI_MODEL:-gpt-5.6-sol}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ["python", "-m", "bioma_worker.cli", "--drain"]
+  n8n:
+    profiles: ["automation"]
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: bioma_n8n
+    restart: always
+    ports:
+      - "5678:5678"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=false
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - NODE_ENV=production
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=America/Sao_Paulo
+    volumes:
+      - bioma_n8n_data:/home/node/.n8n
+
+volumes:
+  bioma_postgres_data:
+  bioma_redis_data:
+  bioma_storage_data:
+  bioma_n8n_data:

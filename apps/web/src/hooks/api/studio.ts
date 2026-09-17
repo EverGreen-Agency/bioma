@@ -1,0 +1,180 @@
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api, type CmsPostUpdate, type PublishOptions, type StudioArtifactStatus } from "../../lib/api";
+
+/** Decisão 8 — a vista do Estúdio: o que a conversa produziu, organizado. */
+export function useStudioArtifacts(
+  workspaceId: string | null,
+  filters?: { kind?: string | null; status?: string | null },
+) {
+  return useQuery({
+    queryKey: ["studio-artifacts", workspaceId, filters?.kind ?? null, filters?.status ?? null],
+    queryFn: () => api.studioArtifacts(workspaceId as string, filters),
+    enabled: Boolean(workspaceId),
+  });
+}
+
+export function useStudioArtifactKinds(workspaceId: string | null) {
+  return useQuery({
+    queryKey: ["studio-artifact-kinds", workspaceId],
+    queryFn: () => api.studioArtifactKinds(workspaceId as string),
+    enabled: Boolean(workspaceId),
+  });
+}
+
+/** Decisao 14 — checklist SEO/GEO do texto.
+ *
+ * `useQuery` e nao mutation: a rota e POST so porque o texto vai no corpo, mas
+ * nao tem efeito colateral nenhum. Chaveada pelo proprio conteudo, entao trocar
+ * de versao ou de peca recalcula sozinho e voltar reaproveita o cache. */
+export function useContentQuality(
+  workspaceId: string | null,
+  input: { title?: string; content: string; keyword?: string | null },
+  enabled = true,
+) {
+  return useQuery({
+    queryKey: ["content-quality", workspaceId, input.title ?? "", input.content, input.keyword ?? null],
+    queryFn: () => api.contentQuality(workspaceId as string, input),
+    enabled: Boolean(workspaceId) && enabled && input.content.trim().length > 0,
+    staleTime: Infinity,
+  });
+}
+
+export function useStudioArtifact(artifactId: string | null) {
+  return useQuery({
+    queryKey: ["studio-artifact", artifactId],
+    queryFn: () => api.studioArtifact(artifactId as string),
+    enabled: Boolean(artifactId),
+  });
+}
+
+/** Invalida a lista E o detalhe: depois de uma nova versão os dois mudam, e
+ *  atualizar só um deixa a tela mostrando v2 na lista e v1 aberta ao lado. */
+function useStudioMutation<TVars>(
+  fn: (vars: TVars) => Promise<unknown>,
+  artifactIdOf: (vars: TVars) => string | undefined,
+) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["studio-artifacts"] });
+      queryClient.invalidateQueries({ queryKey: ["studio-artifact-kinds"] });
+      const id = artifactIdOf(vars);
+      if (id) queryClient.invalidateQueries({ queryKey: ["studio-artifact", id] });
+    },
+  });
+}
+
+export function useCreateStudioArtifact() {
+  return useStudioMutation(
+    ({ workspaceId, ...payload }: { workspaceId: string; title: string; kind: string; content?: string | null }) =>
+      api.createStudioArtifact(workspaceId, payload),
+    () => undefined,
+  );
+}
+
+export function useAddStudioArtifactVersion() {
+  return useStudioMutation(
+    ({ artifactId, ...payload }: { artifactId: string; title: string; content?: string | null; change_note?: string | null }) =>
+      api.addStudioArtifactVersion(artifactId, payload),
+    (vars) => vars.artifactId,
+  );
+}
+
+export function useSetStudioArtifactStatus() {
+  return useStudioMutation(
+    ({ artifactId, status }: { artifactId: string; status: StudioArtifactStatus }) =>
+      api.setStudioArtifactStatus(artifactId, status),
+    (vars) => vars.artifactId,
+  );
+}
+
+export function useSaveArtifactFromRun() {
+  return useStudioMutation(
+    ({ runId, ...payload }: { runId: string; title: string; kind?: string; content?: string | null; workspace_id?: string | null; artifact_id?: string | null; change_note?: string | null }) =>
+      api.saveArtifactFromRun(runId, payload),
+    (vars) => vars.artifact_id ?? undefined,
+  );
+}
+
+/** Decisao 14 — alvos de CMS e publicacao. */
+export function useCmsTargets(workspaceId: string | null) {
+  return useQuery({
+    queryKey: ["cms-targets", workspaceId],
+    queryFn: () => api.cmsTargets(workspaceId as string),
+    enabled: Boolean(workspaceId),
+  });
+}
+
+export function useArtifactPublications(workspaceId: string | null, artifactId: string | null) {
+  return useQuery({
+    queryKey: ["artifact-publications", workspaceId, artifactId],
+    queryFn: () => api.artifactPublications(workspaceId as string, artifactId as string),
+    enabled: Boolean(workspaceId && artifactId),
+  });
+}
+
+/** A previa e `useQuery` e nao mutation: POST so porque o corpo carrega as
+ *  opcoes, mas nao ha efeito colateral nenhum. Trocar de alvo recalcula. */
+export function usePublishPreview(
+  workspaceId: string | null,
+  artifactId: string | null,
+  options: PublishOptions | null,
+) {
+  return useQuery({
+    queryKey: ["publish-preview", workspaceId, artifactId, options],
+    queryFn: () => api.publishPreview(workspaceId as string, artifactId as string, options as PublishOptions),
+    enabled: Boolean(workspaceId && artifactId && options?.target_id),
+  });
+}
+
+export function useCheckCmsTarget(workspaceId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (targetId: string) => api.checkCmsTarget(workspaceId, targetId),
+    // Invalida sempre, inclusive quando o teste falha: o erro tambem e
+    // resultado e precisa aparecer na lista.
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["cms-targets", workspaceId] }),
+  });
+}
+
+export function usePublishArtifact(workspaceId: string, artifactId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (options: PublishOptions) => api.publishArtifact(workspaceId, artifactId, options),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["artifact-publications", workspaceId, artifactId] });
+      queryClient.invalidateQueries({ queryKey: ["studio-artifact", artifactId] });
+    },
+  });
+}
+
+/** Os posts que existem no site — vem do CMS ao vivo, nao do nosso banco. */
+export function useCmsPosts(
+  workspaceId: string | null,
+  targetId: string | null,
+  params?: { page?: number; search?: string },
+) {
+  return useQuery({
+    queryKey: ["cms-posts", workspaceId, targetId, params?.page ?? 1, params?.search ?? ""],
+    queryFn: () => api.cmsPosts(workspaceId as string, targetId as string, params),
+    enabled: Boolean(workspaceId && targetId),
+  });
+}
+
+export function useUpdateCmsPost(workspaceId: string, targetId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ postId, payload }: { postId: string; payload: CmsPostUpdate }) =>
+      api.updateCmsPost(workspaceId, targetId, postId, payload),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["cms-posts", workspaceId, targetId] }),
+  });
+}
+
+export function useTrashCmsPost(workspaceId: string, targetId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (postId: string) => api.trashCmsPost(workspaceId, targetId, postId),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ["cms-posts", workspaceId, targetId] }),
+  });
+}
