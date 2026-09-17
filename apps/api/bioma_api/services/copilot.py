@@ -521,12 +521,18 @@ def _build_dossier(
         context["expert"] = expert
     task_row = None
 
+    task_id = getattr(payload, "task_id", None)
+    workspace_id = getattr(payload, "workspace_id", None)
+    project_id = getattr(payload, "project_id", None)
+    opportunity_id = getattr(payload, "opportunity_id", None)
+    proposal_id = getattr(payload, "proposal_id", None)
+
     with connect() as conn:
-        if payload.task_id:
-            task_row = tasks_repo.get_task(conn, payload.task_id)
+        if task_id:
+            task_row = tasks_repo.get_task(conn, task_id)
             if not task_row:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tarefa não encontrada.")
-            comments = tasks_repo.list_task_comments(conn, payload.task_id, True)
+            comments = tasks_repo.list_task_comments(conn, task_id, True)
             dossier["task"] = {
                 "title": task_row["title"],
                 "status": task_row["status"],
@@ -541,31 +547,31 @@ def _build_dossier(
             dossier["task_comments"] = [
                 {"author": row.get("author_name"), "body": row["body"][:600]} for row in comments[-10:]
             ]
-            context["task_id"] = str(payload.task_id)
+            context["task_id"] = str(task_id)
 
-        if payload.workspace_id:
+        if workspace_id:
             client = workspaces_repo.find_accessible_client(
-                conn, payload.workspace_id, is_platform_admin(user), user.id
+                conn, workspace_id, is_platform_admin(user), user.id
             )
             if not client:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Workspace não encontrado.")
             context["workspace_id"] = str(client["workspace_id"])
             context["client_name"] = client["name"]
 
-        if payload.project_id:
+        if project_id:
             project = conn.execute(
                 "select id, workspace_id, name, code, status, objective from projects where id = %s",
-                (payload.project_id,),
+                (project_id,),
             ).fetchone()
-            if not project or (payload.workspace_id and project["workspace_id"] != payload.workspace_id):
+            if not project or (workspace_id and project["workspace_id"] != workspace_id):
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Projeto não encontrado.")
             dossier["project"] = dict(project)
             context["project_id"] = str(project["id"])
 
-        if payload.opportunity_id:
-            opportunity = proposals_repo.get_opportunity(conn, payload.opportunity_id)
+        if opportunity_id:
+            opportunity = proposals_repo.get_opportunity(conn, opportunity_id)
             if not opportunity or (
-                payload.workspace_id and opportunity.get("workspace_id") != payload.workspace_id
+                workspace_id and opportunity.get("workspace_id") != workspace_id
             ):
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Oportunidade não encontrada.")
             dossier["opportunity"] = {
@@ -576,23 +582,23 @@ def _build_dossier(
                 )
             }
             dossier["commercial_timeline"] = proposals_repo.list_commercial_activities(
-                conn, payload.opportunity_id
+                conn, opportunity_id
             )[:30]
-            context["opportunity_id"] = str(payload.opportunity_id)
+            context["opportunity_id"] = str(opportunity_id)
 
-        if payload.proposal_id:
+        if proposal_id:
             proposal = conn.execute(
                 """
                 select id, workspace_id, opportunity_id, title, client_name, status,
                        executive_summary, pricing_cents, delivery_days, updated_at
                 from commercial_proposals where id = %s and archived_at is null
                 """,
-                (payload.proposal_id,),
+                (proposal_id,),
             ).fetchone()
-            if not proposal or (payload.workspace_id and proposal["workspace_id"] != payload.workspace_id):
+            if not proposal or (workspace_id and proposal["workspace_id"] != workspace_id):
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proposta não encontrada.")
             dossier["proposal"] = dict(proposal)
-            context["proposal_id"] = str(payload.proposal_id)
+            context["proposal_id"] = str(proposal_id)
 
         # "O que priorizar hoje" precisa das tarefas da pessoa, não da carteira toda.
         my_tasks = tasks_repo.list_my_tasks(conn, user.id, is_platform_admin(user))

@@ -259,6 +259,9 @@ class CopilotPlanContext:
         self.surface = "workspace"
         self.task_id = None
         self.workspace_id = workspace_id
+        self.project_id = None
+        self.opportunity_id = None
+        self.proposal_id = None
         self.expert = None
         self.message = ""
 
