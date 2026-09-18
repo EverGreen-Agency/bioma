@@ -44,7 +44,9 @@ export function Sidebar({
   const groupPrincipal = ["cockpit", "operacao", "malleable-studio", "clientes"];
   const groupAdmin = visibleNavItems.map(item => item.id).filter(id => !groupPrincipal.includes(id));
   
-  const isEgAdmin = user?.organizations?.some(org => org.role === "eg_admin");
+  const isEgAdmin = user?.organizations?.some(
+    (org) => org.slug === "eg" && (org.role === "eg_admin" || org.role === "eg_member"),
+  );
 
   function renderGlobalNav() {
     const renderGroup = (groupItems: string[], label: string) => {
@@ -61,6 +63,8 @@ export function Sidebar({
                 ? "/operacao"
                 : item.id === "clientes"
                   ? clientHomePath
+                  : item.id === "malleable-studio"
+                    ? "/presenca"
                   : `/${item.id}`;
             const isActive = location.pathname === path || (item.id !== "cockpit" && location.pathname.startsWith(path));
             return (

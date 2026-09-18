@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "packages": {
-    "bioma/apps/web": {
+    "apps/web": {
       "release-type": "node",
       "package-name": "@eg/bioma-web",
       "component": "bioma-web",

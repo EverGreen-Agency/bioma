@@ -6,6 +6,7 @@ import { externalClients } from "../lib/client-scope";
 import { AdminDock } from "../components/AdminDock";
 import { EditorialCalendar } from "../components/EditorialCalendar";
 import { RaioXScorePanel } from "../components/RaioXScorePanel";
+import { SeoSnapshotPanel } from "../components/SeoSnapshotPanel";
 import { useUiStore } from "../store/uiStore";
 import {
   useClients,
@@ -330,6 +331,8 @@ export function ClientHubView() {
               canEdit={isEgAdmin}
             />
           </div>
+
+          <SeoSnapshotPanel workspaceId={contextId} canCollect={isEgAdmin} />
 
 
         </div>

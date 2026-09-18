@@ -8525,6 +8525,76 @@
         "title": "EditorialCalendarItemSummary",
         "type": "object"
       },
+      "EditorialCalendarItemUpdate": {
+        "properties": {
+          "channel": {
+            "enum": [
+              "instagram",
+              "facebook",
+              "linkedin",
+              "youtube",
+              "tiktok",
+              "blog"
+            ],
+            "title": "Channel",
+            "type": "string"
+          },
+          "content_type": {
+            "enum": [
+              "social_post",
+              "image_ad",
+              "video_script",
+              "article"
+            ],
+            "title": "Content Type",
+            "type": "string"
+          },
+          "media_urls": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Media Urls",
+            "type": "array"
+          },
+          "post_text": {
+            "anyOf": [
+              {
+                "maxLength": 5000,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Post Text"
+          },
+          "scheduled_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scheduled At"
+          },
+          "title": {
+            "maxLength": 300,
+            "minLength": 2,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title",
+          "content_type",
+          "channel"
+        ],
+        "title": "EditorialCalendarItemUpdate",
+        "type": "object"
+      },
       "EngineeringDocData": {
         "properties": {
           "content": {
@@ -26869,6 +26939,141 @@
           "query"
         ],
         "title": "SearchResponse",
+        "type": "object"
+      },
+      "SeoCollectRequest": {
+        "properties": {
+          "target": {
+            "default": "evergreenmkt.com.br",
+            "maxLength": 253,
+            "minLength": 3,
+            "title": "Target",
+            "type": "string"
+          }
+        },
+        "title": "SeoCollectRequest",
+        "type": "object"
+      },
+      "SeoSnapshotState": {
+        "properties": {
+          "available": {
+            "title": "Available",
+            "type": "boolean"
+          },
+          "latest": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SeoSnapshotSummary"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "available"
+        ],
+        "title": "SeoSnapshotState",
+        "type": "object"
+      },
+      "SeoSnapshotSummary": {
+        "properties": {
+          "cost_usd": {
+            "anyOf": [
+              {
+                "pattern": "^(?!^[-+.]*$)[+-]?0*\\d*\\.?\\d*$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cost Usd"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "has_data": {
+            "title": "Has Data",
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "language_code": {
+            "title": "Language Code",
+            "type": "string"
+          },
+          "location_code": {
+            "title": "Location Code",
+            "type": "integer"
+          },
+          "measured_at": {
+            "format": "date-time",
+            "title": "Measured At",
+            "type": "string"
+          },
+          "organic": {
+            "additionalProperties": true,
+            "title": "Organic",
+            "type": "object"
+          },
+          "paid": {
+            "additionalProperties": true,
+            "title": "Paid",
+            "type": "object"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "source_endpoint": {
+            "title": "Source Endpoint",
+            "type": "string"
+          },
+          "source_task_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Task Id"
+          },
+          "target": {
+            "title": "Target",
+            "type": "string"
+          },
+          "workspace_id": {
+            "format": "uuid",
+            "title": "Workspace Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "workspace_id",
+          "source",
+          "source_endpoint",
+          "source_task_id",
+          "target",
+          "location_code",
+          "language_code",
+          "has_data",
+          "organic",
+          "paid",
+          "cost_usd",
+          "measured_at",
+          "created_at"
+        ],
+        "title": "SeoSnapshotSummary",
         "type": "object"
       },
       "SocialDailyMetric": {
@@ -52046,6 +52251,69 @@
         ]
       }
     },
+    "/workspaces/{workspace_id}/calendar/{item_id}": {
+      "put": {
+        "operationId": "update_item_workspaces__workspace_id__calendar__item_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "item_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Item Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EditorialCalendarItemUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EditorialCalendarItemSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Item",
+        "tags": [
+          "editorial-calendar"
+        ]
+      }
+    },
     "/workspaces/{workspace_id}/calendar/{item_id}/stage": {
       "patch": {
         "operationId": "update_stage_workspaces__workspace_id__calendar__item_id__stage_patch",
@@ -53904,6 +54172,102 @@
         "summary": "Create Project",
         "tags": [
           "projects"
+        ]
+      }
+    },
+    "/workspaces/{workspace_id}/seo": {
+      "get": {
+        "operationId": "get_seo_snapshot_workspaces__workspace_id__seo_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeoSnapshotState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Seo Snapshot",
+        "tags": [
+          "seo"
+        ]
+      }
+    },
+    "/workspaces/{workspace_id}/seo/snapshots": {
+      "post": {
+        "operationId": "collect_seo_snapshot_workspaces__workspace_id__seo_snapshots_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "workspace_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Workspace Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SeoCollectRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SeoSnapshotState"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Collect Seo Snapshot",
+        "tags": [
+          "seo"
         ]
       }
     },

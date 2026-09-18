@@ -5,6 +5,7 @@ from bioma_api.auth import current_user_from_request
 from bioma_api.schemas.auth import CurrentUserResponse
 from bioma_api.schemas.editorial_calendar import (
     EditorialCalendarItemPayload,
+    EditorialCalendarItemUpdate,
     EditorialCalendarItemSummary,
 )
 from bioma_api.services import editorial_calendar as cal_service
@@ -29,6 +30,16 @@ def create_item(
     user: CurrentUserResponse = Depends(current_user_from_request),
 ) -> EditorialCalendarItemSummary:
     return cal_service.create_item(workspace_id, payload, user)
+
+
+@router.put("/{item_id}", response_model=EditorialCalendarItemSummary)
+def update_item(
+    workspace_id: UUID,
+    item_id: UUID,
+    payload: EditorialCalendarItemUpdate,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> EditorialCalendarItemSummary:
+    return cal_service.update_item(workspace_id, item_id, payload, user)
 
 
 @router.patch("/{item_id}/stage", response_model=EditorialCalendarItemSummary)

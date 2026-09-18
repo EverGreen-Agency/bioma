@@ -289,3 +289,17 @@ export function useUpdateCalendarStage() {
     },
   });
 }
+
+export function useUpdateCalendarItem() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ workspaceId, itemId, payload }: {
+      workspaceId: string;
+      itemId: string;
+      payload: Parameters<typeof api.updateCalendarItem>[2];
+    }) => api.updateCalendarItem(workspaceId, itemId, payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["calendar-items", variables.workspaceId] });
+    },
+  });
+}

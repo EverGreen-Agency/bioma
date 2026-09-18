@@ -1,5 +1,5 @@
 import React from "react";
-import { Calendar, CheckCircle2, Clock, Instagram, Send, Sparkles } from "lucide-react";
+import { Calendar, CheckCircle2, Instagram } from "lucide-react";
 import type { PostIdea, BrandDna } from "../data/malleable-mock";
 
 interface SchedulerPipelineViewProps {
@@ -25,11 +25,11 @@ export const SchedulerPipelineView: React.FC<SchedulerPipelineViewProps> = ({
           <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
             <Calendar size={20} color="var(--craft-orange)" />
             <h2 style={{ margin: 0, fontSize: "1.25rem", fontWeight: 900 }}>
-              PUBLISHER PIPELINE · INTEGRAÇÃO BLOTATO / INSTAGRAM
+              PUBLISHER PIPELINE · PRÉVIA
             </h2>
           </div>
           <div style={{ fontSize: "0.85rem", color: "var(--craft-ink-muted)", marginTop: "4px" }}>
-            The Publisher despacha diretamente os carrosséis aprovados para a API do Instagram sem necessidade de exportação manual.
+            Ideias desta demonstração ficam apenas na sessão do navegador. Publicação e agendamento reais ainda não estão conectados.
           </div>
         </div>
 
@@ -48,7 +48,7 @@ export const SchedulerPipelineView: React.FC<SchedulerPipelineViewProps> = ({
             }}
           >
             <span style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#059669" }} />
-            CONECTADO AO INSTAGRAM
+            INSTAGRAM NÃO CONECTADO
           </div>
         </div>
       </div>
@@ -73,7 +73,7 @@ export const SchedulerPipelineView: React.FC<SchedulerPipelineViewProps> = ({
                     gap: "4px",
                   }}
                 >
-                  <CheckCircle2 size={12} /> PRONTO PARA PUBLICAÇÃO
+                  <CheckCircle2 size={12} /> PRÉVIA MARCADA PARA AGENDAMENTO
                 </span>
 
                 <div style={{ display: "flex", alignItems: "center", gap: "4px", fontSize: "0.8rem", fontFamily: "var(--craft-font-mono)" }}>
@@ -103,7 +103,7 @@ export const SchedulerPipelineView: React.FC<SchedulerPipelineViewProps> = ({
                 {idea.title}
               </h4>
               <div style={{ fontSize: "0.8rem", color: "var(--craft-orange)", fontWeight: 700, marginBottom: "8px" }}>
-                {idea.slidesCount} lâminas renderizadas
+                {idea.slidesCount} lâminas em prévia
               </div>
 
               <p
@@ -129,13 +129,6 @@ export const SchedulerPipelineView: React.FC<SchedulerPipelineViewProps> = ({
                 style={{ flex: 1 }}
               >
                 Inspecionar Lâminas
-              </button>
-              <button
-                className="craft-btn craft-btn-orange"
-                onClick={() => alert(`Post "${idea.title}" disparado para o Instagram via Blotato!`)}
-                title="Disparar postagem imediata"
-              >
-                <Send size={14} /> Disparar Agora
               </button>
             </div>
           </div>

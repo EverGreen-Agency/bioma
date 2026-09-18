@@ -164,14 +164,17 @@ export const MalleableStudioView: React.FC = () => {
 
   return (
     <div className="craft-studio-root" data-craft-theme={theme}>
-      {/* CRAFT Top Header */}
+      <div role="status" style={{ padding: "10px 20px", background: "#fff3cf", color: "#563800", fontWeight: 700, fontSize: 13 }}>
+        Protótipo com dados demonstrativos. Alterações nesta tela não são salvas no Bioma; nenhuma publicação é enviada.
+      </div>
+      {/* EverGreen Presença: painel operacional do serviço de conteúdo social. */}
       <header className="craft-header">
         <div className="craft-brand-logo">
-          <span className="craft-brand-badge">CRAFT</span>
+          <span className="craft-brand-badge">PRESENÇA</span>
           <div>
             <h1 className="craft-brand-title">
-              RENDER STUDIO
-              <span className="craft-brand-subtitle">by RoboNuggets / Bioma</span>
+              EVERGREEN PRESENÇA
+              <span className="craft-brand-subtitle">operação social com aprovação humana</span>
             </h1>
           </div>
 

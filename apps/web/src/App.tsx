@@ -77,8 +77,8 @@ const PlatformStudiesView = lazy(() =>
 const PlanningPortfolioView = lazy(() =>
   import("./views/admin/proposals/PlanningPortfolioView").then((module) => ({ default: module.PlanningPortfolioView })),
 );
-const MalleableStudioView = lazy(() =>
-  import("./views/malleable-studio/MalleableStudioView").then((module) => ({ default: module.MalleableStudioView })),
+const PresenceView = lazy(() =>
+  import("./views/presenca/PresenceView").then((module) => ({ default: module.PresenceView })),
 );
 
 function ViewLoadingFallback() {
@@ -330,16 +330,18 @@ export function App() {
           />
           <Route path="/configuracoes" element={<SettingsView />} />
           <Route path="/univet" element={<UnivetPresentationView />} />
+          <Route path="/univets" element={<Navigate to="/univet" replace />} />
           <Route
-            path="/malleable-studio"
+            path="/presenca"
             element={
               <Suspense fallback={<ViewLoadingFallback />}>
-                <MalleableStudioView />
+                <PresenceView />
               </Suspense>
             }
           />
-          <Route path="/social-studio" element={<Navigate to="/malleable-studio" replace />} />
-          <Route path="/render-studio" element={<Navigate to="/malleable-studio" replace />} />
+          <Route path="/malleable-studio" element={<Navigate to="/presenca" replace />} />
+          <Route path="/social-studio" element={<Navigate to="/presenca" replace />} />
+          <Route path="/render-studio" element={<Navigate to="/presenca" replace />} />
 
           <Route path="/operacao" element={guardSurface("operacao",
             <Suspense fallback={<ViewLoadingFallback />}>

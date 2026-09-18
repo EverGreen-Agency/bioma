@@ -200,6 +200,7 @@ export function AiControlPlanePanel() {
       display_name: displayName.trim(),
       auth_mode: selectedPreset.authMode,
       execution_mode: selectedPreset.executionMode,
+      status: selectedPreset.executionMode === "local_cli" ? "paused" : "active",
       auth_ref: selectedPreset.authRef,
       capabilities: ["chat", "content", "strategy", "code", "reasoning", "tools", "structured_output"],
       settings: {},
@@ -286,7 +287,11 @@ export function AiControlPlanePanel() {
             </label>
             <small>
               Auth: {selectedPreset.authMode} · execução: {selectedPreset.executionMode}
-              {selectedPreset.authRef ? ` · ${selectedPreset.authRef}` : " · keyring/ADC local"}
+              {selectedPreset.authRef
+                ? ` · segredo somente no runtime (${selectedPreset.authRef})`
+                : selectedPreset.executionMode === "local_cli"
+                  ? " · cadastre sem segredos e conclua pelo login oficial abaixo"
+                  : " · credencial ADC do runtime"}
             </small>
             <button className="primary-button" type="submit" disabled={createAccount.isPending}>
               <Plus size={15} /> Cadastrar

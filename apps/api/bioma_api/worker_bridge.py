@@ -273,6 +273,18 @@ def normalize_imported_prospects_safe(rows: list[dict[str, Any]]) -> list[dict[s
     return normalize_imported_prospects(rows)
 
 
+def collect_dataforseo_domain_rank_safe(target: str) -> dict[str, Any]:
+    if not _ensure_worker_in_path():
+        raise RuntimeError("Worker do Bioma não encontrado no runtime da API.")
+    from bioma_worker.config import get_settings
+    from bioma_worker.dataforseo import DataForSeoError, collect_domain_rank_snapshot
+
+    try:
+        return collect_domain_rank_snapshot(target, get_settings())
+    except DataForSeoError as exc:
+        raise RuntimeError(str(exc)) from exc
+
+
 def generate_market_research_safe(request: dict[str, Any]) -> dict[str, Any]:
     if not _ensure_worker_in_path():
         raise RuntimeError("Worker do Bioma não encontrado no runtime da API.")

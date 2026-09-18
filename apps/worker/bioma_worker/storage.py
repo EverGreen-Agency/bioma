@@ -270,6 +270,10 @@ def list_ai_route_candidates(conn, job: dict):
         left join ai_provider_credentials credential on credential.account_id = account.id
         where account.organization_id = %s
           and account.status in ('active', 'degraded')
+          and (
+            account.channel not in ('codex_chatgpt', 'claude_code', 'antigravity_cli')
+            or credential.encrypted_bundle is not null
+          )
         order by model.priority, account.display_name, model.display_name
         """,
         (job["task_kind"], job["task_kind"], job["organization_id"]),

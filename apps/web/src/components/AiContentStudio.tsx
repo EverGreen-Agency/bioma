@@ -30,8 +30,8 @@ import { StudioArtifactList } from "./StudioArtifactList";
 import { CmsPostsManager } from "./CmsPostsManager";
 import {
   useBrandBook,
+  useWorkspaces,
   useSaveBrandBook,
-  useCalendarItems,
   useContentHookBank,
   useContentScripts,
   useCreateCalendarItem,
@@ -41,11 +41,11 @@ import {
   useGenerateRetrospective,
   useInstagramPosts,
   useLatestRetrospective,
-  useUpdateCalendarStage,
   useUpdateContentScript,
 } from "../hooks/useBiomaApi";
 import { EmptyState, SectionHeader } from "./shared";
 import { StatusPill } from "./StatusPill";
+import { PresenceCalendar } from "../views/presenca/PresenceView";
 
 type MainTab = "artifacts" | "blog" | "studio" | "brand_book" | "calendar" | "retrospective";
 type ContentType = "social_posts" | "image_generation" | "video_scripts";
@@ -496,148 +496,11 @@ function RetrospectiveSection({ workspaceId }: { workspaceId: string }) {
 }
 
 function CalendarSection({ workspaceId }: { workspaceId: string }) {
-  const { data: items, isLoading } = useCalendarItems(workspaceId);
-  const createItem = useCreateCalendarItem();
-  const updateStage = useUpdateCalendarStage();
-
-  const [title, setTitle] = useState("");
-  const [channel, setChannel] = useState<"instagram" | "linkedin" | "facebook" | "tiktok">("instagram");
-  const [postText, setPostText] = useState("");
-
-  function handleCreate(e: FormEvent) {
-    e.preventDefault();
-    if (!title) return;
-    createItem.mutate(
-      {
-        workspaceId,
-        payload: {
-          title,
-          channel,
-          post_text: postText || undefined,
-          stage: "ideation",
-        },
-      },
-      {
-        onSuccess: () => {
-          setTitle("");
-          setPostText("");
-        },
-      }
-    );
-  }
-
-  const stages = [
-    { id: "ideation", label: "Ideação" },
-    { id: "production", label: "Em Produção" },
-    { id: "review", label: "Revisão" },
-    { id: "approved", label: "Aprovado" },
-    { id: "scheduled", label: "Agendado" },
-    { id: "published", label: "Publicado" },
-  ];
-
-  if (isLoading) return <EmptyState compact text="Carregando Calendário Editorial..." />;
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-      <article className="surface">
-        <SectionHeader eyebrow="Planejamento Editorial" title="Adicionar Novo Conteúdo" icon={Calendar} />
-        <form onSubmit={handleCreate} style={{ display: "flex", flexDirection: "column", gap: "12px", marginTop: "12px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px" }}>
-            <input
-              type="text"
-              placeholder="Título da peça ou ideia de anúncio..."
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              style={{ padding: "8px 12px", borderRadius: "4px", border: "1px solid var(--border-light)" }}
-              required
-            />
-            <select
-              value={channel}
-              onChange={(e) => setChannel(e.target.value as any)}
-              style={{ padding: "8px 12px", borderRadius: "4px", border: "1px solid var(--border-light)" }}
-            >
-              <option value="instagram">Instagram</option>
-              <option value="linkedin">LinkedIn</option>
-              <option value="facebook">Facebook</option>
-              <option value="tiktok">TikTok</option>
-            </select>
-          </div>
-          <textarea
-            placeholder="Legenda, roteiro ou rascunho de texto (opcional)..."
-            value={postText}
-            onChange={(e) => setPostText(e.target.value)}
-            rows={2}
-            style={{ padding: "8px 12px", borderRadius: "4px", border: "1px solid var(--border-light)" }}
-          />
-          <div style={{ display: "flex", justifyContent: "flex-end" }}>
-            <button className="secondary-button" type="submit" disabled={createItem.isPending}>
-              <Plus size={15} /> Adicionar à Esteira
-            </button>
-          </div>
-        </form>
-      </article>
-
-      <article className="surface">
-        <SectionHeader eyebrow="Esteira Social Media" title="Kanban do Calendário Editorial" icon={Calendar} />
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "12px", marginTop: "16px" }}>
-          {stages.map((stg) => {
-            const stageItems = items?.filter((i) => i.stage === stg.id) ?? [];
-            return (
-              <div
-                key={stg.id}
-                style={{
-                  background: "var(--bg-elevated)",
-                  padding: "12px",
-                  borderRadius: "6px",
-                  border: "1px solid var(--border-light)",
-                  minHeight: "200px",
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
-                  <strong style={{ fontSize: "13px" }}>{stg.label}</strong>
-                  <span className="demo-badge">{stageItems.length}</span>
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                  {stageItems.map((item) => (
-                    <div
-                      key={item.id}
-                      style={{
-                        background: "var(--surface)",
-                        padding: "10px",
-                        borderRadius: "4px",
-                        border: "1px solid var(--border-light)",
-                        fontSize: "12px",
-                      }}
-                    >
-                      <strong style={{ display: "block", marginBottom: "4px" }}>{item.title}</strong>
-                      <span style={{ color: "var(--text-muted)", fontSize: "11px" }}>{item.channel.toUpperCase()}</span>
-                      
-                      <div style={{ marginTop: "8px", display: "flex", gap: "4px" }}>
-                        {stg.id !== "published" && (
-                          <button
-                            className="mini-button"
-                            type="button"
-                            style={{ fontSize: "10px", padding: "2px 6px" }}
-                            onClick={() => {
-                              const nextStage = stages[stages.findIndex((s) => s.id === stg.id) + 1]?.id;
-                              if (nextStage) updateStage.mutate({ workspaceId, itemId: item.id, stage: nextStage });
-                            }}
-                          >
-                            Avançar ➔
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </article>
-    </div>
-  );
+  const { data: workspaces, isLoading } = useWorkspaces();
+  const workspace = workspaces?.find((item) => item.id === workspaceId);
+  if (isLoading) return <EmptyState compact text="Carregando calendário editorial..." />;
+  if (!workspace) return <EmptyState compact text="Workspace indisponível para o calendário." />;
+  return <PresenceCalendar workspace={workspace} />;
 }
 
 export function AiContentStudio({ workspaceId }: { workspaceId: string }) {
