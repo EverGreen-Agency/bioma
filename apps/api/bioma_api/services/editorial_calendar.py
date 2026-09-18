@@ -95,7 +95,11 @@ def update_item(
             raise HTTPException(status_code=404, detail="Item não encontrado.")
         if existing["stage"] in ("approved", "scheduled", "published"):
             raise HTTPException(status_code=409, detail="Volte o item para revisão antes de editar.")
-        row = cal_repo.update_calendar_item(conn, client["workspace_id"], item_id, payload.model_dump())
+        data = payload.model_dump()
+        merged_metadata = dict(existing.get("metadata") or {})
+        merged_metadata.update(data.get("metadata") or {})
+        data["metadata"] = merged_metadata
+        row = cal_repo.update_calendar_item(conn, client["workspace_id"], item_id, data)
         _audit(conn, user, client, "calendar.updated", row, existing["stage"])
     return EditorialCalendarItemSummary(**dict(row))
 
