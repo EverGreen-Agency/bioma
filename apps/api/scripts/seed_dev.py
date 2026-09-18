@@ -10,6 +10,7 @@ from bioma_api.config import get_settings
 from bioma_api.security import hash_password
 from bioma_api.repositories import workspaces as workspaces_repo
 from performance_seed import seed_performance
+import seed_knowledge
 
 
 DEV_PASSWORD = "senha-dev-123"
@@ -392,6 +393,7 @@ def main() -> None:
         upsert_performance_metric(conn, hm_id, "2026-06-01", "2026-06-30", "CRM", "qualified_meetings", 18)
         seed_performance(conn, hm_client_id, hm_id)
 
+    seed_knowledge.main()
     print("seed ok")
     print("admin: eduardo@evergreengrowth.com.br / senha-dev-123")
     print("cliente: henrique@hmconexoes.com.br / senha-dev-123")

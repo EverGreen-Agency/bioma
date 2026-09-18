@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.7.0](https://github.com/EverGreen-Agency/evergreen-ai-os/compare/bioma-web-v0.6.1...bioma-web-v0.7.0) (2026-08-11)
+
+
+### Features
+
+* **ai-routing:** adiciona suporte a openrouter, deepseek e configuracao de harness tool calling ([bf738c4](https://github.com/EverGreen-Agency/evergreen-ai-os/commit/bf738c4abc1fda6f637310d23c41240c347d1a4c))
+* **copilot:** adiciona conexao de sessao web para providers de IA ([8faed18](https://github.com/EverGreen-Agency/evergreen-ai-os/commit/8faed18b15e095ff45236640a83950b4fbbf629e))
+* **web:** integra modulo de whatsapp multi-provedor nas configuracoe… ([2bd0829](https://github.com/EverGreen-Agency/evergreen-ai-os/commit/2bd08293f432b00df7775a163e8d70b3b361f8c0))
+* **web:** integra modulo de whatsapp multi-provedor nas configuracoes da empresa ([c89f5ac](https://github.com/EverGreen-Agency/evergreen-ai-os/commit/c89f5ac87905a100a5e3f50f0c249d1ae0570f91))
+
+
+### Bug Fixes
+
+* **copilot:** esclarecer mensagem de previa local direcionando para Configuracoes -&gt; Empresa ou Operacao EG ([988cc31](https://github.com/EverGreen-Agency/evergreen-ai-os/commit/988cc31bed3766b2990655918166024e8c1f3b34))
+* **web:** atualiza tipo provider em createAiProviderAccount ([44eb37d](https://github.com/EverGreen-Agency/evergreen-ai-os/commit/44eb37df0b57489870b13455a1af2f9ac17a1483))
+* **web:** corrige tipo de channelOptions para openrouter e deepseek ([249e9be](https://github.com/EverGreen-Agency/evergreen-ai-os/commit/249e9bef69a75f2bc6761f32e793a31bbec92953))
+
 ## [0.6.1](https://github.com/EverGreen-Agency/evergreen-ai-os/compare/bioma-web-v0.6.0...bioma-web-v0.6.1) (2026-08-08)
 
 

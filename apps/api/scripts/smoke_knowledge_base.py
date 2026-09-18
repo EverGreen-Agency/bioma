@@ -36,6 +36,7 @@ def assert_status(response, expected: int, label: str) -> None:
 
 
 def main() -> None:
+    seed_knowledge.main()
     client = TestClient(app)
     assert_status(client.post("/auth/login", json={"email": ADMIN_EMAIL, "password": PASSWORD}), 200, "login")
 

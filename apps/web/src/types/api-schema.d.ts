@@ -5711,6 +5711,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workspaces/{workspace_id}/calendar/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Item */
+        put: operations["update_item_workspaces__workspace_id__calendar__item_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workspaces/{workspace_id}/calendar/{item_id}/stage": {
         parameters: {
             query?: never;
@@ -6187,6 +6204,40 @@ export interface paths {
         put?: never;
         /** Create Project */
         post: operations["create_project_workspaces__workspace_id__projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspace_id}/seo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Seo Snapshot */
+        get: operations["get_seo_snapshot_workspaces__workspace_id__seo_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspace_id}/seo/snapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Collect Seo Snapshot */
+        post: operations["collect_seo_snapshot_workspaces__workspace_id__seo_snapshots_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9827,6 +9878,27 @@ export interface components {
              * Format: uuid
              */
             workspace_id: string;
+        };
+        /** EditorialCalendarItemUpdate */
+        EditorialCalendarItemUpdate: {
+            /**
+             * Channel
+             * @enum {string}
+             */
+            channel: "instagram" | "facebook" | "linkedin" | "youtube" | "tiktok" | "blog";
+            /**
+             * Content Type
+             * @enum {string}
+             */
+            content_type: "social_post" | "image_ad" | "video_script" | "article";
+            /** Media Urls */
+            media_urls?: string[];
+            /** Post Text */
+            post_text?: string | null;
+            /** Scheduled At */
+            scheduled_at?: string | null;
+            /** Title */
+            title: string;
         };
         /** EngineeringDocData */
         EngineeringDocData: {
@@ -16338,6 +16410,67 @@ export interface components {
             mode_actually_used: "lexical";
             /** Query */
             query: string;
+        };
+        /** SeoCollectRequest */
+        SeoCollectRequest: {
+            /**
+             * Target
+             * @default evergreenmkt.com.br
+             */
+            target: string;
+        };
+        /** SeoSnapshotState */
+        SeoSnapshotState: {
+            /** Available */
+            available: boolean;
+            latest?: components["schemas"]["SeoSnapshotSummary"] | null;
+        };
+        /** SeoSnapshotSummary */
+        SeoSnapshotSummary: {
+            /** Cost Usd */
+            cost_usd: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Has Data */
+            has_data: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Language Code */
+            language_code: string;
+            /** Location Code */
+            location_code: number;
+            /**
+             * Measured At
+             * Format: date-time
+             */
+            measured_at: string;
+            /** Organic */
+            organic: {
+                [key: string]: unknown;
+            };
+            /** Paid */
+            paid: {
+                [key: string]: unknown;
+            };
+            /** Source */
+            source: string;
+            /** Source Endpoint */
+            source_endpoint: string;
+            /** Source Task Id */
+            source_task_id: string | null;
+            /** Target */
+            target: string;
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
         };
         /** SocialDailyMetric */
         SocialDailyMetric: {
@@ -31161,6 +31294,42 @@ export interface operations {
             };
         };
     };
+    update_item_workspaces__workspace_id__calendar__item_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditorialCalendarItemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditorialCalendarItemSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_stage_workspaces__workspace_id__calendar__item_id__stage_patch: {
         parameters: {
             query: {
@@ -32286,6 +32455,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_seo_snapshot_workspaces__workspace_id__seo_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeoSnapshotState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    collect_seo_snapshot_workspaces__workspace_id__seo_snapshots_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SeoCollectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeoSnapshotState"];
                 };
             };
             /** @description Validation Error */

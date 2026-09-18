@@ -205,8 +205,8 @@ def main() -> None:
             captured = {}
             real_dossier_builder = copilot_service._build_dossier
 
-            def spy_dossier(payload, user):
-                dossier, context, task_row = real_dossier_builder(payload, user)
+            def spy_dossier(payload, user, *args, **kwargs):
+                dossier, context, task_row = real_dossier_builder(payload, user, *args, **kwargs)
                 captured["dossier"] = dossier
                 return dossier, context, task_row
 

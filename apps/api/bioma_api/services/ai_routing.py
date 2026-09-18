@@ -747,6 +747,9 @@ def preview_route(payload: RoutePreviewRequest, user: CurrentUserResponse) -> Ro
         for model in account.models:
             reasons: list[str] = []
             eligible = account.status in ("active", "degraded") and model.enabled
+            if account.channel in {"codex_chatgpt", "claude_code", "antigravity_cli"} and not account.credentials_configured:
+                eligible = False
+                reasons.append("assinatura ainda não conectada ao cofre do Bioma")
             if account.execution_mode == "manual_handoff":
                 eligible = False
                 reasons.append("canal exige handoff manual")

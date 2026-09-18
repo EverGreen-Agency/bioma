@@ -21,7 +21,7 @@ alter table eg_knowledge_docs
 
 alter table eg_knowledge_docs
   add constraint eg_knowledge_docs_category_check
-  check (category in ('knowledge', 'engineering', 'architecture', 'company', 'blog'));
+  check (category in ('knowledge', 'engineering', 'architecture', 'company', 'blog', 'ideas_docs'));
 
 create or replace function eg_sync_published_post_to_knowledge()
 returns trigger

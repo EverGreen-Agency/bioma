@@ -53,6 +53,10 @@ class WorkerSettings(BaseSettings):
     google_cloud_project: str | None = None
     google_cloud_location: str = "us-central1"
     ahrefs_api_key: str | None = None
+    dataforseo_login: str | None = None
+    dataforseo_password: str | None = None
+    dataforseo_base_url: str = "https://api.dataforseo.com"
+    dataforseo_timeout_seconds: float = 60
     fathom_api_key: str | None = None
     fathom_request_timeout_seconds: float = 60
     # QUEUE-001: o lease precisa ser maior que o job mais longo esperado

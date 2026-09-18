@@ -808,6 +808,39 @@ export type CommercialPortalResponse = {
   action_plans: ActionPlanSummary[];
 };
 
+export type SeoMetrics = {
+  pos_1?: number;
+  pos_2_3?: number;
+  pos_4_10?: number;
+  pos_11_20?: number;
+  count?: number;
+  etv?: number;
+  estimated_paid_traffic_cost?: number;
+  is_new?: number;
+  is_up?: number;
+  is_down?: number;
+  is_lost?: number;
+};
+
+export type SeoSnapshot = {
+  id: string;
+  workspace_id: string;
+  source: "dataforseo";
+  source_endpoint: string;
+  source_task_id: string | null;
+  target: string;
+  location_code: number;
+  language_code: string;
+  has_data: boolean;
+  organic: SeoMetrics;
+  paid: SeoMetrics;
+  cost_usd: number | null;
+  measured_at: string;
+  created_at: string;
+};
+
+export type SeoSnapshotState = { available: boolean; latest: SeoSnapshot | null };
+
 // --- Kits & Logística ---
 export type KitPieceSummary = {
   id: string;
@@ -3558,6 +3591,7 @@ export const api = {
     display_name: string;
     auth_mode: AiProviderAccount["auth_mode"];
     execution_mode: AiProviderAccount["execution_mode"];
+    status?: AiProviderAccount["status"];
     auth_ref?: string | null;
     capabilities: string[];
     settings?: Record<string, unknown>;
@@ -3752,7 +3786,7 @@ export const api = {
     }),
   calendarItems: (workspaceId: string, stage?: string) =>
     request<EditorialCalendarItemSummary[]>(
-      `/workspaces/${workspaceId}/calendar${stage ? `?stage=${stage}` : ""}`
+      `/workspaces/${workspaceId}/calendar?limit=500${stage ? `&stage=${encodeURIComponent(stage)}` : ""}`
     ),
   createCalendarItem: (
     workspaceId: string,
@@ -3776,6 +3810,15 @@ export const api = {
       `/workspaces/${workspaceId}/calendar/${itemId}/stage?stage=${stage}`,
       { method: "PATCH" }
     ),
+  updateCalendarItem: (
+    workspaceId: string,
+    itemId: string,
+    payload: Pick<EditorialCalendarItemSummary, "title" | "content_type" | "channel" | "scheduled_at" | "post_text" | "media_urls">,
+  ) =>
+    request<EditorialCalendarItemSummary>(`/workspaces/${workspaceId}/calendar/${itemId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
   createInvite: (clientId: string, email?: string | null) =>
     request<InviteCreated>(`/workspaces/${clientId}/invites`, {
       method: "POST",
@@ -4089,6 +4132,13 @@ export const api = {
   // Commercial Raio-X (3 Pilares: Oferta, Demanda, Conversao)
   commercialPortal: (workspaceId: string) =>
     request<CommercialPortalResponse>(`/workspaces/${workspaceId}/commercial`),
+  seoSnapshot: (workspaceId: string) =>
+    request<SeoSnapshotState>(`/workspaces/${workspaceId}/seo`),
+  collectSeoSnapshot: (workspaceId: string, target = "evergreenmkt.com.br") =>
+    request<SeoSnapshotState>(`/workspaces/${workspaceId}/seo/snapshots`, {
+      method: "POST",
+      body: JSON.stringify({ target }),
+    }),
   answerDiagnosticQuestion: (
     workspaceId: string,
     payload: {
