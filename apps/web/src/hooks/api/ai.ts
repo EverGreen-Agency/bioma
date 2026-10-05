@@ -303,3 +303,74 @@ export function useUpdateCalendarItem() {
     },
   });
 }
+
+export function useFreeProviders() {
+  return useQuery({
+    queryKey: ["ai-free-providers"],
+    queryFn: api.freeProviders,
+    staleTime: 60_000,
+  });
+}
+
+export function useProviderKeys(providerCode?: string) {
+  return useQuery({
+    queryKey: ["ai-provider-keys", providerCode],
+    queryFn: () => api.providerKeys(providerCode),
+  });
+}
+
+export function useCreateProviderKey() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.createProviderKey,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ai-provider-keys"] });
+      queryClient.invalidateQueries({ queryKey: ["ai-free-providers"] });
+    },
+  });
+}
+
+export function useDeleteProviderKey() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: api.deleteProviderKey,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["ai-provider-keys"] });
+      queryClient.invalidateQueries({ queryKey: ["ai-free-providers"] });
+    },
+  });
+}
+
+export function useTestFreeProvider() {
+  return useMutation({
+    mutationFn: (providerCode: string) => api.testFreeProvider(providerCode),
+  });
+}
+
+export function useOrganizationBudget(organizationId: string) {
+  return useQuery({
+    queryKey: ["ai-org-budget", organizationId],
+    queryFn: () => api.organizationBudget(organizationId),
+    enabled: Boolean(organizationId),
+  });
+}
+
+export function useUpdateOrganizationBudget() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ organizationId, payload }: { organizationId: string; payload: Parameters<typeof api.updateOrganizationBudget>[1] }) =>
+      api.updateOrganizationBudget(organizationId, payload),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["ai-org-budget", variables.organizationId] });
+    },
+  });
+}
+
+export function useUsageAnalytics(organizationId?: string, days = 30) {
+  return useQuery({
+    queryKey: ["ai-usage-analytics", organizationId, days],
+    queryFn: () => api.usageAnalytics(organizationId, days),
+    staleTime: 30_000,
+  });
+}
+

@@ -12,6 +12,7 @@ contra permissão e reversibilidade antes de aplicar. Isso mantém o poder de
 decisão no backend, não no texto que o modelo gerou.
 """
 
+import hashlib
 import json
 from typing import Any
 
@@ -342,8 +343,7 @@ def plan_via_candidate(request: dict[str, Any], candidate: dict[str, Any], setti
         f"Entrada:\n{json.dumps(payload, ensure_ascii=False, default=str)}"
     )
 
-    # `job` fica vazio de propósito: o prompt vai pronto, e `execute_candidate`
-    # pula o template de etapa quando recebe `prompt`.
+    request_hash = hashlib.sha256(prompt.encode("utf-8")).hexdigest()
     result = execute_candidate(candidate, {}, settings, prompt=prompt)
 
     usage = result.get("usage") or {}
@@ -352,6 +352,8 @@ def plan_via_candidate(request: dict[str, Any], candidate: dict[str, Any], setti
         "generation_mode": "live",
         "provider": candidate["provider"],
         "model": candidate["model_id"],
+        "request_hash": request_hash,
+        "latency_ms": result.get("latency_ms"),
         "usage": {
             "input_tokens": usage.get("input_units"),
             "output_tokens": usage.get("output_units"),

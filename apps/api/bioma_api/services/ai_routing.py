@@ -14,13 +14,18 @@ from bioma_api.repositories import ai_routing as repo
 from bioma_api.repositories import client_hub as client_hub_repo
 from bioma_api.schemas.ai_routing import (
     AiRoutingControlPlane,
+    FreeProviderPresetRead,
     HarnessConfigSummary,
     HarnessConfigUpsert,
     ModelCatalogSummary,
     ModelCatalogUpsert,
+    OrganizationBudgetRead,
+    OrganizationBudgetUpdate,
     ProviderAccountCreate,
     ProviderAccountSummary,
     ProviderAccountUpdate,
+    ProviderKeyPoolCreate,
+    ProviderKeyPoolRead,
     ProviderLoginInput,
     ProviderLoginSession,
     ProviderRuntimeStatus,
@@ -32,13 +37,21 @@ from bioma_api.schemas.ai_routing import (
     RoutePreviewRequest,
     RoutingPolicySummary,
     RoutingPolicyUpsert,
+    UsageAnalyticsItem,
+    UsageAnalyticsResponse,
 )
 from bioma_api.schemas.auth import CurrentUserResponse
 from bioma_api.services.ai_operations import _eg_organization_id
+from bioma_api.config import get_settings
 from bioma_api.worker_bridge import (
     ai_provider_settings_safe,
     probe_ai_provider_runtime_safe,
     purge_provider_credentials_safe,
+)
+from bioma_worker.free_providers import (
+    FREE_PROVIDER_PRESETS,
+    make_key_fingerprint,
+    execute_free_provider_call,
 )
 
 
@@ -806,3 +819,304 @@ def preview_route(payload: RoutePreviewRequest, user: CurrentUserResponse) -> Ro
         selected=selected,
         candidates=candidates,
     )
+
+
+def list_free_providers(user: CurrentUserResponse) -> list[FreeProviderPresetRead]:
+    require_platform_admin(user)
+    key_counts: dict[str, int] = {}
+    with connect() as conn:
+        try:
+            rows = conn.execute(
+                """
+                SELECT provider_code, COUNT(*) as count
+                FROM ai_provider_key_pool
+                WHERE status = 'active'
+                GROUP BY provider_code
+                """
+            ).fetchall()
+            for r in rows:
+                key_counts[r["provider_code"]] = int(r["count"])
+        except Exception:
+            pass
+
+    import os
+    result: list[FreeProviderPresetRead] = []
+    for code, preset in FREE_PROVIDER_PRESETS.items():
+        env_var = preset.get("default_env_var", "")
+        has_env = bool(os.environ.get(env_var)) if env_var else False
+        result.append(
+            FreeProviderPresetRead(
+                code=code,
+                name=preset["name"],
+                base_url=preset["base_url"],
+                default_env_var=env_var,
+                description=preset["description"],
+                models=preset["models"],
+                default_model=preset["default_model"],
+                active_keys_count=key_counts.get(code, 0),
+                has_env_key=has_env,
+            )
+        )
+    return result
+
+
+def list_provider_keys(provider_code: str | None, user: CurrentUserResponse) -> list[ProviderKeyPoolRead]:
+    require_platform_admin(user)
+    with connect() as conn:
+        try:
+            if provider_code:
+                rows = conn.execute(
+                    """
+                    SELECT id, provider_code, label, key_fingerprint, status,
+                           error_count, call_count, last_used_at, cooldown_until,
+                           last_error_message, created_at
+                    FROM ai_provider_key_pool
+                    WHERE provider_code = %s
+                    ORDER BY created_at DESC
+                    """,
+                    (provider_code,),
+                ).fetchall()
+            else:
+                rows = conn.execute(
+                    """
+                    SELECT id, provider_code, label, key_fingerprint, status,
+                           error_count, call_count, last_used_at, cooldown_until,
+                           last_error_message, created_at
+                    FROM ai_provider_key_pool
+                    ORDER BY created_at DESC
+                    """
+                ).fetchall()
+            return [
+                ProviderKeyPoolRead(
+                    id=r["id"],
+                    provider_code=r["provider_code"],
+                    label=r["label"],
+                    key_fingerprint=r["key_fingerprint"],
+                    status=r["status"],
+                    error_count=r["error_count"],
+                    call_count=r["call_count"],
+                    last_used_at=r["last_used_at"],
+                    cooldown_until=r["cooldown_until"],
+                    last_error_message=r["last_error_message"],
+                    created_at=r["created_at"],
+                )
+                for r in rows
+            ]
+        except Exception:
+            return []
+
+
+def create_provider_key(payload: ProviderKeyPoolCreate, user: CurrentUserResponse) -> ProviderKeyPoolRead:
+    require_platform_admin(user)
+    require_encryption_configured()
+    settings = get_settings()
+
+    encrypted = encrypt_secret(payload.api_key.strip(), settings.secret_encryption_key)
+    fingerprint = make_key_fingerprint(payload.api_key)
+
+    with connect() as conn:
+        row = conn.execute(
+            """
+            INSERT INTO ai_provider_key_pool (
+                provider_code, label, key_encrypted, key_fingerprint, status, created_at, updated_at
+            )
+            VALUES (%s, %s, %s, %s, 'active', now(), now())
+            RETURNING id, provider_code, label, key_fingerprint, status,
+                      error_count, call_count, last_used_at, cooldown_until,
+                      last_error_message, created_at
+            """,
+            (payload.provider_code, payload.label, encrypted, fingerprint),
+        ).fetchone()
+
+        return ProviderKeyPoolRead(
+            id=row["id"],
+            provider_code=row["provider_code"],
+            label=row["label"],
+            key_fingerprint=row["key_fingerprint"],
+            status=row["status"],
+            error_count=row["error_count"],
+            call_count=row["call_count"],
+            last_used_at=row["last_used_at"],
+            cooldown_until=row["cooldown_until"],
+            last_error_message=row["last_error_message"],
+            created_at=row["created_at"],
+        )
+
+
+def delete_provider_key(key_id: UUID, user: CurrentUserResponse) -> None:
+    require_platform_admin(user)
+    with connect() as conn:
+        conn.execute(
+            "DELETE FROM ai_provider_key_pool WHERE id = %s",
+            (key_id,),
+        )
+
+
+def test_free_provider(provider_code: str, user: CurrentUserResponse) -> dict[str, Any]:
+    require_platform_admin(user)
+    preset = FREE_PROVIDER_PRESETS.get(provider_code)
+    if not preset:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Provedor gratuito '{provider_code}' não existe no catálogo.",
+        )
+    settings = get_settings()
+    with connect() as conn:
+        try:
+            result = execute_free_provider_call(
+                provider_code=provider_code,
+                model_id=preset["default_model"],
+                prompt="Responda em uma palavra: 'Ok'",
+                settings=settings,
+                conn=conn,
+            )
+            return {
+                "ok": True,
+                "provider": provider_code,
+                "model": preset["default_model"],
+                "response": result.get("text", "").strip(),
+                "usage": result.get("usage", {}),
+            }
+        except Exception as exc:
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail=f"Falha no teste com {preset['name']}: {exc}",
+            ) from exc
+
+
+def get_organization_budget(organization_id: UUID, user: CurrentUserResponse) -> OrganizationBudgetRead:
+    require_platform_admin(user)
+    with connect() as conn:
+        budget_row = conn.execute(
+            """
+            SELECT organization_id, monthly_token_cap, monthly_cost_cap_cents,
+                   alert_threshold_percent, enforce_hard_stop
+            FROM ai_organization_budgets
+            WHERE organization_id = %s
+            """,
+            (organization_id,),
+        ).fetchone()
+
+        usage_row = conn.execute(
+            """
+            SELECT 
+                COALESCE(SUM((output->'usage'->>'input_units')::bigint + (output->'usage'->>'output_units')::bigint), 0) as tokens_used,
+                COALESCE(SUM((output->>'cost_cents')::int), 0) as cost_cents_used
+            FROM ai_execution_attempts a
+            LEFT JOIN ai_workflow_step_runs s ON s.id = a.step_run_id
+            WHERE a.organization_id = %s
+              AND a.started_at >= date_trunc('month', now())
+              AND a.status = 'completed'
+            """,
+            (organization_id,),
+        ).fetchone()
+
+        tokens_used = int(usage_row["tokens_used"]) if usage_row else 0
+        cost_cents_used = int(usage_row["cost_cents_used"]) if usage_row else 0
+
+        if not budget_row:
+            return OrganizationBudgetRead(
+                organization_id=organization_id,
+                monthly_token_cap=None,
+                monthly_cost_cap_cents=None,
+                alert_threshold_percent=80,
+                enforce_hard_stop=False,
+                current_month_tokens=tokens_used,
+                current_month_cost_cents=cost_cents_used,
+            )
+
+        return OrganizationBudgetRead(
+            organization_id=budget_row["organization_id"],
+            monthly_token_cap=budget_row["monthly_token_cap"],
+            monthly_cost_cap_cents=budget_row["monthly_cost_cap_cents"],
+            alert_threshold_percent=budget_row["alert_threshold_percent"],
+            enforce_hard_stop=budget_row["enforce_hard_stop"],
+            current_month_tokens=tokens_used,
+            current_month_cost_cents=cost_cents_used,
+        )
+
+
+def update_organization_budget(
+    organization_id: UUID,
+    payload: OrganizationBudgetUpdate,
+    user: CurrentUserResponse,
+) -> OrganizationBudgetRead:
+    require_platform_admin(user)
+    with connect() as conn:
+        conn.execute(
+            """
+            INSERT INTO ai_organization_budgets (
+                organization_id, monthly_token_cap, monthly_cost_cap_cents,
+                alert_threshold_percent, enforce_hard_stop, updated_at
+            )
+            VALUES (%s, %s, %s, %s, %s, now())
+            ON CONFLICT (organization_id) DO UPDATE SET
+                monthly_token_cap = EXCLUDED.monthly_token_cap,
+                monthly_cost_cap_cents = EXCLUDED.monthly_cost_cap_cents,
+                alert_threshold_percent = EXCLUDED.alert_threshold_percent,
+                enforce_hard_stop = EXCLUDED.enforce_hard_stop,
+                updated_at = now()
+            """,
+            (
+                organization_id,
+                payload.monthly_token_cap,
+                payload.monthly_cost_cap_cents,
+                payload.alert_threshold_percent or 80,
+                payload.enforce_hard_stop or False,
+            ),
+        )
+    return get_organization_budget(organization_id, user)
+
+
+def get_usage_analytics(
+    organization_id: UUID | None,
+    days: int,
+    user: CurrentUserResponse,
+) -> UsageAnalyticsResponse:
+    require_platform_admin(user)
+    with connect() as conn:
+        query = """
+            SELECT 
+                to_char(a.started_at, 'YYYY-MM-DD') as day,
+                COALESCE(s.model, a.output->'metadata'->>'model', 'indefinido') as model,
+                COALESCE(s.provider, a.output->'metadata'->>'provider', 'indefinido') as provider,
+                COUNT(*) as calls,
+                COALESCE(SUM((a.output->'usage'->>'input_units')::bigint + (a.output->'usage'->>'output_units')::bigint), 0) as tokens,
+                COALESCE(SUM((a.output->>'cost_cents')::int), 0) as cost_cents,
+                COALESCE(AVG((a.output->>'latency_ms')::int), 0)::int as avg_latency
+            FROM ai_execution_attempts a
+            LEFT JOIN ai_workflow_step_runs s ON s.id = a.step_run_id
+            WHERE a.started_at >= (now() - (interval '1 day' * %s))
+        """
+        params: list[Any] = [days]
+        if organization_id:
+            query += " AND a.organization_id = %s"
+            params.append(organization_id)
+        query += " GROUP BY 1, 2, 3 ORDER BY 1 DESC, 4 DESC"
+
+        rows = conn.execute(query, tuple(params)).fetchall()
+
+        items = [
+            UsageAnalyticsItem(
+                date=r["day"],
+                model=r["model"],
+                provider=r["provider"],
+                total_calls=int(r["calls"]),
+                total_tokens=int(r["tokens"]),
+                total_cost_cents=int(r["cost_cents"]),
+                avg_latency_ms=int(r["avg_latency"]),
+            )
+            for r in rows
+        ]
+
+        total_tokens_month = sum(i.total_tokens for i in items)
+        total_cost_cents_month = sum(i.total_cost_cents for i in items)
+        total_calls_month = sum(i.total_calls for i in items)
+
+        return UsageAnalyticsResponse(
+            items=items,
+            total_tokens_month=total_tokens_month,
+            total_cost_cents_month=total_cost_cents_month,
+            total_calls_month=total_calls_month,
+        )
+

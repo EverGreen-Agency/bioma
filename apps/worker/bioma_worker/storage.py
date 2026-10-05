@@ -1,6 +1,7 @@
 from typing import Any
 from uuid import UUID
 from datetime import date
+import hashlib
 import json
 
 from psycopg import sql
@@ -281,19 +282,24 @@ def list_ai_route_candidates(conn, job: dict):
 
 
 def start_ai_execution_attempt(conn, job: dict, candidate: dict):
+    from bioma_worker.ai_providers import build_prompt
+
+    prompt_content = job.get("prompt") or build_prompt(job)
+    request_hash = job.get("request_hash") or hashlib.sha256(prompt_content.encode("utf-8")).hexdigest()
+
     row = conn.execute(
         """
         insert into ai_execution_attempts (
           organization_id, workflow_run_id, step_run_id, account_id, model_catalog_id,
           attempt_number, status, selection_score, selection_reason, quota_before,
-          input, started_at
+          input, request_hash, started_at
         )
         values (
           %s, %s, %s, %s, %s,
           coalesce((select max(attempt_number) + 1 from ai_execution_attempts where step_run_id = %s), 1),
-          'running', %s, %s, %s, %s, now()
+          'running', %s, %s, %s, %s, %s, now()
         )
-        returning id, attempt_number
+        returning id, attempt_number, request_hash
         """,
         (
             job["organization_id"],
@@ -312,6 +318,7 @@ def start_ai_execution_attempt(conn, job: dict, candidate: dict):
                     "step_key": job["step_key"],
                 }
             ),
+            request_hash,
         ),
     ).fetchone()
     conn.execute(
@@ -978,3 +985,62 @@ def save_gtm_snapshot(
             ),
         )
     return len(tags) + len(triggers) + len(variables) + len(findings)
+
+
+def check_organization_budget(conn, organization_id: str | None) -> dict[str, Any]:
+    if not organization_id:
+        return {"allowed": True}
+    try:
+        budget = conn.execute(
+            """
+            SELECT monthly_token_cap, monthly_cost_cap_cents, alert_threshold_percent, enforce_hard_stop
+            FROM ai_organization_budgets
+            WHERE organization_id = %s
+            """,
+            (organization_id,),
+        ).fetchone()
+        if not budget:
+            return {"allowed": True}
+
+        usage_row = conn.execute(
+            """
+            SELECT 
+                COALESCE(SUM((output->'usage'->>'input_units')::bigint + (output->'usage'->>'output_units')::bigint), 0) as tokens_used,
+                COALESCE(SUM((output->>'cost_cents')::int), 0) as cost_cents_used
+            FROM ai_execution_attempts a
+            LEFT JOIN ai_workflow_step_runs s ON s.id = a.step_run_id
+            WHERE a.organization_id = %s
+              AND a.started_at >= date_trunc('month', now())
+              AND a.status = 'completed'
+            """,
+            (organization_id,),
+        ).fetchone()
+
+        tokens_used = usage_row["tokens_used"] if usage_row else 0
+        cost_cents_used = usage_row["cost_cents_used"] if usage_row else 0
+        monthly_token_cap = budget["monthly_token_cap"]
+        monthly_cost_cap_cents = budget["monthly_cost_cap_cents"]
+        enforce_hard_stop = budget["enforce_hard_stop"]
+
+        if enforce_hard_stop:
+            if monthly_token_cap and tokens_used >= monthly_token_cap:
+                return {
+                    "allowed": False,
+                    "reason": f"Teto de tokens atingido ({tokens_used}/{monthly_token_cap} tokens neste mês).",
+                }
+            if monthly_cost_cap_cents and cost_cents_used >= monthly_cost_cap_cents:
+                return {
+                    "allowed": False,
+                    "reason": f"Teto de custo atingido (US$ {cost_cents_used / 100:.2f} / US$ {monthly_cost_cap_cents / 100:.2f} neste mês).",
+                }
+
+        return {
+            "allowed": True,
+            "tokens_used": tokens_used,
+            "tokens_cap": monthly_token_cap,
+            "cost_cents_used": cost_cents_used,
+            "cost_cents_cap": monthly_cost_cap_cents,
+        }
+    except Exception:
+        return {"allowed": True}
+
