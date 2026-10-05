@@ -2179,7 +2179,71 @@ export type AiProviderChannel =
   | "gemini_api"
   | "vertex"
   | "openrouter"
-  | "deepseek";
+  | "deepseek"
+  | "groq"
+  | "cerebras"
+  | "sambanova"
+  | "mistral"
+  | "together"
+  | "cohere"
+  | "github_models"
+  | "cloudflare"
+  | "deepinfra"
+  | "novita"
+  | "openai_compatible";
+
+export type FreeProviderPreset = {
+  code: string;
+  name: string;
+  base_url: string;
+  default_env_var: string;
+  description: string;
+  models: string[];
+  default_model: string;
+  active_keys_count: number;
+  has_env_key: boolean;
+};
+
+export type ProviderKeyPoolItem = {
+  id: string;
+  provider_code: string;
+  label: string;
+  key_fingerprint: string;
+  status: string;
+  error_count: number;
+  call_count: number;
+  last_used_at: string | null;
+  cooldown_until: string | null;
+  last_error_message: string | null;
+  created_at: string;
+};
+
+export type OrganizationBudget = {
+  organization_id: string;
+  monthly_token_cap: number | null;
+  monthly_cost_cap_cents: number | null;
+  alert_threshold_percent: number;
+  enforce_hard_stop: boolean;
+  current_month_tokens: number;
+  current_month_cost_cents: number;
+};
+
+export type UsageAnalyticsItem = {
+  date: string;
+  model: string;
+  provider: string;
+  total_calls: number;
+  total_tokens: number;
+  total_cost_cents: number;
+  avg_latency_ms: number;
+};
+
+export type UsageAnalyticsResponse = {
+  items: UsageAnalyticsItem[];
+  total_tokens_month: number;
+  total_cost_cents_month: number;
+  total_calls_month: number;
+};
 
 export type AiQuotaBucket = {
   id: string;
@@ -2223,7 +2287,23 @@ export type AiModelCatalogItem = {
 export type AiProviderAccount = {
   id: string;
   subscription_id: string | null;
-  provider: "openai" | "anthropic" | "google" | "openrouter" | "deepseek" | "groq";
+  provider:
+    | "openai"
+    | "anthropic"
+    | "google"
+    | "openrouter"
+    | "deepseek"
+    | "groq"
+    | "cerebras"
+    | "sambanova"
+    | "mistral"
+    | "together"
+    | "cohere"
+    | "github_models"
+    | "cloudflare"
+    | "deepinfra"
+    | "novita"
+    | "openai_compatible";
   channel: AiProviderChannel;
   display_name: string;
   auth_mode: "chatgpt" | "claude_subscription" | "google_subscription" | "api_key" | "vertex_adc" | "service_account";
@@ -2293,6 +2373,7 @@ export type AiProviderRuntimeStatus = {
   ready: boolean;
   version: string | null;
   auth_method: string | null;
+  quota_summary?: string | null;
   detail: string;
   instructions: string[];
   checked_at: string;
@@ -3586,7 +3667,7 @@ export const api = {
   aiRoutingControlPlane: () =>
     request<AiRoutingControlPlane>("/backoffice/ai-operations/control-plane"),
   createAiProviderAccount: (payload: {
-    provider: "openai" | "anthropic" | "google" | "openrouter" | "deepseek" | "groq";
+    provider: AiProviderAccount["provider"];
     channel: AiProviderChannel;
     display_name: string;
     auth_mode: AiProviderAccount["auth_mode"];
@@ -3667,6 +3748,39 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ task_kind: taskKind }),
     }),
+  freeProviders: () =>
+    request<FreeProviderPreset[]>("/backoffice/ai-operations/free-providers"),
+  providerKeys: (providerCode?: string) =>
+    request<ProviderKeyPoolItem[]>(
+      providerCode
+        ? `/backoffice/ai-operations/free-providers/keys?provider_code=${encodeURIComponent(providerCode)}`
+        : "/backoffice/ai-operations/free-providers/keys"
+    ),
+  createProviderKey: (payload: { provider_code: string; label: string; api_key: string }) =>
+    request<ProviderKeyPoolItem>("/backoffice/ai-operations/free-providers/keys", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  deleteProviderKey: (keyId: string) =>
+    request<void>(`/backoffice/ai-operations/free-providers/keys/${keyId}`, {
+      method: "DELETE",
+    }),
+  testFreeProvider: (providerCode: string) =>
+    request<{ ok: boolean; provider: string; model: string; response: string; usage: unknown }>(
+      `/backoffice/ai-operations/free-providers/${providerCode}/test`,
+      { method: "POST" }
+    ),
+  organizationBudget: (orgId: string) =>
+    request<OrganizationBudget>(`/backoffice/ai-operations/budgets/${orgId}`),
+  updateOrganizationBudget: (orgId: string, payload: Partial<OrganizationBudget>) =>
+    request<OrganizationBudget>(`/backoffice/ai-operations/budgets/${orgId}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    }),
+  usageAnalytics: (orgId?: string, days?: number) =>
+    request<UsageAnalyticsResponse>(
+      `/backoffice/ai-operations/usage-analytics?days=${days || 30}${orgId ? `&organization_id=${orgId}` : ""}`
+    ),
   performanceOverview: (clientId: string) => request<PerformanceOverview>(`/workspaces/${clientId}/performance`),
   adsCampaigns: (clientId: string) =>
     request<AdsCampaignSummary[]>(`/workspaces/${clientId}/performance/google-ads/campaigns`),

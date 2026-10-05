@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import AliasChoices, Field, model_validator
+from pydantic import AliasChoices, Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -57,8 +57,23 @@ class Settings(BaseSettings):
     storage_max_upload_mb: int = 20
     google_oauth_client_id: str | None = None
     google_oauth_client_secret: str | None = None
-    # Chave Fernet para segredos de integração em repouso (Kommo etc.).
     secret_encryption_key: str | None = None
+
+    @field_validator("secret_encryption_key")
+    @classmethod
+    def validate_secret_encryption_key(cls, v: str | None) -> str | None:
+        if not v:
+            return None
+        import base64
+        try:
+            raw = base64.urlsafe_b64decode(v)
+            if len(raw) != 32:
+                raise ValueError("Chave Fernet deve conter exatamente 32 bytes.")
+        except Exception as exc:
+            raise ValueError(
+                f"SECRET_ENCRYPTION_KEY deve ser uma chave Fernet válida (32 bytes em base64 urlsafe): {exc}"
+            ) from exc
+        return v
     # Base pública da própria API (redirect_uri do OAuth) e do app web
     # (destino final dos redirects) — distintas porque web e API vivem em
     # subdomínios diferentes.

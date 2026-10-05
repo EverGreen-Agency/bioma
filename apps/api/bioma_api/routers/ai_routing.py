@@ -5,10 +5,15 @@ from fastapi import APIRouter, Depends, status
 from bioma_api.auth import current_user_from_request
 from bioma_api.schemas.ai_routing import (
     AiRoutingControlPlane,
+    FreeProviderPresetRead,
     HarnessConfigUpsert,
     ModelCatalogUpsert,
+    OrganizationBudgetRead,
+    OrganizationBudgetUpdate,
     ProviderAccountCreate,
     ProviderAccountUpdate,
+    ProviderKeyPoolCreate,
+    ProviderKeyPoolRead,
     ProviderLoginInput,
     ProviderLoginSession,
     ProviderRuntimeStatus,
@@ -16,6 +21,7 @@ from bioma_api.schemas.ai_routing import (
     RoutePreview,
     RoutePreviewRequest,
     RoutingPolicyUpsert,
+    UsageAnalyticsResponse,
 )
 from bioma_api.schemas.auth import CurrentUserResponse
 from bioma_api.services import ai_routing as service
@@ -164,3 +170,69 @@ def preview_route(
     user: CurrentUserResponse = Depends(current_user_from_request),
 ) -> RoutePreview:
     return service.preview_route(payload, user)
+
+
+@router.get("/free-providers", response_model=list[FreeProviderPresetRead])
+def list_free_providers(
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> list[FreeProviderPresetRead]:
+    return service.list_free_providers(user)
+
+
+@router.get("/free-providers/keys", response_model=list[ProviderKeyPoolRead])
+def list_provider_keys(
+    provider_code: str | None = None,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> list[ProviderKeyPoolRead]:
+    return service.list_provider_keys(provider_code, user)
+
+
+@router.post("/free-providers/keys", response_model=ProviderKeyPoolRead, status_code=status.HTTP_201_CREATED)
+def create_provider_key(
+    payload: ProviderKeyPoolCreate,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> ProviderKeyPoolRead:
+    return service.create_provider_key(payload, user)
+
+
+@router.delete("/free-providers/keys/{key_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_provider_key(
+    key_id: UUID,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> None:
+    service.delete_provider_key(key_id, user)
+
+
+@router.post("/free-providers/{provider_code}/test")
+def test_free_provider(
+    provider_code: str,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+):
+    return service.test_free_provider(provider_code, user)
+
+
+@router.get("/budgets/{organization_id}", response_model=OrganizationBudgetRead)
+def get_organization_budget(
+    organization_id: UUID,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> OrganizationBudgetRead:
+    return service.get_organization_budget(organization_id, user)
+
+
+@router.put("/budgets/{organization_id}", response_model=OrganizationBudgetRead)
+def update_organization_budget(
+    organization_id: UUID,
+    payload: OrganizationBudgetUpdate,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> OrganizationBudgetRead:
+    return service.update_organization_budget(organization_id, payload, user)
+
+
+@router.get("/usage-analytics", response_model=UsageAnalyticsResponse)
+def get_usage_analytics(
+    organization_id: UUID | None = None,
+    days: int = 30,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> UsageAnalyticsResponse:
+    return service.get_usage_analytics(organization_id, days, user)
+

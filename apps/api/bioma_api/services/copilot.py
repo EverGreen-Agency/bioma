@@ -328,7 +328,14 @@ def _plan_with_routing(plan_request: dict, surface: str, steps: "_StepRecorder")
             steps.record(
                 "plan", f"Plano via {label}", "ok",
                 f"Cota da assinatura — modelo {candidate['model_id']}.",
-                {"account_id": str(candidate["account_id"]), "channel": candidate["channel"]},
+                {
+                    "account_id": str(candidate["account_id"]),
+                    "channel": candidate["channel"],
+                    "provider": candidate["provider"],
+                    "model": candidate["model_id"],
+                    "request_hash": result.get("request_hash"),
+                    "latency_ms": result.get("latency_ms") or _elapsed_ms(attempt_started),
+                },
                 _elapsed_ms(attempt_started),
             )
             return result
@@ -340,11 +347,17 @@ def _plan_with_routing(plan_request: dict, surface: str, steps: "_StepRecorder")
 
     attempt_started = time.monotonic()
     result = copilot_plan_safe(plan_request)
+    req_hash = hashlib.sha256(json.dumps(plan_request, sort_keys=True, default=str).encode("utf-8")).hexdigest()
     steps.record(
         "plan", f"Plano pela chave de API ({surface})",
         "ok",
         "Nenhuma conta de assinatura disponível." if candidates else None,
-        {}, _elapsed_ms(attempt_started),
+        {
+            "channel": "openai_api",
+            "request_hash": req_hash,
+            "latency_ms": _elapsed_ms(attempt_started),
+        },
+        _elapsed_ms(attempt_started),
     )
     return result
 

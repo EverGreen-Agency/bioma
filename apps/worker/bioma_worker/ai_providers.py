@@ -9,6 +9,7 @@ from typing import Any
 
 import httpx
 
+from bioma_worker.free_providers import FREE_PROVIDER_PRESETS, execute_free_provider_call
 from bioma_worker.provider_credentials import provider_process_environment
 
 
@@ -269,8 +270,17 @@ def _message_text(payload: dict[str, Any]) -> str:
     raise ProviderExecutionError("Provider API não retornou texto reconhecível.")
 
 
-def execute_openai_compatible(candidate: dict[str, Any], prompt: str, settings) -> dict[str, Any]:
+def execute_openai_compatible(candidate: dict[str, Any], prompt: str, settings, conn=None) -> dict[str, Any]:
     channel = candidate["channel"]
+    if channel in FREE_PROVIDER_PRESETS:
+        return execute_free_provider_call(
+            provider_code=channel,
+            model_id=candidate["model_id"],
+            prompt=prompt,
+            settings=settings,
+            conn=conn,
+        )
+
     if channel == "openrouter":
         api_key = _env_auth_value(candidate, settings.openrouter_api_key)
         base_url = settings.openrouter_base_url
@@ -283,10 +293,15 @@ def execute_openai_compatible(candidate: dict[str, Any], prompt: str, settings) 
         api_key = _env_auth_value(candidate, settings.deepseek_api_key)
         base_url = settings.deepseek_base_url
         headers = {}
+    elif channel == "openai_compatible":
+        account_settings = candidate.get("account_settings") or {}
+        base_url = account_settings.get("base_url") or getattr(settings, "openai_compatible_base_url", "http://localhost:3000/v1")
+        api_key = _env_auth_value(candidate, None) or account_settings.get("api_key") or "dummy"
+        headers = account_settings.get("extra_headers") or {}
     else:
         raise ProviderExecutionError(f"Canal API incompatível: {channel}")
     if not api_key:
-        env_name = "OPENROUTER_API_KEY" if channel == "openrouter" else "DEEPSEEK_API_KEY"
+        env_name = "OPENROUTER_API_KEY" if channel == "openrouter" else ("DEEPSEEK_API_KEY" if channel == "deepseek" else "OPENAI_COMPATIBLE_API_KEY")
         raise ProviderExecutionError(
             f"Credencial {channel} ausente. Configure auth_ref=env:{env_name} e o secret no runtime."
         )
@@ -419,8 +434,8 @@ def execute_candidate(
         result = execute_antigravity_cli(candidate, prompt, settings)
     elif candidate["channel"] in {"antigravity_sdk", "gemini_api", "vertex"}:
         result = execute_antigravity_sdk(candidate, prompt, settings)
-    elif candidate["channel"] in {"openrouter", "deepseek"}:
-        result = execute_openai_compatible(candidate, prompt, settings)
+    elif candidate["channel"] in {"openrouter", "deepseek", "openai_compatible"} or candidate["channel"] in FREE_PROVIDER_PRESETS:
+        result = execute_openai_compatible(candidate, prompt, settings, conn=job.get("_conn"))
     else:
         raise ProviderExecutionError(
             f"Canal {candidate['channel']} não possui executor headless seguro no worker."

@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,6 +22,22 @@ class WorkerSettings(BaseSettings):
     google_places_api_key: str | None = None
     youtube_organic_sync_limit: int = 50
     secret_encryption_key: str | None = None
+
+    @field_validator("secret_encryption_key")
+    @classmethod
+    def validate_secret_encryption_key(cls, v: str | None) -> str | None:
+        if not v:
+            return None
+        import base64
+        try:
+            raw = base64.urlsafe_b64decode(v)
+            if len(raw) != 32:
+                raise ValueError("Chave Fernet deve conter exatamente 32 bytes.")
+        except Exception as exc:
+            raise ValueError(
+                f"SECRET_ENCRYPTION_KEY deve ser uma chave Fernet válida (32 bytes em base64 urlsafe): {exc}"
+            ) from exc
+        return v
     tiktok_client_key: str | None = None
     tiktok_client_secret: str | None = None
     tiktok_ads_app_id: str | None = None
