@@ -90,3 +90,43 @@ def test_importacao_de_ia_rejeita_origem_ausente(monkeypatch):
     with pytest.raises(HTTPException) as error:
         service._canonical_create_payload(object(), uuid4(), payload)
     assert error.value.status_code == 422
+
+
+def test_update_item_preserva_e_atualiza_metadata(calendar_context, monkeypatch):
+    from bioma_api.schemas.editorial_calendar import EditorialCalendarItemUpdate
+    workspace_id, item_id, user, state, calls = calendar_context
+    state["stage"] = "production"
+    state["metadata"] = {"source_type": "ai_content_request", "ai_content_request_id": str(uuid4())}
+    saved_payload = {}
+
+    def mock_update(conn, wid, iid, data):
+        saved_payload.update(data)
+        return {
+            "id": iid,
+            "workspace_id": wid,
+            "title": data["title"],
+            "content_type": data["content_type"],
+            "channel": data["channel"],
+            "scheduled_at": data["scheduled_at"],
+            "stage": state["stage"],
+            "post_text": data["post_text"],
+            "media_urls": data["media_urls"],
+            "metadata": data["metadata"],
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
+        }
+
+    monkeypatch.setattr(service.cal_repo, "update_calendar_item", mock_update)
+    payload = EditorialCalendarItemUpdate(
+        title="Novo título",
+        content_type="social_post",
+        channel="instagram",
+        post_text="Texto atualizado",
+        media_urls=["https://example.com/img.jpg"],
+        metadata={"assigned_to": {"id": str(user.id), "name": "Operador EG"}, "campaign_tags": ["blackfriday", "reels"]},
+    )
+    result = service.update_item(workspace_id, item_id, payload, user)
+    assert result.title == "Novo título"
+    assert result.metadata["assigned_to"]["name"] == "Operador EG"
+    assert result.metadata["campaign_tags"] == ["blackfriday", "reels"]
+    assert result.metadata["source_type"] == "ai_content_request"

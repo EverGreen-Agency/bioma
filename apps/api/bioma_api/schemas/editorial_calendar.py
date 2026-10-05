@@ -26,6 +26,7 @@ class EditorialCalendarItemUpdate(BaseModel):
     scheduled_at: datetime | None = None
     post_text: str | None = Field(default=None, max_length=5000)
     media_urls: list[str] = Field(default_factory=list)
+    metadata: dict = Field(default_factory=dict)
 
 
 class EditorialCalendarItemSummary(BaseModel):

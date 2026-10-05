@@ -3927,7 +3927,9 @@ export const api = {
   updateCalendarItem: (
     workspaceId: string,
     itemId: string,
-    payload: Pick<EditorialCalendarItemSummary, "title" | "content_type" | "channel" | "scheduled_at" | "post_text" | "media_urls">,
+    payload: Pick<EditorialCalendarItemSummary, "title" | "content_type" | "channel" | "scheduled_at" | "post_text" | "media_urls"> & {
+      metadata?: Record<string, unknown>;
+    },
   ) =>
     request<EditorialCalendarItemSummary>(`/workspaces/${workspaceId}/calendar/${itemId}`, {
       method: "PUT",

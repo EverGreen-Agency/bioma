@@ -75,7 +75,7 @@ def update_calendar_item(conn, workspace_id: UUID, item_id: UUID, payload: dict)
         """
         update workspace_editorial_calendar
         set title = %s, content_type = %s, channel = %s, scheduled_at = %s,
-            post_text = %s, media_urls = %s, updated_at = now()
+            post_text = %s, media_urls = %s, metadata = %s, updated_at = now()
         where id = %s and workspace_id = %s
         returning id, workspace_id, title, content_type, channel, scheduled_at,
                   stage, post_text, media_urls, metadata, created_at, updated_at
@@ -83,6 +83,7 @@ def update_calendar_item(conn, workspace_id: UUID, item_id: UUID, payload: dict)
         (
             payload["title"], payload["content_type"], payload["channel"],
             payload["scheduled_at"], payload["post_text"], Jsonb(payload["media_urls"]),
+            Jsonb(payload.get("metadata", {})),
             item_id, workspace_id,
         ),
     ).fetchone()
