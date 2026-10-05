@@ -393,10 +393,47 @@ def main() -> None:
         upsert_performance_metric(conn, hm_id, "2026-06-01", "2026-06-30", "CRM", "qualified_meetings", 18)
         seed_performance(conn, hm_client_id, hm_id)
 
+        # Univet Loupes Brasil (Sistemas Ópticos & Lupas Cirúrgicas)
+        univet_id = upsert_org(conn, "Univet Loupes Brasil", "univet", "client")
+        univet_user_id = upsert_user(conn, "contato@univet.com.br", "Diretoria Univet")
+        upsert_membership(conn, admin_id, univet_id, "eg_admin")
+        upsert_membership(conn, univet_user_id, univet_id, "client_user")
+
+        conn.execute(
+            """
+            insert into clients (organization_id, name, status, responsible_name)
+            values (%s, 'Univet Loupes Brasil', 'active', 'Eduardo EG')
+            on conflict (organization_id)
+            do update set
+              name = excluded.name,
+              status = excluded.status,
+              responsible_name = excluded.responsible_name
+            """,
+            (univet_id,),
+        )
+        univet_client_id = conn.execute(
+            "select id from clients where organization_id = %s",
+            (univet_id,),
+        ).fetchone()["id"]
+        workspaces_repo.provision_client_workspace(
+            conn,
+            eg_id,
+            univet_id,
+            "Univet Loupes Brasil",
+            "univet",
+        )
+
+        upsert_lead(conn, univet_id, "Dr. Roberto Silveira", "Clínica Endodontia Avançada", "Cirurgião-Dentista", "meeting", "Meta Ads")
+        upsert_lead(conn, univet_id, "Dra. Camila Torres", "Instituto de Microcirurgia", "Cirurgiã Médica", "proposal", "Google Ads")
+        upsert_lead(conn, univet_id, "Dr. Marcelo Guimarães", "Hospital Cardio DF", "Cirurgião Cardiovascular", "qualifying", "WhatsApp")
+        upsert_lead(conn, univet_id, "Dr. André Valente", "Odonto Performance", "Implantodontista", "won", "Indicação")
+        upsert_financial_record(conn, univet_id, "Contrato Univet Loupes - Setup & Growth", "contract", 12500, "open", "2026-10-30")
+
     seed_knowledge.main()
     print("seed ok")
     print("admin: eduardo@evergreengrowth.com.br / senha-dev-123")
     print("cliente: henrique@hmconexoes.com.br / senha-dev-123")
+    print("univet cliente: contato@univet.com.br / senha-dev-123")
 
 
 if __name__ == "__main__":

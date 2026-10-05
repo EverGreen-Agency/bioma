@@ -49,7 +49,8 @@ services:
   api:
     profiles: ["app"]
     build:
-      context: ../apps/api
+      context: ..
+      dockerfile: apps/api/Dockerfile
     environment:
       APP_ENV: local
       API_NAME: Bioma API
