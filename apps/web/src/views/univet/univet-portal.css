@@ -1,0 +1,605 @@
+/* ==========================================================================
+   UNIVET LOUPES BRASIL — DEDICATED EXECUTIVE BI PORTAL
+   Design Direction: Anti-Slop Luxury Medical Optics / High-Precision Analytics
+   Palette: Obsidian Deep (#080B11, #0E1420), Emerald Optical Laser (#10B981, #059669)
+   ========================================================================== */
+
+.uvPortalWrapper {
+  min-height: 100dvh;
+  width: 100%;
+  background: #080B11;
+  color: #F8FAFC;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  padding: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+/* Header & Barra Superior */
+.uvPortalHeader {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(8, 11, 17, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 clamp(16px, 4vw, 48px);
+}
+
+.uvBrandGroup {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.uvBrandLogo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.uvMonogram {
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #00491E 0%, #10B981 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 18px;
+  color: #FFFFFF;
+  letter-spacing: -0.04em;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.uvBrandText {
+  display: flex;
+  flex-direction: column;
+}
+
+.uvBrandTitle {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #FFFFFF;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.uvBrandSubtitle {
+  font-size: 11px;
+  color: #94A3B8;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+/* Modos de visualização (Abas) */
+.uvModeTabs {
+  display: flex;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 3px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.uvTabBtn {
+  background: transparent;
+  border: none;
+  color: #94A3B8;
+  padding: 6px 16px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.uvTabBtn:hover {
+  color: #F8FAFC;
+}
+
+.uvTabBtnActive {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34D399;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+/* Ações e Filtros */
+.uvHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.uvStatusLive {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: #34D399;
+  background: rgba(16, 185, 129, 0.08);
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.uvStatusLiveDot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10B981;
+  box-shadow: 0 0 8px #10B981;
+}
+
+.uvPillFilterGroup {
+  display: flex;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 2px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.uvPillBtn {
+  background: transparent;
+  border: none;
+  color: #94A3B8;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.uvPillBtnActive {
+  background: rgba(255, 255, 255, 0.1);
+  color: #FFFFFF;
+}
+
+.uvBtnSecondary {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #F8FAFC;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.uvBtnSecondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Conteúdo Principal */
+.uvPortalMain {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: clamp(20px, 3vw, 36px) clamp(16px, 4vw, 48px);
+}
+
+/* Banner Executivo */
+.uvHeroSection {
+  margin-bottom: 28px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 20px;
+}
+
+.uvHeroHeadline {
+  font-size: clamp(22px, 2.5vw, 28px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #FFFFFF;
+  margin: 0 0 6px 0;
+  line-height: 1.2;
+}
+
+.uvHeroSubtitle {
+  font-size: 14px;
+  color: #94A3B8;
+  margin: 0;
+  max-width: 80ch;
+}
+
+/* Bento Grid de KPIs (Scorecards) */
+.uvKpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.uvKpiCard {
+  background: rgba(14, 20, 32, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.uvKpiCard:hover {
+  border-color: rgba(16, 185, 129, 0.3);
+  transform: translateY(-2px);
+}
+
+.uvKpiCardPrimary {
+  background: radial-gradient(circle at top left, rgba(16, 185, 129, 0.14), transparent 70%), rgba(14, 20, 32, 0.85);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.uvKpiHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.uvKpiLabel {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94A3B8;
+}
+
+.uvKpiLabelHighlight {
+  color: #34D399;
+}
+
+.uvKpiValue {
+  font-size: clamp(24px, 2.4vw, 32px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: #FFFFFF;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+
+.uvKpiFooter {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.uvDeltaPositive {
+  color: #34D399;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.uvKpiCaption {
+  color: #64748B;
+  font-size: 11px;
+}
+
+/* Seção do Funil Comercial */
+.uvFunnelSection {
+  background: rgba(14, 20, 32, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.uvSectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+}
+
+.uvSectionTitle {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #FFFFFF;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.uvSectionSubtitle {
+  font-size: 12px;
+  color: #94A3B8;
+  margin: 3px 0 0 0;
+}
+
+.uvFunnelSteps {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+.uvFunnelStepCard {
+  background: rgba(22, 32, 50, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 16px;
+  position: relative;
+  transition: all 0.2s ease;
+}
+
+.uvFunnelStepCard:hover {
+  background: rgba(22, 32, 50, 0.7);
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+.uvFunnelStepHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.uvStepNumber {
+  font-size: 10px;
+  font-weight: 700;
+  color: #64748B;
+  text-transform: uppercase;
+}
+
+.uvStepConversionBadge {
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #E2E8F0;
+}
+
+.uvStepCount {
+  font-size: 24px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 4px;
+  line-height: 1;
+}
+
+.uvStepTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: #CBD5E1;
+  margin-bottom: 10px;
+  min-height: 32px;
+}
+
+.uvStepBarTrack {
+  height: 4px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.uvStepBarFill {
+  height: 100%;
+  border-radius: 2px;
+}
+
+/* Grid de 2 Colunas: Canais vs Motivos de Perda */
+.uvTwoColGrid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.uvCardBlock {
+  background: rgba(14, 20, 32, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 24px;
+}
+
+/* Tabela de Canais */
+.uvChannelTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+.uvChannelTable th {
+  text-align: left;
+  padding: 10px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #64748B;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.uvChannelTable td {
+  padding: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: #E2E8F0;
+}
+
+.uvChannelRowHighlight {
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.uvChannelBadgeFree {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34D399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* Pareto de Perdas */
+.uvLossList {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.uvLossItem {
+  background: rgba(22, 32, 50, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 14px;
+}
+
+.uvLossHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+
+.uvLossReason {
+  font-size: 13px;
+  font-weight: 600;
+  color: #F1F5F9;
+}
+
+.uvLossPercent {
+  font-size: 13px;
+  font-weight: 700;
+  color: #EF4444;
+}
+
+.uvLossProgressTrack {
+  height: 5px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.uvLossProgressFill {
+  height: 100%;
+  background: #EF4444;
+  border-radius: 999px;
+}
+
+.uvLossActionNote {
+  font-size: 11px;
+  color: #94A3B8;
+  line-height: 1.4;
+}
+
+/* Tabela de Representantes */
+.uvRepSection {
+  background: rgba(14, 20, 32, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 32px;
+}
+
+.uvRepTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin-top: 12px;
+}
+
+.uvRepTable th {
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #64748B;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.uvRepTable td {
+  padding: 12px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: #E2E8F0;
+}
+
+/* Rodapé */
+.uvPortalFooter {
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 24px clamp(16px, 4vw, 48px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: #64748B;
+  background: #080B11;
+}
+
+/* Responsividade Mobile e Tablet */
+@media (max-width: 1024px) {
+  .uvTwoColGrid {
+    grid-template-columns: 1fr;
+  }
+  .uvFunnelSteps {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .uvPortalHeader {
+    height: auto;
+    padding: 12px 16px;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .uvHeaderActions {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .uvFunnelSteps {
+    grid-template-columns: 1fr;
+  }
+  .uvKpiGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Estilos de Impressão (PDF Export) */
+@media print {
+  .uvPortalHeader, .uvTabBtn, .uvBtnSecondary {
+    display: none !important;
+  }
+  .uvPortalWrapper {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+  }
+  .uvKpiCard, .uvFunnelSection, .uvCardBlock, .uvRepSection {
+    background: #FFFFFF !important;
+    color: #000000 !important;
+    border: 1px solid #DDDDDD !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+  .uvKpiValue, .uvHeroHeadline, .uvSectionTitle, .uvStepCount, .uvLossReason {
+    color: #000000 !important;
+  }
+}
