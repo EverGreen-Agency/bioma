@@ -10,7 +10,7 @@ if (!fs.existsSync(dir)) {
 const proxyContent = `#!/usr/bin/env node
 const readline = require('readline');
 
-const ENDPOINT = process.env.N8N_MCP_URL || 'https://n8n-production-0277a.up.railway.app/mcp-server/http';
+const ENDPOINT = process.env.N8N_MCP_URL || 'https://n8n.evergreenmkt.com.br/mcp-server/http';
 const TOKEN = process.env.N8N_MCP_TOKEN || '';
 
 const rl = readline.createInterface({

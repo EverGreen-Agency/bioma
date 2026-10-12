@@ -11,6 +11,7 @@ import { ResetPasswordView } from "./views/ResetPasswordView";
 import { PrivacyView } from "./views/PrivacyView";
 import { PublicProposalView } from "./views/PublicProposalView";
 import { UnivetPresentationView } from "./views/univet/UnivetPresentationView";
+import { UnivetExecutiveCockpit } from "./views/univet/UnivetExecutiveCockpit";
 import { ArtifactModal } from "./components/ArtifactModal";
 import { CopilotPanel } from "./components/CopilotPanel";
 import { Sidebar } from "./components/Sidebar";
@@ -269,6 +270,8 @@ export function App() {
         <Route path="/privacidade" element={<PrivacyView />} />
         <Route path="/propostas/public/:token" element={<PublicProposalView />} />
         <Route path="/univet" element={<UnivetPresentationView />} />
+        <Route path="/univet/cockpit" element={<UnivetExecutiveCockpit />} />
+        <Route path="/portal/univet" element={<UnivetExecutiveCockpit />} />
         <Route
           path="*"
           element={
@@ -330,6 +333,8 @@ export function App() {
           />
           <Route path="/configuracoes" element={<SettingsView />} />
           <Route path="/univet" element={<UnivetPresentationView />} />
+          <Route path="/univet/cockpit" element={<UnivetExecutiveCockpit />} />
+          <Route path="/portal/univet" element={<UnivetExecutiveCockpit />} />
           <Route path="/univets" element={<Navigate to="/univet" replace />} />
           <Route
             path="/presenca"
