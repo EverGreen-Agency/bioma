@@ -44,15 +44,29 @@ from bioma_api.schemas.auth import CurrentUserResponse
 from bioma_api.services.ai_operations import _eg_organization_id
 from bioma_api.config import get_settings
 from bioma_api.worker_bridge import (
+    _ensure_worker_in_path,
     ai_provider_settings_safe,
     probe_ai_provider_runtime_safe,
     purge_provider_credentials_safe,
 )
-from bioma_worker.free_providers import (
-    FREE_PROVIDER_PRESETS,
-    make_key_fingerprint,
-    execute_free_provider_call,
-)
+
+_ensure_worker_in_path()
+try:
+    from bioma_worker.free_providers import (
+        FREE_PROVIDER_PRESETS,
+        make_key_fingerprint,
+        execute_free_provider_call,
+    )
+except ImportError:
+    FREE_PROVIDER_PRESETS = {}
+
+    def make_key_fingerprint(api_key: str) -> str:
+        import hashlib
+        return hashlib.sha256(api_key.encode("utf-8")).hexdigest()[:12] if api_key else ""
+
+    async def execute_free_provider_call(*args: Any, **kwargs: Any) -> Any:
+        raise RuntimeError("bioma_worker indisponível no runtime.")
+
 
 
 MODEL_PRESETS: dict[str, list[dict[str, Any]]] = {
