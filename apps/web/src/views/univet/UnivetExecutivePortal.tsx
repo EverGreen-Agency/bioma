@@ -13,7 +13,6 @@ import {
   CheckCircle2,
   Sparkles,
   MapPin,
-  Glasses,
   Compass,
   ChevronRight
 } from 'lucide-react';
@@ -135,53 +134,7 @@ const REGIOES_DATA: RegionData[] = [
   }
 ];
 
-const PRODUTOS_DATA = [
-  {
-    id: 'ergo',
-    nome: 'Univet Ergo Advanced TTL',
-    tag: 'Óptica Ergonômica Patenteada',
-    share: '48% do Faturamento',
-    imagem: '/images/univet/ergo-loupe.jpg',
-    preco: 'A partir de R$ 14.800',
-    descricao: 'Tecnologia óptica de prismas defletores de 48° que permite atendimento cirúrgico com postura cervical 100% ereta, prevenindo lesões osteomusculares.',
-    especificacoes: [
-      { label: 'Magnificação', valor: '3.5x a 5.0x HD' },
-      { label: 'Peso Total', valor: '42 gramas' },
-      { label: 'Campo de Visão', valor: '65 mm a 45cm' },
-      { label: 'Indicação', valor: 'Implantes & Cirurgias Longas' }
-    ]
-  },
-  {
-    id: 'eos',
-    nome: 'EOS Wireless LED Headlight',
-    tag: 'Iluminação Coaxial Touchless',
-    share: '28% do Faturamento',
-    imagem: '/images/univet/eos-headlight.jpg',
-    preco: 'A partir de R$ 6.200',
-    descricao: 'Farol cirúrgico sem fio ultraleve com controle por gestos touchless, temperatura cirúrgica de 5.700K e filtro anti-cura UV para compósitos.',
-    especificacoes: [
-      { label: 'Intensidade', valor: '38.000 Lux' },
-      { label: 'Bateria', valor: '140 min (2 bats)' },
-      { label: 'Peso LED', valor: '36 gramas' },
-      { label: 'Controle', valor: 'Sensor Gestual Hands-Free' }
-    ]
-  },
-  {
-    id: 'quick',
-    nome: 'Quick Titan TTL Galilean',
-    tag: 'Titânio Aeroespacial Leve',
-    share: '24% do Faturamento',
-    imagem: '/images/univet/quick-titan.jpg',
-    preco: 'A partir de R$ 8.900',
-    descricao: 'Armação estruturada em titânio aeroespacial puro com sistema Galileano de alta profundidade focal e amplo campo de varredura operatória.',
-    especificacoes: [
-      { label: 'Magnificação', valor: '2.5x a 3.0x' },
-      { label: 'Peso Total', valor: '32 gramas' },
-      { label: 'Campo de Visão', valor: '110 mm amplo' },
-      { label: 'Indicação', valor: 'Clínica Geral, Dentística & Endo' }
-    ]
-  }
-];
+
 
 const CANAIS_DATA = [
   { canal: 'Google Orgânico (SEO)', visitas: 4200, leads: 38, vendas: 5, receita: 47500, cac: 'R$ 0,00', roas: 'Orgânico (∞)', destaque: true },
@@ -605,52 +558,9 @@ export function UnivetExecutivePortal() {
           </div>
         </section>
 
-        {/* Seção 4: Portfólio Óptico Cirúrgico Univet */}
-        <section className="uvSectionBlock">
-          <div className="uvSectionHeader">
-            <div>
-              <h3 className="uvSectionTitle">
-                <Glasses size={18} color="#10B981" />
-                Portfólio Óptico Cirúrgico Univet
-              </h3>
-              <p className="uvSectionSubtitle">
-                Engenharia óptica italiana de precisão: Lupas Ergonômicas TTL e Sistemas Coaxiais de Iluminação Cirúrgica
-              </p>
-            </div>
-          </div>
 
-          <div className="uvProductGrid">
-            {PRODUTOS_DATA.map((prod) => (
-              <div key={prod.id} className="uvProductCard">
-                <div className="uvProductImageWrap">
-                  <img src={prod.imagem} alt={prod.nome} className="uvProductImage" />
-                  <span className="uvProductBadgeShare">{prod.share}</span>
-                </div>
-                <div className="uvProductBody">
-                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: '#10B981', marginBottom: 4 }}>
-                    {prod.tag}
-                  </div>
-                  <h4 className="uvProductTitle">{prod.nome}</h4>
-                  <p className="uvProductDesc">{prod.descricao}</p>
-                  <div className="uvProductSpecs">
-                    {prod.especificacoes.map((spec) => (
-                      <div key={spec.label} className="uvSpecItem">
-                        <span className="uvSpecLabel">{spec.label}</span>
-                        <span className="uvSpecValue">{spec.valor}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ marginTop: 16, paddingTop: 12, borderTop: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 11, color: '#94A3B8' }}>Investimento Estimado</span>
-                    <span style={{ fontSize: 13, fontWeight: 700, color: '#34D399' }}>{prod.preco}</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
 
-        {/* Seção 5: Canais de Aquisição vs Motivos de Perda */}
+        {/* Seção 4: Canais de Aquisição & Rentabilidade vs Motivos de Perda */}
         <div className="uvTwoColGrid">
           {/* Coluna Canais */}
           <section className="uvCardBlock">

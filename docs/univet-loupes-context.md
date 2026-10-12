@@ -110,3 +110,26 @@ flowchart TD
 | **P2-02** | Growth | Otimização de CAPI com eventos offline de compra no CRM | **P2** | Dias 31-60 | Fechamentos no Kommo retroalimentando o algoritmo do Meta Ads. |
 | **P2-03** | Growth | Expansão de campanhas regionais alinhadas à rota de representantes | **P2** | Dias 45-75 | Verba alocada conforme agenda presencial de visitas nos estados. |
 | **P2-04** | SEO | Otimização contínua de Core Web Vitals e Schema Markup médico | **P2** | Dias 60-90 | Pontuação verde no Google PageSpeed e Rich Results ativos. |
+
+---
+
+## 6. Arquitetura do Portal Executivo Standalone & Operação de Campo (Bruna)
+
+- **Portal Executivo Standalone**:
+  - Rota dedicada: `/portal/univet` (atalhos: `/univet`, `/univet/cockpit`).
+  - Acesso público direto sem autenticação, sem app-shell do Bioma e sem sidebar da agência (para consumo direto da diretoria da Univet e stakeholders).
+  - Formato: Painel contínuo de Business Intelligence com rolagem vertical livre (Scorecards Nomus ERP / Kommo CRM, Funil Comercial de 5 etapas, Cobertura Regional de Campo da Bruna e Canais de Aquisição vs. Pareto de Perdas).
+  - Removidos por decisão executiva: Apresentação Estratégica em slides/deck, portfólio genérico de produtos e badges técnicos desnecessários ("Pipeline Conectado").
+- **Operação da Bruna & Rede de Consultores Regionais**:
+  - A Bruna atua na triagem SDR de todos os leads originados pelo site/WhatsApp/mídia e no agendamento de demonstrações presenciais (*test-drives*) nas clínicas e hospitais.
+  - Estrutura de consultores credenciados por território:
+    - **São Paulo (SP)**: Carlos Eduardo (Especialista Clínico Sênior) — Cidades-polo: Capital, Campinas, Ribeirão Preto, Vale do Paraíba.
+    - **Rio de Janeiro & ES (RJ/ES)**: Mariana Souza (Consultora Óptica Regional) — Cidades-polo: Capital Fluminense, Niterói, Petrópolis, Vitória.
+    - **Minas Gerais (MG)**: Roberto Alencar (Consultor de Campo) — Cidades-polo: Belo Horizonte, Triângulo Mineiro, Juiz de Fora.
+    - **Região Sul (PR/SC/RS)**: Lucas Fagundes (Especialista em Ergonomia Cirúrgica) — Cidades-polo: Curitiba, Florianópolis, Joinville, Porto Alegre.
+    - **Nordeste (BA/PE/CE)**: Fernanda Lima (Consultora Técnica) — Cidades-polo: Salvador, Recife, Fortaleza.
+    - **Centro-Oeste (DF/GO/MT)**: Thiago Mendes (Consultor Regional) — Cidades-polo: Brasília, Goiânia, Cuiabá.
+- **Pipeline de Ingestão & CRM**:
+  - Workflow n8n ativo no Railway (`LLRwHjRDsqCAKmAo`) com credenciais Bearer de longa duração da Kommo (`univetloupes.kommo.com`).
+  - Suporta tanto webhooks automáticos do Kommo quanto capturas diretas de landing pages com UTMs e distribuição territorial.
+
