@@ -1,0 +1,29 @@
+{
+  "proof_version": 1,
+  "attempted_at": "2026-09-17",
+  "route_decision": "manual_candidate_through_bioma_worker_executor",
+  "database_trace": false,
+  "database_trace_reason": "local_postgres_and_docker_unavailable",
+  "candidate": {
+    "provider": "anthropic",
+    "channel": "claude_code",
+    "model_id": "haiku",
+    "auth_mode": "oauth"
+  },
+  "prompt_contract": "fixed_marker",
+  "status": "failed_before_inference",
+  "error_category": "connection_refused",
+  "usage": {
+    "input_units": 0,
+    "output_units": 0,
+    "cached_units": 0
+  },
+  "cost_cents": 0,
+  "currency": "USD",
+  "provider_duration_ms": 179146,
+  "claims": {
+    "runtime_executor_invoked": true,
+    "provider_inference_completed": false,
+    "control_plane_route_persisted": false
+  }
+}

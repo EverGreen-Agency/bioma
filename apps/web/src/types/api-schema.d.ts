@@ -722,6 +722,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/backoffice/ai-operations/budgets/{organization_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Organization Budget */
+        get: operations["get_organization_budget_backoffice_ai_operations_budgets__organization_id__get"];
+        /** Update Organization Budget */
+        put: operations["update_organization_budget_backoffice_ai_operations_budgets__organization_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/backoffice/ai-operations/control-plane": {
         parameters: {
             query?: never;
@@ -750,6 +768,75 @@ export interface paths {
         get: operations["get_finops_backoffice_ai_operations_finops_get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backoffice/ai-operations/free-providers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Free Providers */
+        get: operations["list_free_providers_backoffice_ai_operations_free_providers_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backoffice/ai-operations/free-providers/keys": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Provider Keys */
+        get: operations["list_provider_keys_backoffice_ai_operations_free_providers_keys_get"];
+        put?: never;
+        /** Create Provider Key */
+        post: operations["create_provider_key_backoffice_ai_operations_free_providers_keys_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backoffice/ai-operations/free-providers/keys/{key_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Provider Key */
+        delete: operations["delete_provider_key_backoffice_ai_operations_free_providers_keys__key_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backoffice/ai-operations/free-providers/{provider_code}/test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Test Free Provider */
+        post: operations["test_free_provider_backoffice_ai_operations_free_providers__provider_code__test_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -921,6 +1008,23 @@ export interface paths {
         put?: never;
         /** Record Usage */
         post: operations["record_usage_backoffice_ai_operations_usage_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/backoffice/ai-operations/usage-analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Usage Analytics */
+        get: operations["get_usage_analytics_backoffice_ai_operations_usage_analytics_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -5711,6 +5815,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/workspaces/{workspace_id}/calendar/{item_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Update Item */
+        put: operations["update_item_workspaces__workspace_id__calendar__item_id__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/workspaces/{workspace_id}/calendar/{item_id}/stage": {
         parameters: {
             query?: never;
@@ -6187,6 +6308,40 @@ export interface paths {
         put?: never;
         /** Create Project */
         post: operations["create_project_workspaces__workspace_id__projects_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspace_id}/seo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Seo Snapshot */
+        get: operations["get_seo_snapshot_workspaces__workspace_id__seo_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/workspaces/{workspace_id}/seo/snapshots": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Collect Seo Snapshot */
+        post: operations["collect_seo_snapshot_workspaces__workspace_id__seo_snapshots_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9828,6 +9983,31 @@ export interface components {
              */
             workspace_id: string;
         };
+        /** EditorialCalendarItemUpdate */
+        EditorialCalendarItemUpdate: {
+            /**
+             * Channel
+             * @enum {string}
+             */
+            channel: "instagram" | "facebook" | "linkedin" | "youtube" | "tiktok" | "blog";
+            /**
+             * Content Type
+             * @enum {string}
+             */
+            content_type: "social_post" | "image_ad" | "video_script" | "article";
+            /** Media Urls */
+            media_urls?: string[];
+            /** Metadata */
+            metadata?: {
+                [key: string]: unknown;
+            };
+            /** Post Text */
+            post_text?: string | null;
+            /** Scheduled At */
+            scheduled_at?: string | null;
+            /** Title */
+            title: string;
+        };
         /** EngineeringDocData */
         EngineeringDocData: {
             /** Content */
@@ -10051,6 +10231,33 @@ export interface components {
             status?: ("draft" | "open" | "paid" | "overdue" | "cancelled") | null;
             /** Title */
             title?: string | null;
+        };
+        /** FreeProviderPresetRead */
+        FreeProviderPresetRead: {
+            /**
+             * Active Keys Count
+             * @default 0
+             */
+            active_keys_count: number;
+            /** Base Url */
+            base_url: string;
+            /** Code */
+            code: string;
+            /** Default Env Var */
+            default_env_var: string;
+            /** Default Model */
+            default_model: string;
+            /** Description */
+            description: string;
+            /**
+             * Has Env Key
+             * @default false
+             */
+            has_env_key: boolean;
+            /** Models */
+            models: string[];
+            /** Name */
+            name: string;
         };
         /** FreelancerProfileSyncRequest */
         FreelancerProfileSyncRequest: {
@@ -12195,6 +12402,55 @@ export interface components {
             title?: string | null;
             /** Workspace Id */
             workspace_id?: string | null;
+        };
+        /** OrganizationBudgetRead */
+        OrganizationBudgetRead: {
+            /**
+             * Alert Threshold Percent
+             * @default 80
+             */
+            alert_threshold_percent: number;
+            /**
+             * Current Month Cost Cents
+             * @default 0
+             */
+            current_month_cost_cents: number;
+            /**
+             * Current Month Tokens
+             * @default 0
+             */
+            current_month_tokens: number;
+            /**
+             * Enforce Hard Stop
+             * @default false
+             */
+            enforce_hard_stop: boolean;
+            /** Monthly Cost Cap Cents */
+            monthly_cost_cap_cents?: number | null;
+            /** Monthly Token Cap */
+            monthly_token_cap?: number | null;
+            /**
+             * Organization Id
+             * Format: uuid
+             */
+            organization_id: string;
+        };
+        /** OrganizationBudgetUpdate */
+        OrganizationBudgetUpdate: {
+            /**
+             * Alert Threshold Percent
+             * @default 80
+             */
+            alert_threshold_percent: number | null;
+            /**
+             * Enforce Hard Stop
+             * @default false
+             */
+            enforce_hard_stop: boolean | null;
+            /** Monthly Cost Cap Cents */
+            monthly_cost_cap_cents?: number | null;
+            /** Monthly Token Cap */
+            monthly_token_cap?: number | null;
         };
         /**
          * OrganizationPerson
@@ -14661,7 +14917,7 @@ export interface components {
              * Provider
              * @enum {string}
              */
-            provider: "openai" | "anthropic" | "google" | "openrouter" | "deepseek" | "groq";
+            provider: "openai" | "anthropic" | "google" | "openrouter" | "deepseek" | "groq" | "cerebras" | "sambanova" | "mistral" | "together" | "cohere" | "github_models" | "cloudflare" | "deepinfra" | "novita" | "openai_compatible";
             /** Settings */
             settings?: {
                 [key: string]: unknown;
@@ -14722,7 +14978,7 @@ export interface components {
              * Provider
              * @enum {string}
              */
-            provider: "openai" | "anthropic" | "google" | "openrouter" | "deepseek" | "groq";
+            provider: "openai" | "anthropic" | "google" | "openrouter" | "deepseek" | "groq" | "cerebras" | "sambanova" | "mistral" | "together" | "cohere" | "github_models" | "cloudflare" | "deepinfra" | "novita" | "openai_compatible";
             /** Quota Buckets */
             quota_buckets: components["schemas"]["QuotaBucketSummary"][];
             /** Settings */
@@ -14764,6 +15020,49 @@ export interface components {
             status?: ("active" | "degraded" | "unavailable" | "paused") | null;
             /** Subscription Id */
             subscription_id?: string | null;
+        };
+        /** ProviderKeyPoolCreate */
+        ProviderKeyPoolCreate: {
+            /** Api Key */
+            api_key: string;
+            /**
+             * Label
+             * @default Chave Padrão
+             */
+            label: string;
+            /** Provider Code */
+            provider_code: string;
+        };
+        /** ProviderKeyPoolRead */
+        ProviderKeyPoolRead: {
+            /** Call Count */
+            call_count: number;
+            /** Cooldown Until */
+            cooldown_until?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Error Count */
+            error_count: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Key Fingerprint */
+            key_fingerprint: string;
+            /** Label */
+            label: string;
+            /** Last Error Message */
+            last_error_message?: string | null;
+            /** Last Used At */
+            last_used_at?: string | null;
+            /** Provider Code */
+            provider_code: string;
+            /** Status */
+            status: string;
         };
         /** ProviderLoginInput */
         ProviderLoginInput: {
@@ -14846,6 +15145,8 @@ export interface components {
             installed: boolean;
             /** Instructions */
             instructions?: string[];
+            /** Quota Summary */
+            quota_summary?: string | null;
             /** Ready */
             ready: boolean;
             /**
@@ -15253,7 +15554,7 @@ export interface components {
              * Provider
              * @enum {string}
              */
-            provider: "openai" | "anthropic" | "google" | "openrouter" | "deepseek" | "groq";
+            provider: "openai" | "anthropic" | "google" | "openrouter" | "deepseek" | "groq" | "cerebras" | "sambanova" | "mistral" | "together" | "cohere" | "github_models" | "cloudflare" | "deepinfra" | "novita" | "openai_compatible";
             /** Quota Headroom */
             quota_headroom?: string | null;
             /** Reasons */
@@ -16338,6 +16639,67 @@ export interface components {
             mode_actually_used: "lexical";
             /** Query */
             query: string;
+        };
+        /** SeoCollectRequest */
+        SeoCollectRequest: {
+            /**
+             * Target
+             * @default evergreenmkt.com.br
+             */
+            target: string;
+        };
+        /** SeoSnapshotState */
+        SeoSnapshotState: {
+            /** Available */
+            available: boolean;
+            latest?: components["schemas"]["SeoSnapshotSummary"] | null;
+        };
+        /** SeoSnapshotSummary */
+        SeoSnapshotSummary: {
+            /** Cost Usd */
+            cost_usd: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Has Data */
+            has_data: boolean;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Language Code */
+            language_code: string;
+            /** Location Code */
+            location_code: number;
+            /**
+             * Measured At
+             * Format: date-time
+             */
+            measured_at: string;
+            /** Organic */
+            organic: {
+                [key: string]: unknown;
+            };
+            /** Paid */
+            paid: {
+                [key: string]: unknown;
+            };
+            /** Source */
+            source: string;
+            /** Source Endpoint */
+            source_endpoint: string;
+            /** Source Task Id */
+            source_task_id: string | null;
+            /** Target */
+            target: string;
+            /**
+             * Workspace Id
+             * Format: uuid
+             */
+            workspace_id: string;
         };
         /** SocialDailyMetric */
         SocialDailyMetric: {
@@ -17465,6 +17827,34 @@ export interface components {
             status: "open" | "resolved" | "ignored";
             /** Title */
             title: string;
+        };
+        /** UsageAnalyticsItem */
+        UsageAnalyticsItem: {
+            /** Avg Latency Ms */
+            avg_latency_ms: number;
+            /** Date */
+            date: string;
+            /** Model */
+            model: string;
+            /** Provider */
+            provider: string;
+            /** Total Calls */
+            total_calls: number;
+            /** Total Cost Cents */
+            total_cost_cents: number;
+            /** Total Tokens */
+            total_tokens: number;
+        };
+        /** UsageAnalyticsResponse */
+        UsageAnalyticsResponse: {
+            /** Items */
+            items: components["schemas"]["UsageAnalyticsItem"][];
+            /** Total Calls Month */
+            total_calls_month: number;
+            /** Total Cost Cents Month */
+            total_cost_cents_month: number;
+            /** Total Tokens Month */
+            total_tokens_month: number;
         };
         /** ValidationError */
         ValidationError: {
@@ -20022,6 +20412,72 @@ export interface operations {
             };
         };
     };
+    get_organization_budget_backoffice_ai_operations_budgets__organization_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationBudgetRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_organization_budget_backoffice_ai_operations_budgets__organization_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrganizationBudgetUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrganizationBudgetRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_control_plane_backoffice_ai_operations_control_plane_get: {
         parameters: {
             query?: never;
@@ -20058,6 +20514,150 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiFinOpsDashboard"];
+                };
+            };
+        };
+    };
+    list_free_providers_backoffice_ai_operations_free_providers_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FreeProviderPresetRead"][];
+                };
+            };
+        };
+    };
+    list_provider_keys_backoffice_ai_operations_free_providers_keys_get: {
+        parameters: {
+            query?: {
+                provider_code?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderKeyPoolRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_provider_key_backoffice_ai_operations_free_providers_keys_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProviderKeyPoolCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProviderKeyPoolRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_provider_key_backoffice_ai_operations_free_providers_keys__key_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                key_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    test_free_provider_backoffice_ai_operations_free_providers__provider_code__test_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                provider_code: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -20401,6 +21001,38 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiFinOpsDashboard"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_usage_analytics_backoffice_ai_operations_usage_analytics_get: {
+        parameters: {
+            query?: {
+                organization_id?: string | null;
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UsageAnalyticsResponse"];
                 };
             };
             /** @description Validation Error */
@@ -31161,6 +31793,42 @@ export interface operations {
             };
         };
     };
+    update_item_workspaces__workspace_id__calendar__item_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+                item_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EditorialCalendarItemUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EditorialCalendarItemSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_stage_workspaces__workspace_id__calendar__item_id__stage_patch: {
         parameters: {
             query: {
@@ -32286,6 +32954,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ProjectDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_seo_snapshot_workspaces__workspace_id__seo_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeoSnapshotState"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    collect_seo_snapshot_workspaces__workspace_id__seo_snapshots_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SeoCollectRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SeoSnapshotState"];
                 };
             };
             /** @description Validation Error */

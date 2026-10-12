@@ -88,11 +88,26 @@ def run_next_ai_workflow() -> dict[str, Any] | None:
         }
 
     failures: list[str] = []
+    with connect() as conn:
+        budget_status = storage.check_organization_budget(conn, job.get("organization_id"))
+    if not budget_status.get("allowed", True):
+        msg = f"Execução bloqueada por orçamento de IA: {budget_status.get('reason')}"
+        with connect() as conn:
+            storage.fail_ai_workflow_step(conn, job, msg)
+        return {
+            "job": "ai_workflow",
+            "id": str(job["run_id"]),
+            "step": job["step_key"],
+            "status": "failed",
+            "error": msg,
+        }
+
     for candidate in eligible:
         with connect() as conn:
             attempt = storage.start_ai_execution_attempt(conn, job, candidate)
+            job_with_conn = {**job, "_conn": conn}
         try:
-            result = execute_candidate(candidate, job, get_settings())
+            result = execute_candidate(candidate, job_with_conn, get_settings())
             with connect() as conn:
                 storage.complete_ai_workflow_step(conn, job, candidate, attempt["id"], result)
             return {

@@ -10,7 +10,7 @@ import { InviteView } from "./views/InviteView";
 import { ResetPasswordView } from "./views/ResetPasswordView";
 import { PrivacyView } from "./views/PrivacyView";
 import { PublicProposalView } from "./views/PublicProposalView";
-import { UnivetPresentationView } from "./views/univet/UnivetPresentationView";
+import { UnivetExecutivePortal } from "./views/univet/UnivetExecutivePortal";
 import { ArtifactModal } from "./components/ArtifactModal";
 import { CopilotPanel } from "./components/CopilotPanel";
 import { Sidebar } from "./components/Sidebar";
@@ -77,8 +77,8 @@ const PlatformStudiesView = lazy(() =>
 const PlanningPortfolioView = lazy(() =>
   import("./views/admin/proposals/PlanningPortfolioView").then((module) => ({ default: module.PlanningPortfolioView })),
 );
-const MalleableStudioView = lazy(() =>
-  import("./views/malleable-studio/MalleableStudioView").then((module) => ({ default: module.MalleableStudioView })),
+const PresenceView = lazy(() =>
+  import("./views/presenca/PresenceView").then((module) => ({ default: module.PresenceView })),
 );
 
 function ViewLoadingFallback() {
@@ -88,6 +88,17 @@ function ViewLoadingFallback() {
 export function App() {
   const routerNavigate = useNavigate();
   const location = useLocation();
+
+  // Portal Executivo Dedicado da Univet: renderiza como Landing Page isolada
+  // Sem Sidebar, sem Topbar, sem autenticação, sem poluição do Bioma.
+  if (
+    location.pathname === "/univet" ||
+    location.pathname === "/portal/univet" ||
+    location.pathname.startsWith("/univet/") ||
+    location.pathname.startsWith("/portal/univet/")
+  ) {
+    return <UnivetExecutivePortal />;
+  }
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -268,7 +279,6 @@ export function App() {
         <Route path="/redefinir/:token" element={<ResetPasswordView />} />
         <Route path="/privacidade" element={<PrivacyView />} />
         <Route path="/propostas/public/:token" element={<PublicProposalView />} />
-        <Route path="/univet" element={<UnivetPresentationView />} />
         <Route
           path="*"
           element={
@@ -329,17 +339,17 @@ export function App() {
             }
           />
           <Route path="/configuracoes" element={<SettingsView />} />
-          <Route path="/univet" element={<UnivetPresentationView />} />
           <Route
-            path="/malleable-studio"
+            path="/presenca"
             element={
               <Suspense fallback={<ViewLoadingFallback />}>
-                <MalleableStudioView />
+                <PresenceView />
               </Suspense>
             }
           />
-          <Route path="/social-studio" element={<Navigate to="/malleable-studio" replace />} />
-          <Route path="/render-studio" element={<Navigate to="/malleable-studio" replace />} />
+          <Route path="/malleable-studio" element={<Navigate to="/presenca" replace />} />
+          <Route path="/social-studio" element={<Navigate to="/presenca" replace />} />
+          <Route path="/render-studio" element={<Navigate to="/presenca" replace />} />
 
           <Route path="/operacao" element={guardSurface("operacao",
             <Suspense fallback={<ViewLoadingFallback />}>

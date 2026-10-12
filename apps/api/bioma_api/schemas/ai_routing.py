@@ -6,7 +6,11 @@ from uuid import UUID
 from pydantic import BaseModel, Field, model_validator
 
 
-Provider = Literal["openai", "anthropic", "google", "openrouter", "deepseek", "groq"]
+Provider = Literal[
+    "openai", "anthropic", "google", "openrouter", "deepseek", "groq",
+    "cerebras", "sambanova", "mistral", "together", "cohere",
+    "github_models", "cloudflare", "deepinfra", "novita", "openai_compatible"
+]
 AuthMode = Literal[
     "chatgpt",
     "claude_subscription",
@@ -254,6 +258,7 @@ class ProviderRuntimeStatus(BaseModel):
     ready: bool
     version: str | None = None
     auth_method: str | None = None
+    quota_summary: str | None = None
     detail: str
     instructions: list[str] = Field(default_factory=list)
     checked_at: datetime
@@ -311,3 +316,70 @@ class AiRoutingControlPlane(BaseModel):
     harness_config: HarnessConfigSummary | None = None
     quota_collection_jobs: list[QuotaCollectionJobSummary] = Field(default_factory=list)
     generated_at: datetime
+
+
+class FreeProviderPresetRead(BaseModel):
+    code: str
+    name: str
+    base_url: str
+    default_env_var: str
+    description: str
+    models: list[str]
+    default_model: str
+    active_keys_count: int = 0
+    has_env_key: bool = False
+
+
+class ProviderKeyPoolCreate(BaseModel):
+    provider_code: str = Field(min_length=1, max_length=64)
+    label: str = Field(default="Chave Padrão", max_length=128)
+    api_key: str = Field(min_length=1, max_length=512)
+
+
+class ProviderKeyPoolRead(BaseModel):
+    id: UUID
+    provider_code: str
+    label: str
+    key_fingerprint: str
+    status: str
+    error_count: int
+    call_count: int
+    last_used_at: datetime | None = None
+    cooldown_until: datetime | None = None
+    last_error_message: str | None = None
+    created_at: datetime
+
+
+class OrganizationBudgetRead(BaseModel):
+    organization_id: UUID
+    monthly_token_cap: int | None = None
+    monthly_cost_cap_cents: int | None = None
+    alert_threshold_percent: int = 80
+    enforce_hard_stop: bool = False
+    current_month_tokens: int = 0
+    current_month_cost_cents: int = 0
+
+
+class OrganizationBudgetUpdate(BaseModel):
+    monthly_token_cap: int | None = None
+    monthly_cost_cap_cents: int | None = None
+    alert_threshold_percent: int | None = 80
+    enforce_hard_stop: bool | None = False
+
+
+class UsageAnalyticsItem(BaseModel):
+    date: str
+    model: str
+    provider: str
+    total_calls: int
+    total_tokens: int
+    total_cost_cents: int
+    avg_latency_ms: int
+
+
+class UsageAnalyticsResponse(BaseModel):
+    items: list[UsageAnalyticsItem]
+    total_tokens_month: int
+    total_cost_cents_month: int
+    total_calls_month: int
+

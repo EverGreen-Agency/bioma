@@ -11,6 +11,7 @@ export type ViewId =
   | "engenharia"
   | "analytics"
   | "malleable-studio"
+  | "univet"
   | "eg-conhecimento"
   | "eg-wiki"
   | "eg-ideas"
@@ -27,8 +28,9 @@ export type ViewId =
 export const navItems: Array<{ id: ViewId; label: string; icon: LucideIcon }> = [
   { id: "cockpit", label: "Cockpit", icon: LayoutDashboard },
   { id: "operacao", label: "Operação EG", icon: BriefcaseBusiness },
-  { id: "malleable-studio", label: "Estúdio Social CRAFT", icon: Sparkles },
+  { id: "malleable-studio", label: "EverGreen Presença", icon: Sparkles },
   { id: "clientes", label: "Carteira de Clientes", icon: Users },
+  { id: "univet", label: "Univet · Kickoff", icon: FileText },
   
   // Rotas internas EG. Módulos de cliente vivem na navegação do próprio Hub.
   { id: "engenharia", label: "Engenharia", icon: FileText },
@@ -120,6 +122,7 @@ export const viewModule: Record<ViewId, ClientModule> = {
   finance: "finance",
   analytics: "analytics",
   "malleable-studio": "content",
+  univet: "hub",
   engenharia: "engineering",
   // Rotas internas não devem depender de módulos de cliente,
   // mas para obedecer à tipagem sem erro, colocamos hub.

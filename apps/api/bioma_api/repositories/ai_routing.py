@@ -80,6 +80,10 @@ def list_copilot_candidates(conn, organization_id: UUID):
         where account.organization_id = %s
           and account.status in ('active', 'degraded')
           and account.execution_mode <> 'manual_handoff'
+          and (
+            account.channel not in ('codex_chatgpt', 'claude_code', 'antigravity_cli')
+            or credential.encrypted_bundle is not null
+          )
         order by model.priority, account.display_name, model.display_name
         """,
         (organization_id,),

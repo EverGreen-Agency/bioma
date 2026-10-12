@@ -1,6 +1,7 @@
 import { FormEvent, useMemo, useState } from "react";
-import { Building2, Plus, Trash2 } from "lucide-react";
+import { Building2, Plus, Trash2, ShieldCheck } from "lucide-react";
 import { EmptyState, SectionHeader } from "../components/shared";
+import { KommoDeduplicationPanel } from "../components/KommoDeduplicationPanel";
 import {
   type LeadPayload,
   type LeadStage,
@@ -54,6 +55,7 @@ export function CrmView({ clientId }: { clientId: string }) {
   const deleteLead = useDeleteLead();
 
   const [leadDraft, setLeadDraft] = useState<LeadPayload>(emptyLead);
+  const [crmSubTab, setCrmSubTab] = useState<"kanban" | "dedup">("kanban");
 
   const leads = leadsData ?? [];
 
@@ -84,7 +86,38 @@ export function CrmView({ clientId }: { clientId: string }) {
     <section className="operations-layout">
       {error && <div className="notice error">{error}</div>}
 
-      <div className="bento-grid">
+      {/* Sub-navegação: O cliente externo só vê o Funil Comercial; o EG Admin alterna entre o Funil e a Higienização/Deduplicação */}
+      {isEgAdmin && (
+        <div style={{ display: "flex", gap: 10, borderBottom: "1px solid var(--border-light)", paddingBottom: 12, marginBottom: 8 }}>
+          <button
+            type="button"
+            className={crmSubTab === "kanban" ? "primary-button" : "ghost-button"}
+            onClick={() => setCrmSubTab("kanban")}
+            style={{ fontSize: 13, padding: "6px 14px", display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <Building2 size={14} />
+            Esteira Comercial (Funil)
+          </button>
+          <button
+            type="button"
+            className={crmSubTab === "dedup" ? "primary-button" : "ghost-button"}
+            onClick={() => setCrmSubTab("dedup")}
+            style={{ fontSize: 13, padding: "6px 14px", display: "flex", alignItems: "center", gap: 6 }}
+          >
+            <ShieldCheck size={14} />
+            Higienização & Deduplicação (Kommo)
+            <span className="demo-badge" style={{ marginLeft: 4, background: "rgba(59, 130, 246, 0.2)", color: "#60A5FA" }}>
+              Operação EG
+            </span>
+          </button>
+        </div>
+      )}
+
+      {crmSubTab === "dedup" && isEgAdmin ? (
+        <KommoDeduplicationPanel clientId={clientId} />
+      ) : (
+        <>
+          <div className="bento-grid">
         <article className="bento-card col-span-2">
           <div className="bento-header">
             <h3>Pipeline de Leads Ativo</h3>
@@ -179,6 +212,8 @@ export function CrmView({ clientId }: { clientId: string }) {
             </button>
           </form>
         </section>
+      )}
+        </>
       )}
     </section>
   );

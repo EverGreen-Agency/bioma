@@ -19,6 +19,16 @@ class EditorialCalendarItemPayload(BaseModel):
     metadata: dict = Field(default_factory=dict)
 
 
+class EditorialCalendarItemUpdate(BaseModel):
+    title: str = Field(min_length=2, max_length=300)
+    content_type: ContentType
+    channel: ChannelType
+    scheduled_at: datetime | None = None
+    post_text: str | None = Field(default=None, max_length=5000)
+    media_urls: list[str] = Field(default_factory=list)
+    metadata: dict = Field(default_factory=dict)
+
+
 class EditorialCalendarItemSummary(BaseModel):
     id: UUID
     workspace_id: UUID

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   ChevronLeft,
   ChevronRight,
@@ -32,6 +33,7 @@ import styles from './univet.module.css';
 export function UnivetPresentationView() {
   const [currentSlide, setCurrentSlide] = useState(1);
   const [viewMode, setViewMode] = useState<'deck' | 'continuous'>('deck');
+  const navigate = useNavigate();
 
   // Estado do Simulador de Funil
   const [activeSegmentId, setActiveSegmentId] = useState<'odonto' | 'medicina'>('odonto');
@@ -165,6 +167,28 @@ export function UnivetPresentationView() {
           >
             <Layers size={14} />
             <span>{viewMode === 'deck' ? 'Modo Scroll' : 'Modo Slides'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => navigate('/univet/cockpit')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 6,
+              background: 'rgba(16, 185, 129, 0.15)',
+              color: '#34D399',
+              border: '1px solid rgba(16, 185, 129, 0.3)',
+              borderRadius: 8,
+              padding: '6px 12px',
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer'
+            }}
+            title="Abrir Painel de BI & Cockpit Executivo da Univet"
+          >
+            <TrendingUp size={14} />
+            <span>Cockpit Executivo (BI)</span>
           </button>
         </div>
 

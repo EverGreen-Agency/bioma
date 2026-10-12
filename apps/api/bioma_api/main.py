@@ -56,6 +56,7 @@ from bioma_api.routers import (
     brand_book,
     editorial_calendar,
     social_connect,
+    seo,
 )
 
 
@@ -108,6 +109,7 @@ app.include_router(invites.workspace_admin_router)
 app.include_router(performance.router)
 app.include_router(performance.workspace_router)
 app.include_router(social_connect.router)
+app.include_router(seo.router)
 app.include_router(proof.router)
 app.include_router(projects.router)
 app.include_router(projects.workspace_router)

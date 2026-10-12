@@ -1,5 +1,6 @@
 from functools import lru_cache
 
+from pydantic import field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -21,6 +22,22 @@ class WorkerSettings(BaseSettings):
     google_places_api_key: str | None = None
     youtube_organic_sync_limit: int = 50
     secret_encryption_key: str | None = None
+
+    @field_validator("secret_encryption_key")
+    @classmethod
+    def validate_secret_encryption_key(cls, v: str | None) -> str | None:
+        if not v:
+            return None
+        import base64
+        try:
+            raw = base64.urlsafe_b64decode(v)
+            if len(raw) != 32:
+                raise ValueError("Chave Fernet deve conter exatamente 32 bytes.")
+        except Exception as exc:
+            raise ValueError(
+                f"SECRET_ENCRYPTION_KEY deve ser uma chave Fernet válida (32 bytes em base64 urlsafe): {exc}"
+            ) from exc
+        return v
     tiktok_client_key: str | None = None
     tiktok_client_secret: str | None = None
     tiktok_ads_app_id: str | None = None
@@ -53,6 +70,10 @@ class WorkerSettings(BaseSettings):
     google_cloud_project: str | None = None
     google_cloud_location: str = "us-central1"
     ahrefs_api_key: str | None = None
+    dataforseo_login: str | None = None
+    dataforseo_password: str | None = None
+    dataforseo_base_url: str = "https://api.dataforseo.com"
+    dataforseo_timeout_seconds: float = 60
     fathom_api_key: str | None = None
     fathom_request_timeout_seconds: float = 60
     # QUEUE-001: o lease precisa ser maior que o job mais longo esperado

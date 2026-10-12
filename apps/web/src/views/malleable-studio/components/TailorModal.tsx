@@ -45,7 +45,7 @@ export const TailorModal: React.FC<TailorModalProps> = ({
           id: "custom-" + Date.now(),
           name: urlInput.replace(/^https?:\/\//, "").split(".")[0].toUpperCase() + " STUDIO",
           url: urlInput,
-          tagline: "Custom Brand Engine · Tailored via CRAFT",
+          tagline: "Operação de conteúdo configurada para a marca",
         },
       };
 
@@ -71,10 +71,10 @@ export const TailorModal: React.FC<TailorModalProps> = ({
                 fontWeight: 900,
               }}
             >
-              STAGE 5 OF 5 · TAILOR (CRAFT FRAMEWORK)
+              CONFIGURAÇÃO DA MARCA
             </span>
             <h3 style={{ margin: "4px 0 0 0", fontSize: "1.15rem", fontWeight: 900 }}>
-              Rebrand Studio para Qualquer Cliente
+              Adaptar o Presença para um cliente
             </h3>
           </div>
           <button className="craft-btn craft-btn-icon" onClick={onClose}>
