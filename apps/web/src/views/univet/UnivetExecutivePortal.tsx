@@ -1,154 +1,214 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, Download, Instagram, MapPin, Minus, Play, Sparkles, TrendingUp, X } from 'lucide-react';
 import {
-  TrendingUp,
-  DollarSign,
-  Users,
-  Target,
-  Award,
-  Globe,
-  ArrowUpRight,
-  Download,
-  Building2,
-  Calendar,
-  CheckCircle2,
-  Sparkles,
-  MapPin,
-  Compass,
-  ChevronRight
-} from 'lucide-react';
+  computeSnapshot,
+  computeSocial,
+  fmtBRL,
+  fmtCompactBRL,
+  fmtInt,
+  fmtPct,
+  ORIGIN_GROUPS,
+  PERIODS,
+  type CreativeFormat,
+  type CreativeRow,
+  type Insight,
+  type KpiValue,
+  type OriginGroup,
+  type PeriodId,
+  type Platform,
+  type SegmentFilter,
+  type StateRow,
+  type Verdict,
+} from '../../data/univet/univetPortalData';
+import { BrazilMap, ScatterPlot, Sparkline, StackedColumns } from './UnivetCharts';
 import './univet-portal.css';
 
-interface RegionData {
-  id: string;
-  nome: string;
-  uf: string;
-  repNome: string;
-  repCargo: string;
-  repStatus: 'ativo' | 'rota' | 'disponivel';
-  leads: number;
-  visitasAgendadas: number;
-  visitasRealizadas: number;
-  propostas: number;
-  vendas: number;
-  faturamento: number;
-  taxa: string;
-  cidadesPolo: string;
+type MapMetric = 'revenue' | 'leads' | 'orders' | 'convRate';
+type CreativeSort = 'spend' | 'orders' | 'cpl';
+
+const CREATIVE_SORTS: { id: CreativeSort; label: string }[] = [
+  { id: 'spend', label: 'Maior investimento' },
+  { id: 'orders', label: 'Mais pedidos' },
+  { id: 'cpl', label: 'Menor CPL' },
+];
+
+const PLATFORM_OPTIONS: { id: 'todas' | Platform; label: string }[] = [
+  { id: 'todas', label: 'Todas' },
+  { id: 'google', label: 'Google Ads' },
+  { id: 'meta', label: 'Meta Ads' },
+];
+
+const FORMAT_LABEL: Record<CreativeFormat, string> = {
+  search: 'Anúncio de pesquisa',
+  imagem: 'Imagem',
+  video: 'Vídeo',
+  carrossel: 'Carrossel',
+};
+
+const CREATIVES_COLLAPSED = 8;
+
+const SEGMENTS: { id: SegmentFilter; label: string }[] = [
+  { id: 'todos', label: 'Geral' },
+  { id: 'odonto', label: 'Odonto' },
+  { id: 'medicina', label: 'Medicina' },
+];
+
+const MAP_METRICS: { id: MapMetric; label: string; format: (v: number) => string }[] = [
+  { id: 'revenue', label: 'Faturamento', format: fmtCompactBRL },
+  { id: 'leads', label: 'Leads', format: fmtInt },
+  { id: 'orders', label: 'Pedidos', format: fmtInt },
+  { id: 'convRate', label: 'Conversão', format: (v) => fmtPct(v) },
+];
+
+const ORIGIN_COLOR: Record<OriginGroup, string> = {
+  paga: 'var(--uv-series-1)',
+  organica: 'var(--uv-series-3)',
+  relacionamento: 'var(--uv-series-2)',
+};
+
+const PLATFORM: Record<Platform, { label: string; color: string }> = {
+  google: { label: 'Google Ads', color: 'var(--uv-series-1)' },
+  meta: { label: 'Meta Ads', color: 'var(--uv-series-2)' },
+};
+
+const VERDICT: Record<Verdict, { label: string; icon: React.ReactNode; className: string }> = {
+  escalar: { label: 'Escalar', icon: <ArrowUpRight size={13} />, className: 'uvVerdictGood' },
+  manter: { label: 'Manter', icon: <Minus size={13} />, className: 'uvVerdictNeutral' },
+  revisar: { label: 'Revisar', icon: <AlertTriangle size={13} />, className: 'uvVerdictWarn' },
+};
+
+const INSIGHT_TONE: Record<Insight['tone'], { label: string; icon: React.ReactNode }> = {
+  oportunidade: { label: 'Oportunidade', icon: <TrendingUp size={14} /> },
+  risco: { label: 'Atenção', icon: <AlertTriangle size={14} /> },
+  destaque: { label: 'Destaque', icon: <Sparkles size={14} /> },
+};
+
+const orDash = (value: number | null, format: (v: number) => string, empty = 'n/d') => (value === null ? empty : format(value));
+const fmtRoas = (value: number) => `${value.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}x`;
+
+function Segmented<T extends string>({ options, value, onChange, label }: { options: { id: T; label: string }[]; value: T; onChange: (id: T) => void; label: string }) {
+  return (
+    <div className="uvSegmented" role="group" aria-label={label}>
+      {options.map((option) => (
+        <button key={option.id} type="button" className="uvSegmentedBtn" aria-pressed={value === option.id} onClick={() => onChange(option.id)}>
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
 }
 
-const REGIOES_DATA: RegionData[] = [
-  {
-    id: 'sp',
-    nome: 'São Paulo',
-    uf: 'SP',
-    repNome: 'Carlos Eduardo',
-    repCargo: 'Especialista Clínico Sênior',
-    repStatus: 'ativo',
-    leads: 48,
-    visitasAgendadas: 14,
-    visitasRealizadas: 22,
-    propostas: 15,
-    vendas: 7,
-    faturamento: 71400,
-    taxa: '14.6%',
-    cidadesPolo: 'Capital, Campinas, Ribeirão Preto, S. José dos Campos'
-  },
-  {
-    id: 'rj_es',
-    nome: 'Rio de Janeiro & ES',
-    uf: 'RJ / ES',
-    repNome: 'Mariana Souza',
-    repCargo: 'Consultora Óptica Regional',
-    repStatus: 'rota',
-    leads: 28,
-    visitasAgendadas: 8,
-    visitasRealizadas: 12,
-    propostas: 8,
-    vendas: 3,
-    faturamento: 28500,
-    taxa: '10.7%',
-    cidadesPolo: 'Rio de Janeiro, Niterói, Petrópolis, Vitória'
-  },
-  {
-    id: 'mg',
-    nome: 'Minas Gerais',
-    uf: 'MG',
-    repNome: 'Roberto Alencar',
-    repCargo: 'Consultor de Campo',
-    repStatus: 'disponivel',
-    leads: 24,
-    visitasAgendadas: 6,
-    visitasRealizadas: 8,
-    propostas: 5,
-    vendas: 2,
-    faturamento: 19000,
-    taxa: '8.3%',
-    cidadesPolo: 'Belo Horizonte, Uberlândia, Juiz de Fora'
-  },
-  {
-    id: 'sul',
-    nome: 'Região Sul',
-    uf: 'PR / SC / RS',
-    repNome: 'Lucas Fagundes',
-    repCargo: 'Especialista em Ergonomia Cirúrgica',
-    repStatus: 'ativo',
-    leads: 26,
-    visitasAgendadas: 9,
-    visitasRealizadas: 11,
-    propostas: 7,
-    vendas: 3,
-    faturamento: 27900,
-    taxa: '11.5%',
-    cidadesPolo: 'Curitiba, Florianópolis, Joinville, Porto Alegre'
-  },
-  {
-    id: 'ne',
-    nome: 'Nordeste',
-    uf: 'BA / PE / CE',
-    repNome: 'Fernanda Lima',
-    repCargo: 'Consultora Técnica',
-    repStatus: 'disponivel',
-    leads: 14,
-    visitasAgendadas: 4,
-    visitasRealizadas: 5,
-    propostas: 3,
-    vendas: 1,
-    faturamento: 9500,
-    taxa: '7.1%',
-    cidadesPolo: 'Salvador, Recife, Fortaleza'
-  },
-  {
-    id: 'co',
-    nome: 'Centro-Oeste',
-    uf: 'DF / GO / MT',
-    repNome: 'Thiago Mendes',
-    repCargo: 'Consultor Regional',
-    repStatus: 'rota',
-    leads: 10,
-    visitasAgendadas: 3,
-    visitasRealizadas: 4,
-    propostas: 2,
-    vendas: 1,
-    faturamento: 8200,
-    taxa: '10.0%',
-    cidadesPolo: 'Brasília, Goiânia, Cuiabá'
-  }
-];
+// Variação contra o período anterior. `goodWhen` define se subir é bom (receita) ou ruim (CAC);
+// `neutral` serve para métricas sem juízo de valor, como investimento.
+function Delta({ kpi, goodWhen }: { kpi: KpiValue; goodWhen: 'up' | 'down' | 'neutral' }) {
+  if (kpi.value === null || kpi.previous === null || kpi.previous === 0) return null;
+  const change = (kpi.value - kpi.previous) / kpi.previous;
+  const up = change >= 0;
+  const tone = goodWhen === 'neutral' ? 'uvDeltaNeutral' : up === (goodWhen === 'up') ? 'uvDeltaGood' : 'uvDeltaBad';
+  return (
+    <span className={`uvDelta ${tone}`}>
+      {up ? <ArrowUpRight size={13} /> : <ArrowDownRight size={13} />}
+      {fmtPct(Math.abs(change))}
+    </span>
+  );
+}
 
+function StatTile({ label, value, kpi, goodWhen, caption }: { label: string; value: string; kpi?: KpiValue; goodWhen?: 'up' | 'down' | 'neutral'; caption: string }) {
+  return (
+    <div className="uvTile">
+      <div className="uvTileLabel">{label}</div>
+      <div className="uvTileValue">{value}</div>
+      <div className="uvTileFoot">
+        {kpi && goodWhen && <Delta kpi={kpi} goodWhen={goodWhen} />}
+        <span>{caption}</span>
+      </div>
+    </div>
+  );
+}
 
+function CardHeader({ title, subtitle, children }: { title: string; subtitle?: string; children?: React.ReactNode }) {
+  return (
+    <div className="uvCardHeader">
+      <div>
+        <h3 className="uvCardTitle">{title}</h3>
+        {subtitle && <p className="uvCardSubtitle">{subtitle}</p>}
+      </div>
+      {children}
+    </div>
+  );
+}
 
-const CANAIS_DATA = [
-  { canal: 'Google Orgânico (SEO)', visitas: 4200, leads: 38, vendas: 5, receita: 47500, cac: 'R$ 0,00', roas: 'Orgânico (∞)', destaque: true },
-  { canal: 'Google AI Overview (GEO)', visitas: 1850, leads: 24, vendas: 4, receita: 38000, cac: 'R$ 0,00', roas: 'IA Direta (∞)', destaque: true },
-  { canal: 'Google Ads (Search)', visitas: 2900, leads: 35, vendas: 3, receita: 28500, cac: 'R$ 1.800,00', roas: '5.28x', destaque: false },
-  { canal: 'Meta Ads (Instagram)', visitas: 3600, leads: 31, vendas: 2, receita: 19000, cac: 'R$ 2.100,00', roas: '4.52x', destaque: false },
-  { canal: 'Indicações de Clientes', visitas: 310, leads: 14, vendas: 2, receita: 19000, cac: 'R$ 0,00', roas: 'Viral (∞)', destaque: false },
-  { canal: 'Congressos (CIOSP)', visitas: 450, leads: 8, vendas: 1, receita: 12500, cac: 'R$ 8.000,00', roas: '1.56x', destaque: false },
-];
+function InlineBar({ share, color = 'var(--uv-accent)' }: { share: number; color?: string }) {
+  return <span className="uvInlineBar" style={{ width: `${Math.max(share * 100, share > 0 ? 2 : 0)}%`, background: color }} />;
+}
+
+function Empty({ children }: { children: React.ReactNode }) {
+  return <p className="uvEmpty">{children}</p>;
+}
+
+function CreativeCard({ creative }: { creative: CreativeRow }) {
+  const verdict = VERDICT[creative.verdict];
+  return (
+    <article className={`uvCreative ${creative.active ? '' : 'uvCreativePaused'}`}>
+      <div className="uvCreativeCover">
+        {creative.image ? (
+          <>
+            <img src={creative.image} alt="" loading="lazy" style={{ objectPosition: creative.imagePosition }} />
+            {creative.format === 'video' && (
+              <span className="uvCreativePlay" aria-hidden="true">
+                <Play size={18} fill="currentColor" />
+              </span>
+            )}
+          </>
+        ) : (
+          // Anúncio de pesquisa não tem imagem: o preview é o próprio texto do anúncio
+          <div className="uvSearchPreview">
+            <span>Patrocinado</span>
+            <strong>{creative.headline}</strong>
+            <p>{creative.body}</p>
+          </div>
+        )}
+      </div>
+      <div className="uvCreativeBody">
+        <div className="uvCreativeHead">
+          <strong>{creative.name}</strong>
+          <span className={`uvVerdict ${verdict.className}`}>
+            {verdict.icon}
+            {verdict.label}
+          </span>
+        </div>
+        <span className="uvCellSub">
+          <span className="uvSwatch uvSwatchDot" style={{ background: PLATFORM[creative.platform].color }} />
+          {PLATFORM[creative.platform].label} · {FORMAT_LABEL[creative.format]}
+          {!creative.active && ' · Pausado'}
+        </span>
+        <p className="uvCreativeCopy">{creative.image ? creative.headline : creative.campaignName}</p>
+        <dl className="uvCreativeStats">
+          <div><dt>Investimento</dt><dd>{fmtBRL(creative.spend)}</dd></div>
+          <div><dt>CTR</dt><dd>{orDash(creative.ctr, (v) => fmtPct(v))}</dd></div>
+          <div><dt>CPL</dt><dd>{orDash(creative.cpl, fmtBRL)}</dd></div>
+          <div><dt>Leads</dt><dd>{fmtInt(creative.leads)}</dd></div>
+          <div><dt>Pedidos</dt><dd>{fmtInt(creative.orders)}</dd></div>
+          <div><dt>CAC</dt><dd>{orDash(creative.cac, fmtBRL, 'sem pedido')}</dd></div>
+        </dl>
+      </div>
+    </article>
+  );
+}
+
+function stateMetric(state: StateRow, metric: MapMetric) {
+  return metric === 'convRate' ? state.convRate ?? 0 : state[metric];
+}
 
 export function UnivetExecutivePortal() {
-  const [selectedSegment, setSelectedSegment] = useState<'todos' | 'odonto' | 'medicina'>('todos');
-  const [selectedPeriod, setSelectedPeriod] = useState<'30d' | 'mes_atual' | 'trimestre'>('30d');
-  const [selectedRegion, setSelectedRegion] = useState<string>('todas');
+  const [segment, setSegment] = useState<SegmentFilter>('todos');
+  const [period, setPeriod] = useState<PeriodId>('90d');
+  const [uf, setUf] = useState<string | null>(null);
+  const [mapMetric, setMapMetric] = useState<MapMetric>('revenue');
+  const [platform, setPlatform] = useState<'todas' | Platform>('todas');
+  const [hoverBucket, setHoverBucket] = useState<number | null>(null);
+  const [creativeSort, setCreativeSort] = useState<CreativeSort>('spend');
+  const [showAllCreatives, setShowAllCreatives] = useState(false);
 
   // Destrava e garante scroll nativo livre da página inteira
   useEffect(() => {
@@ -168,438 +228,376 @@ export function UnivetExecutivePortal() {
     };
   }, []);
 
-  // Multiplicadores contextuais baseados no filtro de período e segmento
-  const multiplier = useMemo(() => {
-    let m = 1.0;
-    if (selectedSegment === 'odonto') m *= 0.75;
-    if (selectedSegment === 'medicina') m *= 0.25;
-    if (selectedPeriod === 'mes_atual') m *= 0.6;
-    if (selectedPeriod === 'trimestre') m *= 2.8;
-    return m;
-  }, [selectedSegment, selectedPeriod]);
+  const data = useMemo(() => computeSnapshot({ period, segment, uf }), [period, segment, uf]);
+  const social = useMemo(() => computeSocial(period), [period]);
+  const { kpis } = data;
+  const periodLabel = PERIODS.find((p) => p.id === period)?.label ?? '';
+  const metric = MAP_METRICS.find((m) => m.id === mapMetric) ?? MAP_METRICS[0];
 
-  const faturamentoTotal = Math.round(164500 * multiplier);
-  const totalLeads = Math.round(150 * multiplier);
-  const totalVendas = Math.round(17 * multiplier);
-  const faturamentoOrganico = Math.round(85500 * multiplier);
-  const ticketMedio = totalVendas > 0 ? Math.round(faturamentoTotal / totalVendas) : 9676;
-  const taxaConversao = ((totalVendas / totalLeads) * 100).toFixed(1);
+  const mapValues = useMemo(() => new Map(data.states.map((s) => [s.uf, stateMetric(s, mapMetric)])), [data.states, mapMetric]);
+  const ranking = useMemo(
+    () => [...data.states].filter((s) => stateMetric(s, mapMetric) > 0).sort((a, b) => stateMetric(b, mapMetric) - stateMetric(a, mapMetric)).slice(0, 8),
+    [data.states, mapMetric],
+  );
+  const rankingMax = ranking.length ? stateMetric(ranking[0], mapMetric) : 0;
+  const selectedState = uf ? data.states.find((s) => s.uf === uf) ?? null : null;
 
-  // Filtragem de representantes por região selecionada
-  const filteredReps = useMemo(() => {
-    if (selectedRegion === 'todas') return REGIOES_DATA;
-    return REGIOES_DATA.filter((r) => r.id === selectedRegion);
-  }, [selectedRegion]);
+  const campaigns = platform === 'todas' ? data.campaigns : data.campaigns.filter((c) => c.platform === platform);
+  const maxCampaignSpend = Math.max(...data.campaigns.map((c) => c.spend), 1);
+  const scatterPoints = campaigns
+    .filter((c) => c.cpl !== null && c.leads > 0)
+    .map((c) => ({
+      id: c.id,
+      label: c.name.split(' | ')[1] ?? c.name,
+      x: c.cpl as number,
+      y: c.leadToOrder ?? 0,
+      size: c.spend,
+      color: PLATFORM[c.platform].color,
+      tooltip: (
+        <>
+          <div className="uvTooltipTitle">{c.name}</div>
+          <div className="uvTooltipRow"><span /><span>Investimento</span><strong>{fmtBRL(c.spend)}</strong></div>
+          <div className="uvTooltipRow"><span /><span>Custo por lead</span><strong>{fmtBRL(c.cpl as number)}</strong></div>
+          <div className="uvTooltipRow"><span /><span>Lead em pedido</span><strong>{fmtPct(c.leadToOrder ?? 0)}</strong></div>
+          <div className="uvTooltipRow"><span /><span>CAC</span><strong>{orDash(c.cac, fmtBRL, 'sem pedido')}</strong></div>
+        </>
+      ),
+    }));
+  const paidLeads = campaigns.reduce((sum, c) => sum + c.leads, 0);
+  const paidOrders = campaigns.reduce((sum, c) => sum + c.orders, 0);
+  const paidSpend = campaigns.reduce((sum, c) => sum + c.spend, 0);
 
-  // Etapas do Funil
-  const etapasFunil = [
-    {
-      id: '01',
-      titulo: '1. Ingestão Digital',
-      sub: 'Mídia, SEO & Tráfego Direto',
-      count: totalLeads,
-      percPasso: '100%',
-      fillWidth: '100%',
-      color: '#3B82F6'
-    },
-    {
-      id: '02',
-      titulo: '2. Qualificação SDR',
-      sub: 'Atendimento & Triagem Bruna',
-      count: Math.round(105 * multiplier),
-      percPasso: '70.0%',
-      fillWidth: '70%',
-      color: '#60A5FA'
-    },
-    {
-      id: '03',
-      titulo: '3. Demonstração / Test-Drive',
-      sub: 'Visita Presencial em Clínica',
-      count: Math.round(48 * multiplier),
-      percPasso: '32.0%',
-      fillWidth: '45.7%',
-      color: '#F59E0B'
-    },
-    {
-      id: '04',
-      titulo: '4. Proposta Emitida',
-      sub: 'Negociação de Óptica & Grau',
-      count: Math.round(32 * multiplier),
-      percPasso: '21.3%',
-      fillWidth: '66.7%',
-      color: '#8B5CF6'
-    },
-    {
-      id: '05',
-      titulo: '5. Pedido Faturado (Nomus)',
-      sub: 'Venda Concluída & Emitida',
-      count: totalVendas,
-      percPasso: `${taxaConversao}%`,
-      fillWidth: '53.1%',
-      color: '#10B981'
-    }
-  ];
+  const creatives = useMemo(() => {
+    const list = platform === 'todas' ? data.creatives : data.creatives.filter((c) => c.platform === platform);
+    const sorted = [...list].sort((a, b) => {
+      if (creativeSort === 'cpl') return (a.cpl ?? Infinity) - (b.cpl ?? Infinity);
+      if (creativeSort === 'orders') return b.orders - a.orders || b.revenue - a.revenue;
+      return b.spend - a.spend;
+    });
+    return sorted;
+  }, [data.creatives, platform, creativeSort]);
+  const visibleCreatives = showAllCreatives ? creatives : creatives.slice(0, CREATIVES_COLLAPSED);
 
-  const renderRepStatus = (status: RegionData['repStatus']) => {
-    switch (status) {
-      case 'ativo':
-        return <span className="uvBadgeSuccess">Ativo em Campo</span>;
-      case 'rota':
-        return <span className="uvBadgePurple">Em Rota Clínica</span>;
-      case 'disponivel':
-        return <span className="uvBadgeWarning">Agenda Aberta</span>;
-    }
-  };
+  const maxProductRevenue = Math.max(...data.products.map((p) => p.revenue), 1);
+  const maxSpecialtyRevenue = Math.max(...data.specialties.map((s) => s.revenue), 1);
+  const maxChannelRevenue = Math.max(...data.channels.map((c) => c.revenue), 1);
+  const funnelTop = data.funnel[0].count || 1;
+  const hasOrders = (kpis.orders.value ?? 0) > 0;
 
   return (
     <div className="uvPortalWrapper">
-      {/* Header Executivo Standalone */}
       <header className="uvPortalHeader">
-        <div className="uvBrandGroup">
-          <div className="uvBrandLogo">
-            <div className="uvMonogram">U</div>
-            <div className="uvBrandText">
-              <h1 className="uvBrandTitle">UNIVET LOUPES</h1>
-              <span className="uvBrandSubtitle">Optical Technologies · Brasil</span>
-            </div>
+        <div className="uvBrand">
+          <div className="uvMonogram" aria-hidden="true">U</div>
+          <div>
+            <h1 className="uvBrandTitle">Univet Loupes</h1>
+            <span className="uvBrandSubtitle">Painel executivo · Brasil</span>
           </div>
         </div>
 
-        {/* Filtros e Ações */}
         <div className="uvHeaderActions">
-          {/* Filtro de Segmento */}
-          <div className="uvPillFilterGroup">
-            <button
-              type="button"
-              className={`uvPillBtn ${selectedSegment === 'todos' ? 'uvPillBtnActive' : ''}`}
-              onClick={() => setSelectedSegment('todos')}
-            >
-              Geral
+          {uf && (
+            <button type="button" className="uvFilterChip" onClick={() => setUf(null)} aria-label={`Remover filtro de estado ${uf}`}>
+              <MapPin size={13} />
+              {uf}
+              <X size={13} />
             </button>
-            <button
-              type="button"
-              className={`uvPillBtn ${selectedSegment === 'odonto' ? 'uvPillBtnActive' : ''}`}
-              onClick={() => setSelectedSegment('odonto')}
-            >
-              Odonto
-            </button>
-            <button
-              type="button"
-              className={`uvPillBtn ${selectedSegment === 'medicina' ? 'uvPillBtnActive' : ''}`}
-              onClick={() => setSelectedSegment('medicina')}
-            >
-              Medicina
-            </button>
-          </div>
-
-          {/* Filtro de Período */}
-          <div className="uvPillFilterGroup">
-            <button
-              type="button"
-              className={`uvPillBtn ${selectedPeriod === '30d' ? 'uvPillBtnActive' : ''}`}
-              onClick={() => setSelectedPeriod('30d')}
-            >
-              30D
-            </button>
-            <button
-              type="button"
-              className={`uvPillBtn ${selectedPeriod === 'mes_atual' ? 'uvPillBtnActive' : ''}`}
-              onClick={() => setSelectedPeriod('mes_atual')}
-            >
-              Mês
-            </button>
-            <button
-              type="button"
-              className={`uvPillBtn ${selectedPeriod === 'trimestre' ? 'uvPillBtnActive' : ''}`}
-              onClick={() => setSelectedPeriod('trimestre')}
-            >
-              Trimestre
-            </button>
-          </div>
-
-          <button
-            type="button"
-            className="uvBtnSecondary"
-            onClick={() => window.print()}
-            title="Exportar Painel para Relatório em PDF"
-          >
+          )}
+          <Segmented options={SEGMENTS} value={segment} onChange={setSegment} label="Segmento" />
+          <Segmented options={PERIODS} value={period} onChange={setPeriod} label="Período" />
+          <button type="button" className="uvBtnSecondary" onClick={() => window.print()} title="Exportar o painel em PDF">
             <Download size={14} />
             <span>PDF</span>
           </button>
         </div>
       </header>
 
-      {/* Conteúdo Principal Contínuo */}
       <main className="uvPortalMain">
-        {/* Hero Section */}
-        <section className="uvHeroSection">
-          <h2 className="uvHeroHeadline">Performance Comercial & Inteligência de Receita</h2>
+        <section className="uvHero">
+          <h2 className="uvHeroHeadline">Da campanha ao pedido faturado</h2>
           <p className="uvHeroSubtitle">
-            Monitoramento do ciclo de vendas: Ingestão de Leads (Kommo CRM) → Demonstrações Clínicas → Pedidos Faturados (Nomus ERP).
+            {data.scopeLabel}, últimos {periodLabel}. Mídia (Google Ads e Meta Ads), oportunidades (Kommo CRM) e faturamento (Nomus ERP) no mesmo recorte.
           </p>
         </section>
 
-        {/* Seção 1: Bento Grid de KPIs Executivos */}
-        <section className="uvKpiGrid">
-          {/* KPI 1: Faturamento Nomus */}
-          <div className="uvKpiCard uvKpiCardPrimary">
-            <div className="uvKpiHeader">
-              <span className="uvKpiLabel uvKpiLabelHighlight">Faturamento Real (Nomus)</span>
-              <DollarSign size={18} color="#34D399" />
+        {/* Indicadores principais */}
+        <section className="uvKpiBand" aria-label="Indicadores principais">
+          <div className="uvHeroTile">
+            <div className="uvTileLabel">Faturamento (Nomus ERP)</div>
+            <div className="uvHeroValue">{fmtBRL(kpis.revenue.value ?? 0)}</div>
+            <div className="uvTileFoot">
+              <Delta kpi={kpis.revenue} goodWhen="up" />
+              <span>vs. {periodLabel} anteriores</span>
             </div>
-            <div className="uvKpiValue">R$ {faturamentoTotal.toLocaleString('pt-BR')}</div>
-            <div className="uvKpiFooter">
-              <span className="uvDeltaPositive">
-                <ArrowUpRight size={14} /> +18.4%
-              </span>
-              <span className="uvKpiCaption">vs período anterior · {totalVendas} pedidos</span>
-            </div>
+            <dl className="uvHeroFacts">
+              <div><dt>Pedidos faturados</dt><dd>{fmtInt(kpis.orders.value ?? 0)}</dd></div>
+              <div><dt>Ticket médio</dt><dd>{orDash(kpis.ticket.value, fmtBRL)}</dd></div>
+              <div><dt>Receita orgânica</dt><dd>{orDash(kpis.organicShare, (v) => fmtPct(v, 0))}</dd></div>
+            </dl>
+            <Sparkline values={data.buckets.map((b) => b.revenue)} label="Evolução do faturamento no período" />
           </div>
 
-          {/* KPI 2: Volume de Leads Kommo */}
-          <div className="uvKpiCard">
-            <div className="uvKpiHeader">
-              <span className="uvKpiLabel">Oportunidades (Kommo)</span>
-              <Users size={18} color="#60A5FA" />
-            </div>
-            <div className="uvKpiValue">{totalLeads} Leads</div>
-            <div className="uvKpiFooter">
-              <span className="uvDeltaPositive">{taxaConversao}%</span>
-              <span className="uvKpiCaption">conversão final em vendas</span>
-            </div>
-          </div>
-
-          {/* KPI 3: Ticket Médio Cirúrgico */}
-          <div className="uvKpiCard">
-            <div className="uvKpiHeader">
-              <span className="uvKpiLabel">Ticket Médio Óptico</span>
-              <Target size={18} color="#F59E0B" />
-            </div>
-            <div className="uvKpiValue">R$ {ticketMedio.toLocaleString('pt-BR')}</div>
-            <div className="uvKpiFooter">
-              <span className="uvKpiCaption">Mix Ergo TTL + Quick Titan + EOS</span>
-            </div>
-          </div>
-
-          {/* KPI 4: Receita via SEO & GEO */}
-          <div className="uvKpiCard">
-            <div className="uvKpiHeader">
-              <span className="uvKpiLabel">Receita SEO / GEO</span>
-              <Globe size={18} color="#10B981" />
-            </div>
-            <div className="uvKpiValue">R$ {faturamentoOrganico.toLocaleString('pt-BR')}</div>
-            <div className="uvKpiFooter">
-              <span className="uvDeltaPositive">CAC R$ 0,00</span>
-              <span className="uvKpiCaption">52% do faturamento total</span>
-            </div>
-          </div>
-
-          {/* KPI 5: Pipeline em Aberto */}
-          <div className="uvKpiCard">
-            <div className="uvKpiHeader">
-              <span className="uvKpiLabel">Demonstrações Ativas</span>
-              <Sparkles size={18} color="#A78BFA" />
-            </div>
-            <div className="uvKpiValue">{Math.round(48 * multiplier)} Visitas</div>
-            <div className="uvKpiFooter">
-              <span className="uvKpiCaption">R$ 465.000 em negociação clínica</span>
-            </div>
-          </div>
+          <StatTile label="Investimento em mídia" value={fmtBRL(kpis.spend.value ?? 0)} kpi={kpis.spend} goodWhen="neutral" caption="Google Ads + Meta Ads" />
+          <StatTile label="CAC estimado" value={orDash(kpis.cac.value, fmtBRL)} kpi={kpis.cac} goodWhen="down" caption={`Só mídia paga: ${orDash(kpis.cacPaid.value, fmtBRL)}`} />
+          <StatTile label="ROAS de mídia" value={orDash(kpis.roas.value, fmtRoas)} kpi={kpis.roas} goodWhen="up" caption="Receita atribuída por real investido" />
+          <StatTile label="Leads (Kommo CRM)" value={fmtInt(kpis.leads.value ?? 0)} kpi={kpis.leads} goodWhen="up" caption={`CPL pago: ${orDash(kpis.cpl.value, fmtBRL)}`} />
+          <StatTile label="Lead em pedido" value={orDash(kpis.convRate.value, (v) => fmtPct(v))} kpi={kpis.convRate} goodWhen="up" caption={`Ciclo médio: ${orDash(kpis.avgCycleDays, (v) => `${Math.round(v)} dias`)}`} />
+          <StatTile label="Propostas em aberto" value={fmtCompactBRL(kpis.openProposals.value)} caption={`${kpis.openProposals.count} propostas · ${kpis.upcomingDemos} demonstrações em 14 dias`} />
         </section>
 
-        {/* Seção 2: Funil Comercial de 5 Estágios */}
-        <section className="uvFunnelSection">
-          <div className="uvSectionHeader">
-            <div>
-              <h3 className="uvSectionTitle">
-                <TrendingUp size={18} color="#10B981" />
-                Funil de Conversão Comercial (Kommo CRM → Nomus ERP)
-              </h3>
-              <p className="uvSectionSubtitle">
-                Tração de cada etapa comercial com indicadores de avanço e conversão clínica
-              </p>
+        {/* Leituras automáticas */}
+        {data.insights.length > 0 && (
+          <section className="uvInsights" aria-label="Leituras do período">
+            <h3 className="uvInsightsTitle">Leituras do período</h3>
+            <div className="uvInsightsGrid">
+              {data.insights.map((insight) => (
+                <article key={insight.id} className={`uvInsight uvInsight-${insight.tone}`}>
+                  <span className="uvInsightTone">
+                    {INSIGHT_TONE[insight.tone].icon}
+                    {INSIGHT_TONE[insight.tone].label}
+                  </span>
+                  <h4>{insight.title}</h4>
+                  <p>{insight.body}</p>
+                  <div className="uvInsightMetric">
+                    <strong>{insight.metric}</strong>
+                    <span>{insight.metricLabel}</span>
+                  </div>
+                </article>
+              ))}
             </div>
-          </div>
+          </section>
+        )}
 
-          <div className="uvFunnelSteps">
-            {etapasFunil.map((etapa) => (
-              <div key={etapa.id} className="uvFunnelStepCard">
-                <div className="uvFunnelStepHeader">
-                  <span className="uvStepNumber">ETAPA {etapa.id}</span>
-                  <span className="uvStepConversionBadge">{etapa.percPasso}</span>
+        {/* Receita no tempo + funil */}
+        <div className="uvRow uvRow-7-5">
+          <section className="uvCard">
+            <CardHeader title="Receita faturada por origem" subtitle="Pedidos do Nomus atribuídos ao canal de entrada do lead">
+              <ul className="uvLegend">
+                {ORIGIN_GROUPS.map((group) => (
+                  <li key={group.id}>
+                    <span className="uvSwatch" style={{ background: ORIGIN_COLOR[group.id] }} />
+                    {group.label}
+                  </li>
+                ))}
+              </ul>
+            </CardHeader>
+            {hasOrders ? (
+              <StackedColumns
+                data={data.buckets.map((b) => ({ label: b.label, rangeLabel: b.rangeLabel, values: ORIGIN_GROUPS.map((g) => b[g.id]) }))}
+                series={ORIGIN_GROUPS.map((g) => ({ label: g.label, color: ORIGIN_COLOR[g.id] }))}
+                height={236}
+                format={fmtBRL}
+                axisFormat={(v) => (v === 0 ? '0' : fmtCompactBRL(v).replace('R$ ', ''))}
+                hoverIndex={hoverBucket}
+                onHover={setHoverBucket}
+                showXAxis={false}
+                ariaLabel="Receita faturada por intervalo, empilhada por origem"
+              />
+            ) : (
+              <Empty>Nenhum pedido faturado neste recorte.</Empty>
+            )}
+            <div className="uvSubChartTitle">Investimento em mídia no mesmo intervalo</div>
+            <StackedColumns
+              data={data.buckets.map((b) => ({ label: b.label, rangeLabel: b.rangeLabel, values: [b.spend] }))}
+              series={[{ label: 'Investimento', color: 'var(--uv-series-neutral)' }]}
+              height={104}
+              format={fmtBRL}
+              axisFormat={(v) => (v === 0 ? '0' : fmtCompactBRL(v).replace('R$ ', ''))}
+              hoverIndex={hoverBucket}
+              onHover={setHoverBucket}
+              ariaLabel="Investimento em mídia por intervalo"
+            />
+          </section>
+
+          <section className="uvCard">
+            <CardHeader title="Funil comercial" subtitle="Volume de cada etapa no período e custo de mídia por etapa" />
+            <ol className="uvFunnel">
+              <li className="uvFunnelRow uvFunnelHead" aria-hidden="true">
+                <span>Etapa</span>
+                <span>Volume</span>
+                <span>Custo de mídia</span>
+              </li>
+              {data.funnel.map((stage) => (
+                <li key={stage.id} className="uvFunnelRow">
+                  <div className="uvFunnelLabel">
+                    <strong>{stage.label}</strong>
+                    <span>{stage.stepRate === null ? stage.source : `${fmtPct(stage.stepRate, 0)} da etapa anterior`}</span>
+                  </div>
+                  <div className="uvFunnelBarCell">
+                    <InlineBar share={stage.count / funnelTop} />
+                    <span className="uvFunnelCount">{fmtInt(stage.count)}</span>
+                  </div>
+                  <div className="uvFunnelCost">{orDash(stage.costPer, fmtBRL)}</div>
+                </li>
+              ))}
+            </ol>
+            <dl className="uvFactRow">
+              <div><dt>Primeira resposta (mediana)</dt><dd>{orDash(kpis.medianResponseMin, (v) => `${v} min`)}</dd></div>
+              <div><dt>Ciclo até o pedido</dt><dd>{orDash(kpis.avgCycleDays, (v) => `${Math.round(v)} dias`)}</dd></div>
+            </dl>
+          </section>
+        </div>
+
+        {/* Geografia */}
+        <section className="uvCard">
+          <CardHeader title="Demanda e vendas por estado" subtitle="Clique em um estado para filtrar o painel inteiro">
+            <Segmented options={MAP_METRICS} value={mapMetric} onChange={setMapMetric} label="Métrica do mapa" />
+          </CardHeader>
+          <div className="uvGeo">
+            <BrazilMap
+              values={mapValues}
+              selected={uf}
+              onSelect={setUf}
+              legendFormat={metric.format}
+              ariaLabel={`Mapa do Brasil por ${metric.label.toLowerCase()}`}
+              renderTooltip={(code) => {
+                const state = data.states.find((s) => s.uf === code);
+                if (!state) return null;
+                return (
+                  <>
+                    <div className="uvTooltipTitle">{state.name}</div>
+                    <div className="uvTooltipRow"><span /><span>Faturamento</span><strong>{fmtBRL(state.revenue)}</strong></div>
+                    <div className="uvTooltipRow"><span /><span>Leads</span><strong>{fmtInt(state.leads)}</strong></div>
+                    <div className="uvTooltipRow"><span /><span>Pedidos</span><strong>{fmtInt(state.orders)}</strong></div>
+                    <div className="uvTooltipRow"><span /><span>Consultor</span><strong>{state.rep ?? 'Sem consultor'}</strong></div>
+                  </>
+                );
+              }}
+            />
+
+            <div className="uvGeoSide">
+              {selectedState ? (
+                <div className="uvStateDetail">
+                  <div className="uvStateDetailHead">
+                    <div>
+                      <h4>{selectedState.name}</h4>
+                      <span className={selectedState.rep ? '' : 'uvTextWarn'}>
+                        {selectedState.rep ? `Consultor: ${selectedState.rep}` : 'Sem consultor regional, atendimento remoto'}
+                      </span>
+                    </div>
+                    <button type="button" className="uvBtnGhost" onClick={() => setUf(null)}>Ver Brasil</button>
+                  </div>
+                  <dl className="uvStatGrid">
+                    <div><dt>Faturamento</dt><dd>{fmtBRL(selectedState.revenue)}</dd></div>
+                    <div><dt>Pedidos</dt><dd>{fmtInt(selectedState.orders)}</dd></div>
+                    <div><dt>Leads</dt><dd>{fmtInt(selectedState.leads)}</dd></div>
+                    <div><dt>Demonstrações</dt><dd>{fmtInt(selectedState.demos)}</dd></div>
+                    <div><dt>Lead em pedido</dt><dd>{orDash(selectedState.convRate, (v) => fmtPct(v))}</dd></div>
+                    <div><dt>Ticket médio</dt><dd>{orDash(selectedState.ticket, fmtBRL)}</dd></div>
+                  </dl>
                 </div>
-                <div className="uvStepCount">{etapa.count}</div>
-                <div className="uvStepTitle">{etapa.titulo}</div>
-                <div className="uvStepBarTrack">
-                  <div
-                    className="uvStepBarFill"
-                    style={{ width: etapa.fillWidth, backgroundColor: etapa.color }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Seção 3: Cobertura Regional & Operação da Bruna */}
-        <section className="uvSectionBlock">
-          <div className="uvSectionHeader">
-            <div>
-              <h3 className="uvSectionTitle">
-                <Compass size={18} color="#34D399" />
-                Mapa de Cobertura Regional & Operação de Campo (Bruna)
-              </h3>
-              <p className="uvSectionSubtitle">
-                Gestão territorial dos consultores credenciados, agendamentos de visitas clínicas e pipeline de test-drives
-              </p>
-            </div>
-            <div style={{ fontSize: 12, color: '#94A3B8' }}>
-              Filtro ativo: <strong style={{ color: '#34D399' }}>{selectedRegion === 'todas' ? 'Brasil (Todos os Estados)' : REGIOES_DATA.find(r => r.id === selectedRegion)?.nome}</strong>
+              ) : (
+                <>
+                  <div className="uvSideTitle">Maiores estados por {metric.label.toLowerCase()}</div>
+                  {ranking.length === 0 ? (
+                    <Empty>Sem dados neste recorte.</Empty>
+                  ) : (
+                    <ul className="uvBarList">
+                      {ranking.map((state) => (
+                        <li key={state.uf}>
+                          <button type="button" className="uvBarListRow" onClick={() => setUf(state.uf)}>
+                            <span className="uvBarListName">
+                              {state.name}
+                              {!state.rep && <em>sem consultor</em>}
+                            </span>
+                            <span className="uvBarListTrack">
+                              <InlineBar share={stateMetric(state, mapMetric) / rankingMax} />
+                            </span>
+                            <span className="uvBarListValue">{metric.format(stateMetric(state, mapMetric))}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </>
+              )}
             </div>
           </div>
 
-          {/* Grid de Regiões Interativas */}
-          <div className="uvGeoGrid">
-            <button
-              type="button"
-              className={`uvRegionCard ${selectedRegion === 'todas' ? 'uvRegionCardActive' : ''}`}
-              onClick={() => setSelectedRegion('todas')}
-            >
-              <div className="uvRegionHeader">
-                <span className="uvRegionName">Brasil Consolidado</span>
-                <span className="uvRegionBadgeUf">NACIONAL</span>
-              </div>
-              <div className="uvRepAssigned">
-                <Users size={13} />
-                <span>6 Consultores Credenciados</span>
-              </div>
-              <div className="uvRegionStats">
-                <span>Leads: <strong>{totalLeads}</strong></span>
-                <span>Agendadas (Bruna): <strong>{Math.round(48 * multiplier)}</strong></span>
-                <span>Vendas: <strong>{totalVendas}</strong></span>
-              </div>
-            </button>
-
-            {REGIOES_DATA.map((reg) => {
-              const isSelected = selectedRegion === reg.id;
-              return (
-                <button
-                  key={reg.id}
-                  type="button"
-                  className={`uvRegionCard ${isSelected ? 'uvRegionCardActive' : ''}`}
-                  onClick={() => setSelectedRegion(isSelected ? 'todas' : reg.id)}
-                >
-                  <div className="uvRegionHeader">
-                    <span className="uvRegionName">{reg.nome}</span>
-                    <span className="uvRegionBadgeUf">{reg.uf}</span>
-                  </div>
-                  <div className="uvRepAssigned">
-                    <MapPin size={13} />
-                    <span>{reg.repNome}</span>
-                  </div>
-                  <div className="uvRegionStats">
-                    <span>Leads: <strong>{Math.round(reg.leads * multiplier)}</strong></span>
-                    <span>Bruna: <strong>{Math.round(reg.visitasAgendadas * multiplier)} vis.</strong></span>
-                    <span>Vendas: <strong>{Math.round(reg.vendas * multiplier)}</strong></span>
-                  </div>
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Tabela de Pipeline por Consultor Credenciado */}
-          <div className="uvTableResponsive">
-            <table className="uvDataTable">
+          <div className="uvTableWrap">
+            <table className="uvTable">
               <thead>
                 <tr>
-                  <th>Consultor Regional</th>
-                  <th>Território / UF</th>
-                  <th>Cidades-Polo Atendidas</th>
-                  <th>Leads Atrib.</th>
-                  <th>Agendadas (Bruna)</th>
-                  <th>Test-Drives</th>
-                  <th>Propostas</th>
-                  <th>Faturados (Nomus)</th>
-                  <th>Faturamento</th>
-                  <th>Conversão</th>
-                  <th>Status Operacional</th>
+                  <th>Consultor</th>
+                  <th>Território</th>
+                  <th className="uvNum">Leads</th>
+                  <th className="uvNum">Demonstrações</th>
+                  <th className="uvNum">Propostas</th>
+                  <th className="uvNum">Pedidos</th>
+                  <th className="uvNum">Faturamento</th>
+                  <th className="uvNum">Lead em pedido</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredReps.map((rep) => (
-                  <tr key={rep.id}>
-                    <td style={{ fontWeight: 600, color: '#FFFFFF' }}>{rep.repNome}</td>
-                    <td style={{ color: '#34D399', fontWeight: 600 }}>{rep.uf}</td>
-                    <td style={{ color: '#94A3B8', fontSize: 12 }}>{rep.cidadesPolo}</td>
-                    <td>{Math.round(rep.leads * multiplier)}</td>
-                    <td style={{ color: '#60A5FA', fontWeight: 600 }}>{Math.round(rep.visitasAgendadas * multiplier)}</td>
-                    <td>{Math.round(rep.visitasRealizadas * multiplier)}</td>
-                    <td>{Math.round(rep.propostas * multiplier)}</td>
-                    <td style={{ fontWeight: 700, color: '#34D399' }}>{Math.round(rep.vendas * multiplier)}</td>
-                    <td style={{ fontWeight: 700, color: '#FFFFFF' }}>
-                      R$ {Math.round(rep.faturamento * multiplier).toLocaleString('pt-BR')}
+                {data.reps.map((rep) => (
+                  <tr key={rep.id} className={uf && rep.ufs.includes(uf) ? 'uvRowActive' : ''}>
+                    <td>
+                      <strong>{rep.name}</strong>
+                      <span className="uvCellSub">{rep.role}</span>
                     </td>
                     <td>
-                      <span style={{
-                        background: 'rgba(255, 255, 255, 0.06)',
-                        padding: '2px 8px',
-                        borderRadius: 4,
-                        fontSize: 11,
-                        fontWeight: 600
-                      }}>
-                        {rep.taxa}
-                      </span>
+                      {rep.territory}
+                      <span className="uvCellSub">{rep.ufs.join(', ')}</span>
                     </td>
-                    <td>{renderRepStatus(rep.repStatus)}</td>
+                    <td className="uvNum">{fmtInt(rep.leads)}</td>
+                    <td className="uvNum">{fmtInt(rep.demos)}</td>
+                    <td className="uvNum">{fmtInt(rep.props)}</td>
+                    <td className="uvNum">{fmtInt(rep.orders)}</td>
+                    <td className="uvNum"><strong>{fmtBRL(rep.revenue)}</strong></td>
+                    <td className="uvNum">{orDash(rep.convRate, (v) => fmtPct(v))}</td>
                   </tr>
                 ))}
+                <tr className="uvRowMuted">
+                  <td>
+                    <strong>Sem consultor</strong>
+                    <span className="uvCellSub">Atendimento remoto</span>
+                  </td>
+                  <td>Demais estados</td>
+                  <td className="uvNum">{fmtInt(data.uncovered.leads)}</td>
+                  <td className="uvNum">{fmtInt(data.uncovered.demos)}</td>
+                  <td className="uvNum">{fmtInt(data.uncovered.props)}</td>
+                  <td className="uvNum">{fmtInt(data.uncovered.orders)}</td>
+                  <td className="uvNum"><strong>{fmtBRL(data.uncovered.revenue)}</strong></td>
+                  <td className="uvNum">{data.uncovered.leads > 0 ? fmtPct(data.uncovered.orders / data.uncovered.leads) : 'n/d'}</td>
+                </tr>
               </tbody>
             </table>
           </div>
         </section>
 
-
-
-        {/* Seção 4: Canais de Aquisição & Rentabilidade vs Motivos de Perda */}
-        <div className="uvTwoColGrid">
-          {/* Coluna Canais */}
-          <section className="uvCardBlock">
-            <div className="uvSectionHeader">
-              <div>
-                <h3 className="uvSectionTitle">
-                  <Globe size={18} color="#38BDF8" />
-                  Canais de Aquisição & Rentabilidade
-                </h3>
-                <p className="uvSectionSubtitle">Eficiência de geração de leads, receita e custo de aquisição</p>
-              </div>
-            </div>
-
-            <div style={{ overflowX: 'auto' }}>
-              <table className="uvChannelTable">
+        {/* Aquisição */}
+        <div className="uvRow uvRow-7-5">
+          <section className="uvCard">
+            <CardHeader title="Canais de aquisição" subtitle="Do lead ao pedido faturado, por canal de entrada" />
+            <div className="uvTableWrap">
+              <table className="uvTable">
                 <thead>
                   <tr>
                     <th>Canal</th>
-                    <th>Leads</th>
-                    <th>Vendas</th>
+                    <th className="uvNum">Leads</th>
+                    <th className="uvNum">Pedidos</th>
                     <th>Receita</th>
-                    <th>CAC</th>
-                    <th>Eficiência</th>
+                    <th className="uvNum">CAC</th>
+                    <th className="uvNum">ROAS</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {CANAIS_DATA.map((c) => (
-                    <tr key={c.canal} className={c.destaque ? 'uvChannelRowHighlight' : ''}>
-                      <td style={{ fontWeight: 600 }}>
-                        {c.canal}
-                        {c.destaque && <span style={{ marginLeft: 6 }} className="uvChannelBadgeFree">Orgânico</span>}
+                  {data.channels.map((channel) => (
+                    <tr key={channel.id}>
+                      <td>
+                        <span className="uvSwatch" style={{ background: ORIGIN_COLOR[channel.group] }} />
+                        {channel.label}
                       </td>
-                      <td>{Math.round(c.leads * multiplier)}</td>
-                      <td>{Math.round(c.vendas * multiplier)}</td>
-                      <td style={{ color: '#34D399', fontWeight: 600 }}>
-                        R$ {Math.round(c.receita * multiplier).toLocaleString('pt-BR')}
+                      <td className="uvNum">{fmtInt(channel.leads)}</td>
+                      <td className="uvNum">{fmtInt(channel.orders)}</td>
+                      <td>
+                        <span className="uvBarCell">
+                          <span className="uvBarCellTrack"><InlineBar share={channel.revenue / maxChannelRevenue} color={ORIGIN_COLOR[channel.group]} /></span>
+                          <strong>{fmtBRL(channel.revenue)}</strong>
+                        </span>
                       </td>
-                      <td>{c.cac}</td>
-                      <td style={{ color: c.destaque ? '#34D399' : '#94A3B8', fontWeight: 600 }}>{c.roas}</td>
+                      <td className="uvNum">{channel.spend > 0 ? orDash(channel.cac, fmtBRL, 'sem pedido') : 'sem mídia'}</td>
+                      <td className="uvNum">{channel.spend > 0 ? orDash(channel.roas, fmtRoas) : 'n/d'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -607,83 +605,212 @@ export function UnivetExecutivePortal() {
             </div>
           </section>
 
-          {/* Coluna Pareto de Perdas */}
-          <section className="uvCardBlock">
-            <div className="uvSectionHeader">
-              <div>
-                <h3 className="uvSectionTitle">
-                  <Target size={18} color="#F87171" />
-                  Pareto de Motivos de Perda
-                </h3>
-                <p className="uvSectionSubtitle">Oportunidades mapeadas pelo CRM para automação e recuperação</p>
-              </div>
+          <section className="uvCard">
+            <CardHeader title="Públicos e clusters de mídia" subtitle="Quanto mais alto e à esquerda, mais barato e mais comprador">
+              <ul className="uvLegend">
+                {(Object.keys(PLATFORM) as Platform[]).map((id) => (
+                  <li key={id}>
+                    <span className="uvSwatch uvSwatchDot" style={{ background: PLATFORM[id].color }} />
+                    {PLATFORM[id].label}
+                  </li>
+                ))}
+              </ul>
+            </CardHeader>
+            {scatterPoints.length > 0 ? (
+              <ScatterPlot
+                points={scatterPoints}
+                height={300}
+                xLabel="Custo por lead"
+                yLabel="Leads que viram pedido"
+                xFormat={(v) => (v === 0 ? '0' : fmtBRL(v))}
+                yFormat={(v) => fmtPct(v, 0)}
+                xRef={paidLeads > 0 ? paidSpend / paidLeads : null}
+                yRef={paidLeads > 0 ? paidOrders / paidLeads : null}
+                ariaLabel="Dispersão de campanhas por custo por lead e taxa de conversão em pedido"
+              />
+            ) : (
+              <Empty>Sem leads de mídia paga neste recorte.</Empty>
+            )}
+            <p className="uvChartNote">Tamanho do círculo: investimento. Linhas tracejadas: média da mídia paga.</p>
+          </section>
+        </div>
+
+        <section className="uvCard">
+          <CardHeader title="Campanhas e segmentações" subtitle="Investimento das plataformas cruzado com pedidos faturados no Nomus">
+            <Segmented options={PLATFORM_OPTIONS} value={platform} onChange={setPlatform} label="Plataforma" />
+          </CardHeader>
+          <div className="uvTableWrap">
+            <table className="uvTable">
+              <thead>
+                <tr>
+                  <th>Campanha ou público</th>
+                  <th>Investimento</th>
+                  <th className="uvNum">Leads</th>
+                  <th className="uvNum">CPL</th>
+                  <th className="uvNum">Pedidos</th>
+                  <th className="uvNum">Receita</th>
+                  <th className="uvNum">CAC</th>
+                  <th className="uvNum">ROAS</th>
+                  <th>Leitura</th>
+                </tr>
+              </thead>
+              <tbody>
+                {campaigns.map((c) => (
+                  <tr key={c.id}>
+                    <td>
+                      <strong>{c.name}</strong>
+                      <span className="uvCellSub">
+                        <span className="uvSwatch uvSwatchDot" style={{ background: PLATFORM[c.platform].color }} />
+                        {PLATFORM[c.platform].label} · {c.cluster}
+                      </span>
+                    </td>
+                    <td>
+                      <span className="uvBarCell">
+                        <span className="uvBarCellTrack"><InlineBar share={c.spend / maxCampaignSpend} color="var(--uv-series-neutral)" /></span>
+                        <strong>{fmtBRL(c.spend)}</strong>
+                      </span>
+                    </td>
+                    <td className="uvNum">{fmtInt(c.leads)}</td>
+                    <td className="uvNum">{orDash(c.cpl, fmtBRL)}</td>
+                    <td className="uvNum">{fmtInt(c.orders)}</td>
+                    <td className="uvNum">{fmtBRL(c.revenue)}</td>
+                    <td className="uvNum">{orDash(c.cac, fmtBRL, 'sem pedido')}</td>
+                    <td className="uvNum">{orDash(c.roas, fmtRoas)}</td>
+                    <td>
+                      <span className={`uvVerdict ${VERDICT[c.verdict].className}`}>
+                        {VERDICT[c.verdict].icon}
+                        {VERDICT[c.verdict].label}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section className="uvCard">
+          <CardHeader title="Criativos em veiculação" subtitle="Cada anúncio do Google Ads e do Meta Ads com o resultado que gerou até o pedido faturado">
+            <div className="uvControlGroup">
+              <Segmented options={PLATFORM_OPTIONS} value={platform} onChange={setPlatform} label="Plataforma dos criativos" />
+              <Segmented options={CREATIVE_SORTS} value={creativeSort} onChange={setCreativeSort} label="Ordenação dos criativos" />
             </div>
+          </CardHeader>
+          <div className="uvCreativeGrid">
+            {visibleCreatives.map((creative) => (
+              <CreativeCard key={creative.id} creative={creative} />
+            ))}
+          </div>
+          {creatives.length > CREATIVES_COLLAPSED && (
+            <button type="button" className="uvBtnGhost uvShowMore" aria-expanded={showAllCreatives} onClick={() => setShowAllCreatives((open) => !open)}>
+              {showAllCreatives ? 'Mostrar menos' : `Ver todos os ${creatives.length} criativos`}
+            </button>
+          )}
+        </section>
 
-            <div className="uvLossList">
-              <div className="uvLossItem">
-                <div className="uvLossHeader">
-                  <span className="uvLossReason">1. Preço / Condição de Pagamento</span>
-                  <span className="uvLossPercent">41%</span>
-                </div>
-                <div className="uvLossProgressTrack">
-                  <div className="uvLossProgressFill" style={{ width: '41%' }} />
-                </div>
-                <span className="uvLossActionNote">
-                  Ação: Ativar parcelamento em 12x sem juros e entrada facilitada via cartão.
-                </span>
-              </div>
+        {/* Produtos e especialidades */}
+        <div className="uvRow uvRow-7-5">
+          <section className="uvCard">
+            <CardHeader title="Produtos mais vendidos" subtitle="Pedidos faturados no Nomus ERP, por receita" />
+            {hasOrders ? (
+              <ul className="uvProductList">
+                {data.products.map((product) => (
+                  <li key={product.id}>
+                    <div className="uvProductHead">
+                      <span>
+                        <strong>{product.name}</strong>
+                        <em>{product.line}</em>
+                      </span>
+                      <strong>{fmtBRL(product.revenue)}</strong>
+                    </div>
+                    <div className="uvProductBar"><InlineBar share={product.revenue / maxProductRevenue} /></div>
+                    <div className="uvProductMeta">
+                      <span>{fmtInt(product.orders)} pedidos</span>
+                      <span>Ticket {orDash(product.ticket, fmtBRL)}</span>
+                      <span>{fmtPct(product.share, 0)} da receita</span>
+                      <span>{fmtPct(product.medicinaShare, 0)} medicina</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Empty>Nenhum pedido faturado neste recorte.</Empty>
+            )}
+          </section>
 
-              <div className="uvLossItem">
-                <div className="uvLossHeader">
-                  <span className="uvLossReason">2. Prazo de Importação (Itália)</span>
-                  <span className="uvLossPercent">28%</span>
-                </div>
-                <div className="uvLossProgressTrack">
-                  <div className="uvLossProgressFill" style={{ width: '28%' }} />
-                </div>
-                <span className="uvLossActionNote">
-                  Ação: Alinhamento de estoque de pronta-entrega para armações padrão em SP.
-                </span>
-              </div>
+          <section className="uvCard">
+            <CardHeader title="Especialidades que compram" subtitle="Segmento informado no CRM, por receita" />
+            {data.specialties.length > 0 ? (
+              <ul className="uvBarList uvBarListStatic">
+                {data.specialties.slice(0, 7).map((spec) => (
+                  <li key={`${spec.segment}-${spec.name}`} className="uvBarListRow">
+                    <span className="uvBarListName">
+                      {spec.name}
+                      <em>{spec.segment === 'odonto' ? 'odonto' : 'medicina'} · {fmtInt(spec.leads)} leads · {orDash(spec.convRate, (v) => fmtPct(v))}</em>
+                    </span>
+                    <span className="uvBarListTrack"><InlineBar share={spec.revenue / maxSpecialtyRevenue} /></span>
+                    <span className="uvBarListValue">{fmtCompactBRL(spec.revenue)}</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <Empty>Sem leads neste recorte.</Empty>
+            )}
+          </section>
+        </div>
 
-              <div className="uvLossItem">
-                <div className="uvLossHeader">
-                  <span className="uvLossReason">3. Escolha por Lupa Concorrente</span>
-                  <span className="uvLossPercent">19%</span>
-                </div>
-                <div className="uvLossProgressTrack">
-                  <div className="uvLossProgressFill" style={{ width: '19%' }} />
-                </div>
-                <span className="uvLossActionNote">
-                  Ação: Envio de laudo postural comparativo mostrando o alívio cervical da Ergo TTL.
-                </span>
-              </div>
+        {/* Perdas e redes sociais */}
+        <div className="uvRow uvRow-7-5">
+          <section className="uvCard">
+            <CardHeader title="Por que perdemos oportunidades" subtitle="Motivo de perda obrigatório no Kommo, com a ação recomendada" />
+            <ul className="uvLossList">
+              {data.losses.filter((loss) => loss.count > 0).map((loss) => (
+                <li key={loss.id}>
+                  <div className="uvLossHead">
+                    <strong>{loss.label}</strong>
+                    <span>{fmtPct(loss.share, 0)} · {fmtInt(loss.count)} perdas{loss.value > 0 ? ` · ${fmtCompactBRL(loss.value)} em propostas` : ''}</span>
+                  </div>
+                  <div className="uvLossBar"><InlineBar share={loss.share / (data.losses[0].share || 1)} color="var(--uv-critical)" /></div>
+                  <p>{loss.action}</p>
+                </li>
+              ))}
+            </ul>
+            {data.losses.every((loss) => loss.count === 0) && <Empty>Nenhuma perda registrada neste recorte.</Empty>}
+          </section>
 
-              <div className="uvLossItem">
-                <div className="uvLossHeader">
-                  <span className="uvLossReason">4. Sem Decisão / Adiamento</span>
-                  <span className="uvLossPercent">12%</span>
-                </div>
-                <div className="uvLossProgressTrack">
-                  <div className="uvLossProgressFill" style={{ width: '12%' }} />
-                </div>
-                <span className="uvLossActionNote">
-                  Ação: Régua de nutrição de conteúdo clínico no WhatsApp via IA.
-                </span>
-              </div>
-            </div>
+          <section className="uvCard">
+            <CardHeader title="Instagram" subtitle="Monitoramento orgânico do perfil, sem recorte de segmento ou estado">
+              <span className="uvTag"><Instagram size={13} /> Somente leitura</span>
+            </CardHeader>
+            <dl className="uvStatGrid">
+              <div><dt>Seguidores</dt><dd>{fmtInt(social.followers)}</dd><span className="uvDelta uvDeltaGood"><ArrowUpRight size={13} />{fmtInt(social.followersDelta)}</span></div>
+              <div><dt>Alcance</dt><dd>{fmtInt(social.reach)}</dd></div>
+              <div><dt>Engajamento</dt><dd>{fmtPct(social.engagementRate)}</dd></div>
+              <div><dt>Visitas ao perfil</dt><dd>{fmtInt(social.profileVisits)}</dd></div>
+              <div><dt>Cliques no link</dt><dd>{fmtInt(social.linkClicks)}</dd></div>
+            </dl>
+            <Sparkline values={social.reachSeries} label="Evolução do alcance no período" />
+            <div className="uvSideTitle">Conteúdos de maior alcance</div>
+            <ul className="uvPostList">
+              {social.topPosts.map((post) => (
+                <li key={post.title}>
+                  <span>
+                    <strong>{post.title}</strong>
+                    <em>{post.format}</em>
+                  </span>
+                  <span className="uvPostStats">{fmtInt(post.reach)} alcance · {fmtInt(post.saves)} salvamentos</span>
+                </li>
+              ))}
+            </ul>
           </section>
         </div>
       </main>
 
-      {/* Rodapé Executivo */}
       <footer className="uvPortalFooter">
         <div>
-          <strong>Univet Loupes Brasil</strong> · Sistema Executivo de BI & Performance Comercial
+          <strong>Univet Loupes Brasil</strong> · Fontes: Nomus ERP, Kommo CRM, Google Ads, Meta Ads e Instagram
         </div>
-        <div>
-          EverGreen Agency © 2026 · Acesso Executivo Confidencial
-        </div>
+        <div>Dados demonstrativos · EverGreen Agency 2026</div>
       </footer>
     </div>
   );
