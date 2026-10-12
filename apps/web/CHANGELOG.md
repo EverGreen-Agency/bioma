@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.0.0 (2026-10-12)
+
+
+### Features
+
+* **ai-control-plane:** implementar provedores gratuitos, orcamentos e hash de execucao ([8e4d744](https://github.com/EverGreen-Agency/bioma/commit/8e4d74442811530900b62adea5e2a8f43bc75b70))
+* **presenca,seo:** persistencia editorial, snapshots dataforseo e controle operacional de ia ([020f636](https://github.com/EverGreen-Agency/bioma/commit/020f636a6a0a4710f4455964b09340b46cc2a8f8))
+* **presenca:** transformar operacao social com esteira, mockups e handoff ([fbb0436](https://github.com/EverGreen-Agency/bioma/commit/fbb0436927adad1bdccf32e443b98d2198765671))
+* **studio:** add malleable social studio with CRAFT framework ([96a1dc9](https://github.com/EverGreen-Agency/bioma/commit/96a1dc9d0b5e22d52e11b2215693902791de5957))
+* **univet-web:** adicionar apresentacao e documentacao da univet loupes ([afdcf7d](https://github.com/EverGreen-Agency/bioma/commit/afdcf7d5c30326b2a5009171502563e181405217))
+* **univet:** adicionar cockpit executivo bi e corrigir build web ([2832fc1](https://github.com/EverGreen-Agency/bioma/commit/2832fc1f53f7219f717cc73652cc937edb673255))
+* **univet:** adicionar integracao nomus n8n e painel de higienizacao kommo ([d6f2370](https://github.com/EverGreen-Agency/bioma/commit/d6f23709fc01ac68c36a51377ef14928a17287a6))
+* **univet:** isolar portal executivo bi fora do app-shell bioma ([6ea0f0e](https://github.com/EverGreen-Agency/bioma/commit/6ea0f0ef6cc1c06197dbf3de188c4d46c99d716a))
+* **univet:** reconstruir portal de bi com dados ponta a ponta ([cb8c772](https://github.com/EverGreen-Agency/bioma/commit/cb8c772cded1a12a976d29c048c53fbe78d699c3))
+* **univet:** unificar bi executivo continuo com operacao bruna e catalogo optico ([df85df9](https://github.com/EverGreen-Agency/bioma/commit/df85df935cdf21b44737e4e1345c097e21a511e8))
+
+
+### Bug Fixes
+
+* **ci:** compatibilizar import bioma_worker e atualizar contrato openapi ([aacae1d](https://github.com/EverGreen-Agency/bioma/commit/aacae1d0a821ca8711785a8c47ca73b46503bf0f))
+* **ci:** corrigir on conflict do performance_seed e restaurar rewrites no vercel.json ([a3ccd9d](https://github.com/EverGreen-Agency/bioma/commit/a3ccd9d3b4e6d63cb180be0bd5f4874faa7bf301))
+* **ci:** corrigir prefixos do vite proxy, copilot plan e seed knowledge ([00874ea](https://github.com/EverGreen-Agency/bioma/commit/00874eae479f44a46da0c3803aef93cbea8cd510))
+* **univet:** estilizar canais e motivos de perda e remover portfolio optico ([9bbc346](https://github.com/EverGreen-Agency/bioma/commit/9bbc346444e1de57178fee9cb97504ad0f18b63e))
+
 ## [0.7.0](https://github.com/EverGreen-Agency/evergreen-ai-os/compare/bioma-web-v0.6.1...bioma-web-v0.7.0) (2026-08-11)
 
 
