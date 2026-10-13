@@ -11,6 +11,8 @@ import { ResetPasswordView } from "./views/ResetPasswordView";
 import { PrivacyView } from "./views/PrivacyView";
 import { PublicProposalView } from "./views/PublicProposalView";
 import { UnivetExecutivePortal } from "./views/univet/UnivetExecutivePortal";
+import { UnivetEgPortal } from "./views/univet/UnivetEgPortal";
+import { UnivetRealPortal } from "./views/univet/UnivetRealPortal";
 import { ArtifactModal } from "./components/ArtifactModal";
 import { CopilotPanel } from "./components/CopilotPanel";
 import { Sidebar } from "./components/Sidebar";
@@ -97,6 +99,10 @@ export function App() {
     location.pathname.startsWith("/univet/") ||
     location.pathname.startsWith("/portal/univet/")
   ) {
+    // Três portais sem login: apresentação (mock), dados reais (agregados) e operação EG (com chave).
+    const portalPath = location.pathname.replace(/\/$/, "");
+    if (portalPath === "/portal/univet/eg") return <UnivetEgPortal />;
+    if (portalPath === "/portal/univet/v2") return <UnivetRealPortal />;
     return <UnivetExecutivePortal />;
   }
 

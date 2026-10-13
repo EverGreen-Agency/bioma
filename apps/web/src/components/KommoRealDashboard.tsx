@@ -19,13 +19,13 @@ const PERIODS = [
 // Campos mostrados como ranking. UF vai para o mapa; motivo de perda tem bloco próprio.
 const RANKED_DIMENSIONS = ["origem", "segmento", "produto", "solicitacao", "tipo_atendimento", "representante"];
 
-function formatDateTime(value: string | number | null) {
+export function formatDateTime(value: string | number | null) {
   if (value === null) return "sem registro";
   const date = typeof value === "number" ? new Date(value * 1000) : new Date(value);
   return date.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-function Segmented({ value, onChange }: { value: number; onChange: (id: number) => void }) {
+export function PeriodSegmented({ value, onChange }: { value: number; onChange: (id: number) => void }) {
   return (
     <div className="uvSegmented" role="group" aria-label="Período">
       {PERIODS.map((period) => (
@@ -97,7 +97,7 @@ function Sources({ subdomain }: { subdomain: string | null }) {
   );
 }
 
-function DashboardBody({ data, subdomain }: { data: KommoDashboard; subdomain: string | null }) {
+export function KommoDashboardBody({ data, subdomain }: { data: KommoDashboard; subdomain: string | null }) {
   const [hoverBucket, setHoverBucket] = useState<number | null>(null);
   const { totals } = data;
   const delta = totals.leads_previous ? (totals.leads - totals.leads_previous) / totals.leads_previous : null;
@@ -310,7 +310,7 @@ export function KommoRealDashboard({ organizationId, canSync }: { organizationId
           </p>
         </div>
         <div className="uvControlGroup">
-          {response?.dashboard && <Segmented value={days} onChange={setDays} />}
+          {response?.dashboard && <PeriodSegmented value={days} onChange={setDays} />}
           {syncButton}
         </div>
       </div>
@@ -351,7 +351,7 @@ export function KommoRealDashboard({ organizationId, canSync }: { organizationId
           </p>
         </div>
       ) : (
-        <DashboardBody data={response.dashboard} subdomain={response.subdomain} />
+        <KommoDashboardBody data={response.dashboard} subdomain={response.subdomain} />
       )}
     </div>
   );

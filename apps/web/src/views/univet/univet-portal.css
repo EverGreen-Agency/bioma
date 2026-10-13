@@ -159,6 +159,9 @@ body:has(.uvPortalWrapper),
 }
 
 .uvSegmentedBtn {
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
   border: 0;
   background: transparent;
   color: var(--uv-text-2);
@@ -179,7 +182,8 @@ body:has(.uvPortalWrapper),
   transform: scale(0.97);
 }
 
-.uvSegmentedBtn[aria-pressed='true'] {
+.uvSegmentedBtn[aria-pressed='true'],
+.uvSegmentedBtn[aria-current='page'] {
   background: var(--uv-surface-3);
   color: var(--uv-text);
   box-shadow: inset 0 0 0 1px var(--uv-line-strong), inset 0 -2px 0 var(--uv-accent);
@@ -1359,6 +1363,138 @@ button.uvBarListRow:hover {
 
 .uvCheck input {
   accent-color: var(--uv-accent);
+}
+
+/* ---------- Portal EG ---------- */
+.uvNoticeOk {
+  border-color: rgba(76, 195, 138, 0.4);
+  padding: 14px 18px;
+}
+
+.uvNoticeOk p {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--uv-text);
+}
+
+.uvNotice h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.uvFormRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  width: 100%;
+}
+
+.uvField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 200px;
+  font-size: 12.5px;
+  color: var(--uv-text-2);
+}
+
+.uvFieldWide {
+  flex: 1 1 320px;
+}
+
+.uvField input {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: var(--uv-radius-control);
+  border: 1px solid var(--uv-line-strong);
+  background: var(--uv-surface-2);
+  color: var(--uv-text);
+  font: inherit;
+  font-size: 13.5px;
+}
+
+.uvField input::placeholder {
+  color: var(--uv-text-3);
+}
+
+.uvField em {
+  font-style: normal;
+  color: var(--uv-critical);
+}
+
+.uvProgress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--uv-surface-3);
+  overflow: hidden;
+  margin: 16px 0 4px;
+}
+
+.uvProgress span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--uv-accent);
+  transition: width 0.5s var(--uv-ease);
+}
+
+.uvConfirm {
+  border: 1px solid rgba(226, 171, 69, 0.45);
+  background: rgba(226, 171, 69, 0.08);
+  border-radius: 12px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+}
+
+.uvConfirm p {
+  font-size: 13.5px;
+  color: var(--uv-text);
+  max-width: 78ch;
+}
+
+.uvTableToolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin: 18px 0 12px;
+}
+
+.uvErrorList {
+  margin-top: 10px;
+  font-size: 12.5px;
+  color: var(--uv-warning);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.uvFieldList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.uvFieldList em {
+  display: block;
+  font-style: normal;
+  font-size: 12px;
+  color: var(--uv-text-3);
+}
+
+.uvCard > .uvKpiRow {
+  margin-bottom: 4px;
+}
+
+.uvCard .uvKpiRow .uvTile {
+  background: var(--uv-surface-2);
 }
 
 /* ---------- Criativos ---------- */
