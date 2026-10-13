@@ -58,6 +58,9 @@ const API_PREFIXES = [
   "/me",
   "/organizations",
   "/platform-studies",
+  // Portais sem login por cliente. O prefixo NÃO é "/portal": esse caminho é rota do front
+  // (/portal/univet) e, proxiado, devolveria JSON no lugar da página.
+  "/portal-api",
   "/project-document-imports",
   "/project-phases",
   "/project-plan-items",

@@ -113,13 +113,27 @@ flowchart TD
 
 ---
 
-## 6. Arquitetura do Portal Executivo Standalone & Operação de Campo (Bruna)
+## 6. Portais da Univet, Operação de Campo e Estado Real dos Dados
 
-- **Portal Executivo Standalone**:
-  - Rota dedicada: `/portal/univet` (atalhos: `/univet`, `/univet/cockpit`).
-  - Acesso público direto sem autenticação, sem app-shell do Bioma e sem sidebar da agência (para consumo direto da diretoria da Univet e stakeholders).
-  - Formato: Painel contínuo de Business Intelligence com rolagem vertical livre (Scorecards Nomus ERP / Kommo CRM, Funil Comercial de 5 etapas, Cobertura Regional de Campo da Bruna e Canais de Aquisição vs. Pareto de Perdas).
-  - Removidos por decisão executiva: Apresentação Estratégica em slides/deck, portfólio genérico de produtos e badges técnicos desnecessários ("Pipeline Conectado").
+Atualizado em 2026-10-13.
+
+- **Três portais sem login** (decisão do Eduardo em 2026-10-13: a área logada do Bioma está com problemas, então tudo da Univet fica fora dela por enquanto):
+  - `/portal/univet`: apresentação com dados demonstrativos (mock coerente em `apps/web/src/data/univet/univetPortalData.ts`). É o que se mostra ao cliente.
+  - `/portal/univet/v2`: painel só com dados reais do Kommo. Público, devolve apenas agregados (nenhum nome, telefone ou conversa).
+  - `/portal/univet/eg`: operação da EverGreen. É onde o Bioma escreve no Kommo. Abre com a chave do portal (`PORTAL_ADMIN_KEY` no serviço da API), passada no link como `?k=<chave>`.
+- **API**: rotas em `apps/api/bioma_api/routers/portal_public.py`, serviço em `services/kommo_portal.py`. O painel logado equivalente (CRM do cliente) continua existindo em `services/kommo_crm.py`.
+- **Deduplicação de contatos** (motor em `apps/worker/bioma_worker/integrations/kommo_deduplication.py`):
+  - Agrupa contatos por telefone normalizado ou e-mail e elege o principal por pontuação.
+  - Unificar = vincular os leads ao principal, desvincular da duplicata e marcar a duplicata com `[DUPLICADO]` no nome. A API do Kommo NÃO tem método para excluir nem mesclar contato: a exclusão final é manual, em massa, na tela de contatos do Kommo.
+  - Roda sob demanda sobre a base inteira, em lotes, com progresso e histórico.
+- **Classificação de leads pela conversa** (`apps/api/bioma_api/lead_classifier.py`):
+  - Lê as mensagens do lead (`GET /api/v4/talks` e `/talks/{id}/messages`, escopo de histórico de chat) e decide segmento, produto, solicitação inicial, tipo de atendimento, origem e UF.
+  - Dois motores: modelo de decisão no formato TypeSafe `/v1/systemone` (Jev, ou Laya atrás de servidor compatível), ativado por `DECISION_MODEL_API_KEY`; e regras por palavra-chave mais UF pelo DDD, que rodam sempre.
+  - Só preenche campo vazio e só com opção existente no campo. Nunca sobrescreve o que o time preencheu.
+  - Roda no histórico (em lotes, pelo portal EG) e a cada mensagem ou lead novo (webhook `add_message` / `add_lead` registrado no Kommo pelo portal EG).
+- **Estado real da conta `univetloupes` em 2026-10-13**: 753 leads, nenhum marcado como ganho, 688 parados em "01 Primeiro atendimento", nenhum lead criado depois de julho/2026; campos quase vazios (origem 9%, UF 2%, UTM 0%); 4.134 contatos, 1.673 duplicados, todos criados em 2026-07-01 (evento único, provável importação).
+- **Kommo x Nomus (ponto de atenção)**: o Nomus é quem dita a venda, mas o pedido não carrega o identificador do lead do Kommo, porque entre o WhatsApp e o pedido existe o representante. A conciliação vai precisar de chave indireta (telefone, CPF/CNPJ, nome e janela de datas) e deve ser tratada como provável, não exata. Classificar o histórico tende a marcar quase tudo como venda ganha em retrospecto; não usar isso como taxa de conversão.
+- **Pendências**: chave do modelo de decisão (Jev ou Laya), credenciais do Nomus, ligação de Google Ads e Meta Ads ao painel real.
 - **Operação da Bruna & Rede de Consultores Regionais**:
   - A Bruna atua na triagem SDR de todos os leads originados pelo site/WhatsApp/mídia e no agendamento de demonstrações presenciais (*test-drives*) nas clínicas e hospitais.
   - Estrutura de consultores credenciados por território:

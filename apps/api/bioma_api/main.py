@@ -34,6 +34,7 @@ from bioma_api.routers import (
     mcp_http,
     oauth,
     passwords,
+    portal_public,
     performance,
     platform_studies,
     projects,
@@ -83,6 +84,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(oauth.router)
 app.include_router(passwords.router)
+app.include_router(portal_public.router)
 app.include_router(invites.public_router)
 app.include_router(benchmark.public_router)
 app.include_router(cases.public_router)
