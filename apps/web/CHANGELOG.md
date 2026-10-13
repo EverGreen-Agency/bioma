@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.1.0...bioma-web-v1.2.0) (2026-10-13)
+
+
+### Features
+
+* **univet:** portais de dados reais e operacao eg com deduplicacao e classificacao ([c32c467](https://github.com/EverGreen-Agency/bioma/commit/c32c467c61e5eb304a2e01005cffa594fccddc6f))
+
 ## [1.1.0](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.0.0...bioma-web-v1.1.0) (2026-10-13)
 
 
