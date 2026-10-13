@@ -1478,7 +1478,44 @@ button.uvBarListRow:hover {
 }
 
 /* ---------- Impressão (PDF): mesmos tokens, tema claro ---------- */
+@page {
+  margin: 12mm;
+}
+
 @media print {
+  /* tasks.css e analytics-finance.css escondem `body *` na impressão para isolar os
+     relatórios deles. Sem reexibir o portal aqui, o PDF sai como uma página vazia. */
+  .uvPortalWrapper,
+  .uvPortalWrapper * {
+    visibility: visible !important;
+    animation: none !important;
+  }
+
+  html:has(.uvPortalWrapper),
+  body:has(.uvPortalWrapper) {
+    background: #ffffff !important;
+  }
+
+  /* Os gráficos são medidos em pixels na tela; no papel escalam pelo viewBox */
+  .uvChart {
+    height: auto !important;
+  }
+
+  .uvChart svg {
+    width: 100%;
+    height: auto;
+  }
+
+  .uvPortalMain {
+    padding: 16px 0 0;
+  }
+
+  .uvPortalHeader,
+  .uvPortalFooter {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
   .uvPortalWrapper {
     --uv-bg: #ffffff;
     --uv-surface: #ffffff;
@@ -1514,6 +1551,14 @@ button.uvBarListRow:hover {
 
   .uvMapLabel {
     fill: #ffffff;
+  }
+
+  .uvMapLabelDark {
+    fill: #0b1a15;
+  }
+
+  .uvMapLabelEmpty {
+    fill: #667181;
   }
 
   .uvShowMore {
