@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.0.0...bioma-web-v1.1.0) (2026-10-13)
+
+
+### Features
+
+* **kommo:** painel de dados reais, deduplicacao real e correcoes de ci e deploy ([362646b](https://github.com/EverGreen-Agency/bioma/commit/362646b1e2d35e39a959559a4ef2afc8acd038f5))
+
 ## 1.0.0 (2026-10-12)
 
 
