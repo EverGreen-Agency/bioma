@@ -102,7 +102,7 @@ export function StackedColumns({ data, series, height, format, axisFormat, hover
   return (
     <div className="uvChart" ref={ref} style={{ height }}>
       {width > 0 && (
-        <svg width={width} height={height} role="img" aria-label={ariaLabel}>
+        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={ariaLabel}>
           {scale.ticks.map((tick) => (
             <g key={tick}>
               <line x1={margin.left} x2={width - margin.right} y1={y(tick)} y2={y(tick)} className={tick === 0 ? 'uvAxisBase' : 'uvGridLine'} />
@@ -238,7 +238,7 @@ export function ScatterPlot({ points, height, xLabel, yLabel, xFormat, yFormat, 
   return (
     <div className="uvChart" ref={ref} style={{ height }}>
       {width > 0 && (
-        <svg width={width} height={height} role="img" aria-label={ariaLabel}>
+        <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} role="img" aria-label={ariaLabel}>
           {ys.ticks.map((tick) => (
             <g key={`y${tick}`}>
               <line x1={margin.left} x2={width - margin.right} y1={py(tick)} y2={py(tick)} className={tick === 0 ? 'uvAxisBase' : 'uvGridLine'} />
@@ -374,7 +374,7 @@ export function BrazilMap({ values, selected, onSelect, renderTooltip, legendFor
         {BRAZIL_STATES.filter((s) => MAP_LABELED.has(s.uf)).map((state) => {
           const cls = classOf(values.get(state.uf) ?? 0);
           return (
-            <text key={state.uf} x={state.cx} y={state.cy} dy="0.35em" textAnchor="middle" className={`uvMapLabel ${cls >= 3 ? 'uvMapLabelDark' : ''}`}>
+            <text key={state.uf} x={state.cx} y={state.cy} dy="0.35em" textAnchor="middle" className={`uvMapLabel ${cls >= 3 ? 'uvMapLabelDark' : cls < 0 ? 'uvMapLabelEmpty' : ''}`}>
               {state.uf}
             </text>
           );

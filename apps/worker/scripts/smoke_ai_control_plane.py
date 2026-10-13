@@ -94,6 +94,19 @@ def main() -> None:
         account = next(row for row in account_response.json()["accounts"] if row["display_name"] == ACCOUNT_NAME)
         account_id = account["id"]
 
+        # Desde 020f636, conta de assinatura (codex/claude/antigravity) só é elegível
+        # ao roteamento com credencial no cofre. O smoke não faz login de verdade:
+        # registra uma credencial de fixture, que some com a conta na limpeza (cascade).
+        with connect() as conn:
+            conn.execute(
+                """
+                insert into ai_provider_credentials (account_id, encrypted_bundle, auth_method)
+                values (%s, 'smoke-fixture', 'smoke')
+                on conflict (account_id) do nothing
+                """,
+                (account_id,),
+            )
+
         assert_status(
             client.post(f"/backoffice/ai-operations/accounts/{account_id}/models/bootstrap"),
             200,

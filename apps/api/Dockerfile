@@ -21,9 +21,15 @@ RUN apt-get update \
     && rm /tmp/nodesource_setup.sh \
     && rm -rf /var/lib/apt/lists/*
 RUN npm install -g @openai/codex @anthropic-ai/claude-code
-RUN curl -fsSL https://antigravity.google/cli/install.sh -o /tmp/install-antigravity.sh \
-    && bash /tmp/install-antigravity.sh --dir /usr/local/bin \
-    && rm /tmp/install-antigravity.sh
+# O Antigravity CLI é um canal opcional de IA (provider_login trata a ausência do
+# binário). O instalador é servido por terceiro: em 12/10/2026 o CDN passou a
+# devolver o script comprimido para o builder do Railway ("cannot execute binary
+# file") e derrubou todo deploy da API. `--compressed` resolve esse caso, e a
+# falha deste passo deixa de abortar o build: a API sobe sem o CLI e avisa no log.
+RUN (curl -fsSL --compressed https://antigravity.google/cli/install.sh -o /tmp/install-antigravity.sh \
+    && bash /tmp/install-antigravity.sh --dir /usr/local/bin) \
+    || echo "AVISO: Antigravity CLI não instalado; o canal antigravity_cli ficará indisponível." \
+    ; rm -f /tmp/install-antigravity.sh
 
 RUN groupadd --system bioma && useradd --system --gid bioma --create-home bioma
 

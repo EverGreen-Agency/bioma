@@ -277,6 +277,7 @@ def main() -> None:
         fake_candidate = {
             "account_id": account_id,
             "account_name": "Smoke Claude Assinatura",
+            "provider": "anthropic",
             "channel": "claude_code",
             "model_id": "gpt-4o-mini",  # tem preço na tabela — é o caso que expõe o bug.
         }

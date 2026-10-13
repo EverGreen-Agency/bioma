@@ -111,10 +111,10 @@ function ClientModuleBoundary({ module, children }: { module: ClientModule; chil
 }
 
 export function ClientCrmRoute() {
-  const { workspace } = useClientWorkspace();
+  const { client, workspace } = useClientWorkspace();
   return (
     <ClientModuleBoundary module="commercial">
-      <Suspense fallback={<ModuleLoading />}><CrmView clientId={workspace.workspaceId} /></Suspense>
+      <Suspense fallback={<ModuleLoading />}><CrmView clientId={workspace.workspaceId} organizationId={client.organization_id} /></Suspense>
     </ClientModuleBoundary>
   );
 }

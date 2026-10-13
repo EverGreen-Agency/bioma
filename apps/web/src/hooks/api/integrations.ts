@@ -457,3 +457,49 @@ export function useWhatsAppLogs(workspaceId: string | null) {
     enabled: Boolean(workspaceId),
   });
 }
+
+export function useKommoDashboard(organizationId: string | null, days: number) {
+  return useQuery({
+    queryKey: ["kommo-dashboard", organizationId, days],
+    queryFn: () => api.getKommoDashboard(organizationId as string, days),
+    enabled: Boolean(organizationId),
+  });
+}
+
+export function useSyncKommoDashboard() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ organizationId, days }: { organizationId: string; days: number }) =>
+      api.syncKommoDashboard(organizationId, days),
+    onSuccess: (_, variables) => {
+      void queryClient.invalidateQueries({ queryKey: ["kommo-dashboard", variables.organizationId] });
+    },
+  });
+}
+
+export function useKommoDedupRuns(organizationId: string | null) {
+  return useQuery({
+    queryKey: ["kommo-dedup-runs", organizationId],
+    queryFn: () => api.listKommoDedupRuns(organizationId as string),
+    enabled: Boolean(organizationId),
+  });
+}
+
+export function useRunKommoDedupSimulation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (organizationId: string) => api.runKommoDedupSimulation(organizationId),
+    onSuccess: (_, organizationId) => {
+      void queryClient.invalidateQueries({ queryKey: ["kommo-dedup-runs", organizationId] });
+    },
+  });
+}
+
+export function useKommoDedupRun(organizationId: string | null, runId: string | null, page: number, onlyWithLeads: boolean) {
+  return useQuery({
+    queryKey: ["kommo-dedup-run", organizationId, runId, page, onlyWithLeads],
+    queryFn: () => api.getKommoDedupRun(organizationId as string, runId as string, page, onlyWithLeads),
+    enabled: Boolean(organizationId && runId),
+    placeholderData: (previous) => previous,
+  });
+}

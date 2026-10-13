@@ -1,403 +1,230 @@
-import { useState } from "react";
-import {
-  Users,
-  ShieldCheck,
-  RefreshCw,
-  GitMerge,
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  Phone,
-  Mail,
-  Building,
-  Info,
-} from "lucide-react";
-import { SectionHeader } from "./shared";
+import { useEffect, useState } from "react";
+import { AlertTriangle, ExternalLink, ScanSearch } from "lucide-react";
+import { useKommoDedupRun, useKommoDedupRuns, useRunKommoDedupSimulation } from "../hooks/api";
+import { fmtInt, fmtPct } from "../data/univet/univetPortalData";
+import "../views/univet/univet-portal.css";
 
-interface DuplicateCluster {
-  id: string;
-  matchReason: string;
-  similarity: number;
-  status: "pending" | "merged" | "dismissed";
-  canonical: {
-    id: number;
-    name: string;
-    phone: string;
-    email: string;
-    specialty?: string;
-    leadsCount: number;
-    createdAt: string;
-  };
-  duplicates: Array<{
-    id: number;
-    name: string;
-    phone: string;
-    email: string;
-    specialty?: string;
-    leadsCount: number;
-    createdAt: string;
-  }>;
+// Higienização do Kommo com dados reais. Cada varredura lê todos os contatos da conta,
+// agrupa os que compartilham telefone ou e-mail e guarda o relatório no histórico.
+// É sempre simulação: esta tela não altera contato nem lead no CRM.
+
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
-const INITIAL_CLUSTERS: DuplicateCluster[] = [
-  {
-    id: "cluster-01",
-    matchReason: "Telefone canônico idêntico (formatação 8 vs 9 dígitos com +55)",
-    similarity: 98,
-    status: "pending",
-    canonical: {
-      id: 489201,
-      name: "Dr. Roberto M. Silveira",
-      phone: "+55 (11) 98765-4321",
-      email: "roberto.silveira@endo-clinica.com.br",
-      specialty: "Endodontia / Microscopia",
-      leadsCount: 2,
-      createdAt: "12/09/2026 14:20",
-    },
-    duplicates: [
-      {
-        id: 489912,
-        name: "Roberto Silveira",
-        phone: "(11) 8765-4321",
-        email: "roberto.silveira@endo-clinica.com.br",
-        specialty: "Odontologia",
-        leadsCount: 1,
-        createdAt: "28/09/2026 09:15",
-      },
-    ],
-  },
-  {
-    id: "cluster-02",
-    matchReason: "Mesmo e-mail e clínica médica com variação no nome do cirurgião",
-    similarity: 92,
-    status: "pending",
-    canonical: {
-      id: 471043,
-      name: "Dra. Camila Vasconcelos Torres",
-      phone: "+55 (21) 99123-8877",
-      email: "camila.torres@cirurgiaplastica.med.br",
-      specialty: "Cirurgia Plástica Reconstrutiva",
-      leadsCount: 3,
-      createdAt: "04/08/2026 11:05",
-    },
-    duplicates: [
-      {
-        id: 490104,
-        name: "Camila Torres (Clínica)",
-        phone: "+55 (21) 99123-8877",
-        email: "camila.torres@cirurgiaplastica.med.br",
-        specialty: "Médica",
-        leadsCount: 1,
-        createdAt: "01/10/2026 16:40",
-      },
-    ],
-  },
-  {
-    id: "cluster-03",
-    matchReason: "Telefone celular idêntico via canal WhatsApp Lead Ads",
-    similarity: 95,
-    status: "pending",
-    canonical: {
-      id: 462190,
-      name: "Dr. Marcelo F. Guimarães",
-      phone: "+55 (31) 98844-5511",
-      email: "marcelo.guimaraes@cardio.med.br",
-      specialty: "Cirurgia Cardiovascular",
-      leadsCount: 1,
-      createdAt: "15/07/2026 17:30",
-    },
-    duplicates: [
-      {
-        id: 490518,
-        name: "Marcelo Guimaraes",
-        phone: "31988445511",
-        email: "m.guimaraes@cardio.med.br",
-        specialty: "Cirurgião",
-        leadsCount: 1,
-        createdAt: "02/10/2026 10:12",
-      },
-    ],
-  },
-];
+function formatDay(timestamp: number | null) {
+  return timestamp ? new Date(timestamp * 1000).toLocaleDateString("pt-BR") : "sem data";
+}
 
-export function KommoDeduplicationPanel({ clientId }: { clientId: string }) {
-  const [clusters, setClusters] = useState<DuplicateCluster[]>(INITIAL_CLUSTERS);
-  const [isRunningScan, setIsRunningScan] = useState(false);
-  const [scanMessage, setScanMessage] = useState<string | null>(null);
+export function KommoDeduplicationPanel({ organizationId }: { organizationId: string }) {
+  const runs = useKommoDedupRuns(organizationId);
+  const simulate = useRunKommoDedupSimulation();
+  const [selectedRunId, setSelectedRunId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [onlyWithLeads, setOnlyWithLeads] = useState(false);
 
-  const pendingCount = clusters.filter((c) => c.status === "pending").length;
-  const mergedCount = clusters.filter((c) => c.status === "merged").length;
+  // Sem escolha explícita, mostra a varredura mais recente.
+  const runId = selectedRunId ?? runs.data?.[0]?.id ?? null;
+  const detail = useKommoDedupRun(organizationId, runId, page, onlyWithLeads);
 
-  function handleRunDryRun() {
-    setIsRunningScan(true);
-    setScanMessage(null);
-    setTimeout(() => {
-      setIsRunningScan(false);
-      setScanMessage(
-        "Varredura em Modo Dry-Run concluída: 1.482 contatos analisados no Kommo. 3 clusters de duplicatas ativos identificados com segurança."
-      );
-    }, 900);
+  useEffect(() => {
+    setPage(1);
+  }, [runId, onlyWithLeads]);
+
+  function handleSimulate() {
+    simulate.mutate(organizationId, {
+      onSuccess: (run) => setSelectedRunId(run.id),
+    });
   }
 
-  function handleMerge(clusterId: string) {
-    setClusters((prev) =>
-      prev.map((c) => (c.id === clusterId ? { ...c, status: "merged" } : c))
-    );
-  }
-
-  function handleDismiss(clusterId: string) {
-    setClusters((prev) =>
-      prev.map((c) => (c.id === clusterId ? { ...c, status: "dismissed" } : c))
-    );
-  }
+  const run = detail.data?.run;
+  const contactUrl = (id: number) => (run ? `https://${run.subdomain}.kommo.com/contacts/detail/${id}` : "#");
+  const pageCount = detail.data ? Math.max(1, Math.ceil(detail.data.total_clusters / detail.data.page_size)) : 1;
+  const simulateError = simulate.error instanceof Error ? simulate.error.message : null;
+  const runsError = runs.error instanceof Error ? runs.error.message : null;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-      {/* Top Banner de Contexto Operacional */}
-      <div
-        style={{
-          background: "var(--bg-elevated)",
-          border: "1px solid var(--border-light)",
-          borderRadius: 8,
-          padding: "16px 20px",
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          flexWrap: "wrap",
-          gap: 16,
-        }}
-      >
+    <div className="uvScope">
+      <div className="uvPanelHeader">
         <div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <span style={{ color: "#3B82F6" }}>
-              <ShieldCheck size={20} />
-            </span>
-            <h3 style={{ margin: 0, fontSize: 16, color: "var(--text)" }}>
-              Higienização & Deduplicação de Contatos (Kommo CRM)
-            </h3>
-            <span className="demo-badge" style={{ background: "rgba(59, 130, 246, 0.15)", color: "#60A5FA" }}>
-              Exclusivo Operação EG
-            </span>
-          </div>
-          <p style={{ margin: 0, fontSize: 13, color: "var(--text-muted)" }}>
-            Varredura contínua de contatos criados por múltiplos pontos de entrada (Meta Ads, Site Univet e WhatsApp), unificando oportunidades no contato canônico.
+          <h2 className="uvPanelTitle">Higienização e deduplicação</h2>
+          <p className="uvPanelSubtitle">
+            Varre os contatos do Kommo atrás de pessoas cadastradas mais de uma vez (mesmo telefone ou e-mail). É uma simulação: nada é alterado no CRM.
           </p>
         </div>
-
-        <div style={{ display: "flex", gap: 10 }}>
-          <button
-            className="ghost-button"
-            type="button"
-            onClick={handleRunDryRun}
-            disabled={isRunningScan}
-            style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 14px", fontSize: 13 }}
-          >
-            <RefreshCw size={14} className={isRunningScan ? "spin" : ""} />
-            {isRunningScan ? "Analisando Kommo..." : "Executar Varredura (Dry-Run)"}
-          </button>
-        </div>
+        <button type="button" className="uvBtnPrimary" disabled={simulate.isPending} onClick={handleSimulate}>
+          <ScanSearch size={14} className={simulate.isPending ? "uvSpin" : undefined} />
+          {simulate.isPending ? "Varrendo contatos..." : "Rodar nova varredura"}
+        </button>
       </div>
 
-      {scanMessage && (
-        <div
-          style={{
-            padding: "10px 14px",
-            borderRadius: 6,
-            fontSize: 13,
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            background: "rgba(59, 130, 246, 0.12)",
-            color: "#60A5FA",
-            border: "1px solid rgba(59, 130, 246, 0.25)",
-          }}
-        >
-          <Info size={16} />
-          {scanMessage}
+      {simulate.isPending && (
+        <div className="uvNotice">
+          <h4>Lendo todos os contatos do Kommo</h4>
+          <p>Em contas com milhares de contatos a leitura leva até um minuto. Pode continuar nesta tela.</p>
         </div>
       )}
 
-      {/* Métricas Rápidas do Motor */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 }}>
-        <div className="surface" style={{ padding: 16 }}>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Contatos Analisados</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "var(--text)" }}>1.482</div>
-          <small style={{ color: "var(--text-dim)", fontSize: 11 }}>Base Kommo Univet</small>
+      {(simulateError || runsError) && (
+        <div className="uvNotice uvNoticeError" role="alert">
+          <h4><AlertTriangle size={15} /> Não foi possível concluir</h4>
+          <p>{simulateError ?? runsError}</p>
         </div>
-        <div className="surface" style={{ padding: 16 }}>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Clusters Suspeitos</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: pendingCount > 0 ? "#F59E0B" : "#10B981" }}>
-            {pendingCount}
+      )}
+
+      {runs.isLoading ? (
+        <>
+          <div className="uvSkeleton" style={{ height: 110 }} />
+          <div className="uvSkeleton" style={{ height: 320 }} />
+        </>
+      ) : !runsError && (runs.data?.length ?? 0) === 0 && !simulate.isPending ? (
+        <div className="uvNotice">
+          <h4>Nenhuma varredura feita ainda</h4>
+          <p>Use Rodar nova varredura para ler os contatos e ver quantos estão duplicados. O resultado fica guardado aqui no histórico.</p>
+        </div>
+      ) : run && detail.data ? (
+        <>
+          <div className="uvKpiRow">
+            <div className="uvTile">
+              <div className="uvTileLabel">Contatos analisados</div>
+              <div className="uvTileValue">{fmtInt(run.contacts_scanned)}</div>
+              <div className="uvTileFoot"><span>{run.subdomain}.kommo.com</span></div>
+            </div>
+            <div className="uvTile">
+              <div className="uvTileLabel">Contatos duplicados</div>
+              <div className="uvTileValue">{fmtInt(run.duplicates_count)}</div>
+              <div className="uvTileFoot">
+                <span>{run.contacts_scanned > 0 ? `${fmtPct(run.duplicates_count / run.contacts_scanned, 0)} da base` : "base vazia"}</span>
+              </div>
+            </div>
+            <div className="uvTile">
+              <div className="uvTileLabel">Grupos de duplicatas</div>
+              <div className="uvTileValue">{fmtInt(run.clusters_count)}</div>
+              <div className="uvTileFoot"><span>cada grupo é a mesma pessoa</span></div>
+            </div>
+            <div className="uvTile">
+              <div className="uvTileLabel">Leads presos em duplicatas</div>
+              <div className="uvTileValue">{fmtInt(run.leads_to_reassign)}</div>
+              <div className="uvTileFoot"><span>precisam ir para o contato principal</span></div>
+            </div>
           </div>
-          <small style={{ color: "var(--text-dim)", fontSize: 11 }}>Aguardando validação</small>
-        </div>
-        <div className="surface" style={{ padding: 16 }}>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Unificações Realizadas</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "#10B981" }}>{mergedCount}</div>
-          <small style={{ color: "var(--text-dim)", fontSize: 11 }}>Sem perda de histórico de leads</small>
-        </div>
-        <div className="surface" style={{ padding: 16 }}>
-          <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 4 }}>Prevenção Ativa (n8n)</div>
-          <div style={{ fontSize: 22, fontWeight: 700, color: "#3B82F6" }}>100%</div>
-          <small style={{ color: "var(--text-dim)", fontSize: 11 }}>Gatekeeper de ingestão E.164</small>
-        </div>
-      </div>
 
-      {/* Lista de Clusters de Duplicatas */}
-      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-        <h4 style={{ margin: 0, fontSize: 14, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-          Clusters Detectados ({clusters.length})
-        </h4>
-
-        {clusters.map((cluster) => {
-          const isPending = cluster.status === "pending";
-          const isMerged = cluster.status === "merged";
-          const isDismissed = cluster.status === "dismissed";
-
-          return (
-            <article
-              key={cluster.id}
-              className="surface"
-              style={{
-                padding: 20,
-                display: "flex",
-                flexDirection: "column",
-                gap: 16,
-                borderLeft: `4px solid ${
-                  isMerged ? "#10B981" : isDismissed ? "var(--border-light)" : "#F59E0B"
-                }`,
-                opacity: isDismissed ? 0.6 : 1,
-              }}
-            >
-              {/* Header do Cluster */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span
-                    className="demo-badge"
-                    style={{
-                      background: cluster.similarity >= 95 ? "rgba(16, 185, 129, 0.15)" : "rgba(245, 158, 11, 0.15)",
-                      color: cluster.similarity >= 95 ? "#10B981" : "#F59E0B",
-                      fontWeight: 600,
-                    }}
-                  >
-                    Similaridade {cluster.similarity}%
-                  </span>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text)" }}>
-                    {cluster.matchReason}
-                  </span>
-                </div>
-
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  {isMerged && (
-                    <span style={{ display: "flex", alignItems: "center", gap: 4, color: "#10B981", fontSize: 12, fontWeight: 600 }}>
-                      <CheckCircle2 size={14} /> Unificado no Canônico
-                    </span>
-                  )}
-                  {isDismissed && (
-                    <span style={{ display: "flex", alignItems: "center", gap: 4, color: "var(--text-dim)", fontSize: 12 }}>
-                      <XCircle size={14} /> Ignorado (Falso Positivo)
-                    </span>
-                  )}
-                  {isPending && (
-                    <>
-                      <button
-                        className="primary-button"
-                        type="button"
-                        onClick={() => handleMerge(cluster.id)}
-                        style={{ padding: "6px 12px", fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}
-                      >
-                        <GitMerge size={14} /> Unificar no Canônico
-                      </button>
-                      <button
-                        className="ghost-button"
-                        type="button"
-                        onClick={() => handleDismiss(cluster.id)}
-                        style={{ padding: "6px 10px", fontSize: 12 }}
-                      >
-                        Ignorar
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* Comparação: Canônico vs Duplicata(s) */}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-                  gap: 14,
-                  background: "var(--bg-elevated)",
-                  padding: 14,
-                  borderRadius: 6,
-                }}
-              >
-                {/* Lado A: Canônico */}
-                <div style={{ borderRight: "1px solid var(--border-light)", paddingRight: 14 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                    <span className="demo-badge" style={{ background: "rgba(16, 185, 129, 0.2)", color: "#34D399" }}>
-                      Canônico (Mais Antigo / Completo)
-                    </span>
-                    <span style={{ fontSize: 11, color: "var(--text-dim)" }}>ID #{cluster.canonical.id}</span>
-                  </div>
-                  <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>
-                    {cluster.canonical.name}
-                  </div>
-                  {cluster.canonical.specialty && (
-                    <div style={{ fontSize: 12, color: "#38BDF8", marginBottom: 6 }}>
-                      {cluster.canonical.specialty}
-                    </div>
-                  )}
-                  <div style={{ fontSize: 12, color: "var(--text-muted)", display: "grid", gap: 4 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <Phone size={12} /> {cluster.canonical.phone}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <Mail size={12} /> {cluster.canonical.email}
-                    </div>
-                    <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 4 }}>
-                      {cluster.canonical.leadsCount} lead(s) associado(s) · Criado em {cluster.canonical.createdAt}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Lado B: Duplicatas */}
+          <div className="uvRow uvRow-7-5">
+            <section className="uvCard">
+              <div className="uvCardHeader">
                 <div>
-                  {cluster.duplicates.map((dup) => (
-                    <div key={dup.id}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                        <span className="demo-badge" style={{ background: "rgba(239, 68, 68, 0.15)", color: "#F87171" }}>
-                          Registro Duplicado a Mesclar
-                        </span>
-                        <span style={{ fontSize: 11, color: "var(--text-dim)" }}>ID #{dup.id}</span>
-                      </div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: "var(--text)", marginBottom: 4 }}>
-                        {dup.name}
-                      </div>
-                      {dup.specialty && (
-                        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 6 }}>
-                          {dup.specialty}
-                        </div>
-                      )}
-                      <div style={{ fontSize: 12, color: "var(--text-muted)", display: "grid", gap: 4 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <Phone size={12} /> {dup.phone}
-                        </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                          <Mail size={12} /> {dup.email}
-                        </div>
-                        <div style={{ fontSize: 11, color: "var(--text-dim)", marginTop: 4 }}>
-                          {dup.leadsCount} lead(s) a reatribuir · Criado em {dup.createdAt}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                  <h3 className="uvCardTitle">Como as duplicatas foram identificadas</h3>
+                  <p className="uvCardSubtitle">Critério que ligou os contatos de cada grupo</p>
                 </div>
               </div>
-            </article>
-          );
-        })}
-      </div>
+              <ul className="uvBarList uvBarListStatic">
+                {detail.data.match_breakdown.map((item) => (
+                  <li key={item.label} className="uvBarListRow">
+                    <span className="uvBarListName">{item.label}</span>
+                    <span className="uvBarListTrack">
+                      <span className="uvInlineBar" style={{ width: `${Math.max(item.share * 100, 2)}%`, background: "var(--uv-accent)" }} />
+                    </span>
+                    <span className="uvBarListValue">{fmtInt(item.count)} · {fmtPct(item.share, 0)}</span>
+                  </li>
+                ))}
+              </ul>
+              {detail.data.match_breakdown.length === 0 && <p className="uvEmpty">Nenhuma duplicata encontrada nesta varredura.</p>}
+            </section>
+
+            <section className="uvCard">
+              <div className="uvCardHeader">
+                <div>
+                  <h3 className="uvCardTitle">Histórico de varreduras</h3>
+                  <p className="uvCardSubtitle">Selecione uma para rever o relatório</p>
+                </div>
+              </div>
+              <div className="uvRunList">
+                {(runs.data ?? []).map((item) => (
+                  <button key={item.id} type="button" className="uvRunItem" aria-pressed={item.id === runId} onClick={() => setSelectedRunId(item.id)}>
+                    <strong>{formatDateTime(item.created_at)}</strong>
+                    <span>{fmtInt(item.duplicates_count)} duplicados</span>
+                    <span>{item.requested_by_name ?? "Usuário removido"}</span>
+                    <span>{fmtInt(item.contacts_scanned)} contatos</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+          </div>
+
+          <section className="uvCard">
+            <div className="uvCardHeader">
+              <div>
+                <h3 className="uvCardTitle">Grupos de duplicatas</h3>
+                <p className="uvCardSubtitle">
+                  Abra os contatos no Kommo para conferir e unificar. Os grupos com lead preso aparecem primeiro.
+                </p>
+              </div>
+              <label className="uvCheck">
+                <input type="checkbox" checked={onlyWithLeads} onChange={(event) => setOnlyWithLeads(event.target.checked)} />
+                Só grupos com lead a mover
+              </label>
+            </div>
+            {detail.data.clusters.length === 0 ? (
+              <p className="uvEmpty">Nenhum grupo neste filtro.</p>
+            ) : (
+              <div className="uvTableWrap">
+                <table className="uvTable">
+                  <thead>
+                    <tr>
+                      <th>Contato principal</th>
+                      <th>Duplicata</th>
+                      <th>Critério</th>
+                      <th className="uvNum">Leads a mover</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {detail.data.clusters.map((cluster) => (
+                      <tr key={cluster.cluster_id}>
+                        <td>
+                          <a className="uvLink" href={contactUrl(cluster.master_contact_id)} target="_blank" rel="noreferrer">
+                            {cluster.master_name} <ExternalLink size={12} />
+                          </a>
+                          <span className="uvCellSub">Contato #{cluster.master_contact_id}</span>
+                        </td>
+                        <td>
+                          {cluster.duplicate_contacts.map((dup) => (
+                            <div key={dup.id}>
+                              <a className="uvLink" href={contactUrl(dup.id)} target="_blank" rel="noreferrer">
+                                {dup.name ?? "Sem nome"} <ExternalLink size={12} />
+                              </a>
+                              <span className="uvCellSub">
+                                #{dup.id} · criado em {formatDay(dup.created_at)} · {fmtInt(dup.leads_count)} {dup.leads_count === 1 ? "lead" : "leads"}
+                              </span>
+                            </div>
+                          ))}
+                        </td>
+                        <td>{cluster.match_kind}</td>
+                        <td className="uvNum">{fmtInt(cluster.leads_to_reassign)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            <div className="uvPager">
+              <span>
+                {fmtInt(detail.data.total_clusters)} grupos · página {detail.data.page} de {pageCount}
+              </span>
+              <div>
+                <button type="button" className="uvBtnGhost" disabled={page <= 1} onClick={() => setPage((p) => p - 1)}>Anterior</button>
+                <button type="button" className="uvBtnGhost" disabled={page >= pageCount} onClick={() => setPage((p) => p + 1)}>Próxima</button>
+              </div>
+            </div>
+          </section>
+        </>
+      ) : detail.error ? (
+        <div className="uvNotice uvNoticeError" role="alert">
+          <h4>Não foi possível abrir o relatório</h4>
+          <p>{detail.error instanceof Error ? detail.error.message : "Erro inesperado."}</p>
+        </div>
+      ) : (
+        <div className="uvSkeleton" style={{ height: 320 }} />
+      )}
     </div>
   );
 }

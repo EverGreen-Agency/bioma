@@ -153,7 +153,7 @@ function CreativeCard({ creative }: { creative: CreativeRow }) {
       <div className="uvCreativeCover">
         {creative.image ? (
           <>
-            <img src={creative.image} alt="" loading="lazy" style={{ objectPosition: creative.imagePosition }} />
+            <img src={creative.image} alt="" style={{ objectPosition: creative.imagePosition }} />
             {creative.format === 'video' && (
               <span className="uvCreativePlay" aria-hidden="true">
                 <Play size={18} fill="currentColor" />
