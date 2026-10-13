@@ -12,6 +12,7 @@ inválido ou ação irreversível são recusados independentemente do que o text
 
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 from datetime import date, datetime, timezone
