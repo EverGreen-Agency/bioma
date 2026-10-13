@@ -3947,6 +3947,84 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/integrations/{organization_id}/kommo/dashboard": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Kommo Dashboard
+         * @description Painel de dados reais montado sobre a última sincronização do Kommo.
+         */
+        get: operations["get_kommo_dashboard_integrations__organization_id__kommo_dashboard_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integrations/{organization_id}/kommo/dashboard/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sync Kommo Dashboard
+         * @description Relê os leads no Kommo (somente leitura) e devolve o painel atualizado.
+         */
+        post: operations["sync_kommo_dashboard_integrations__organization_id__kommo_dashboard_sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integrations/{organization_id}/kommo/dedup/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Kommo Dedup Runs */
+        get: operations["list_kommo_dedup_runs_integrations__organization_id__kommo_dedup_runs_get"];
+        put?: never;
+        /**
+         * Run Kommo Dedup Simulation
+         * @description Varre os contatos do Kommo atrás de duplicatas. Simulação: não altera o CRM.
+         */
+        post: operations["run_kommo_dedup_simulation_integrations__organization_id__kommo_dedup_runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/integrations/{organization_id}/kommo/dedup/runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Kommo Dedup Run */
+        get: operations["get_kommo_dedup_run_integrations__organization_id__kommo_dedup_runs__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/mcp": {
         parameters: {
             query?: never;
@@ -11332,10 +11410,197 @@ export interface components {
             /** Subdomain */
             subdomain: string | null;
         };
+        /** KommoDashboard */
+        KommoDashboard: {
+            /** Campaigns */
+            campaigns: components["schemas"]["KommoRankedItem"][];
+            /** Dimensions */
+            dimensions: components["schemas"]["KommoDimension"][];
+            /** Loss Reasons */
+            loss_reasons: components["schemas"]["KommoRankedItem"][];
+            /** Period Days */
+            period_days: number;
+            /** Pipelines */
+            pipelines: components["schemas"]["KommoPipelineSummary"][];
+            /** Quality */
+            quality: components["schemas"]["KommoFieldQuality"][];
+            /** Timeline */
+            timeline: components["schemas"]["KommoTimelineBucket"][];
+            totals: components["schemas"]["KommoDashboardTotals"];
+        };
+        /**
+         * KommoDashboardResponse
+         * @description `dashboard` é nulo enquanto a conta nunca foi sincronizada (ou não está conectada).
+         */
+        KommoDashboardResponse: {
+            /** Configured */
+            configured: boolean;
+            dashboard: components["schemas"]["KommoDashboard"] | null;
+            /** Fetched At */
+            fetched_at: string | null;
+            /** Subdomain */
+            subdomain: string | null;
+        };
+        /** KommoDashboardTotals */
+        KommoDashboardTotals: {
+            /** Last Activity At */
+            last_activity_at: number | null;
+            /** Last Lead At */
+            last_lead_at: number | null;
+            /** Leads */
+            leads: number;
+            /** Leads All Time */
+            leads_all_time: number;
+            /** Leads Previous */
+            leads_previous: number | null;
+            /** Lost */
+            lost: number;
+            /** Open */
+            open: number;
+            /** Open Value */
+            open_value: number;
+            /** With Visit */
+            with_visit: number;
+            /** Won */
+            won: number;
+            /** Won Value */
+            won_value: number;
+        };
+        /** KommoDedupCluster */
+        KommoDedupCluster: {
+            /** Cluster Id */
+            cluster_id: string;
+            /** Duplicate Contacts */
+            duplicate_contacts: components["schemas"]["KommoDedupContact"][];
+            /** Leads To Reassign */
+            leads_to_reassign: number;
+            /** Master Contact Id */
+            master_contact_id: number;
+            /** Master Name */
+            master_name: string;
+            /** Match Kind */
+            match_kind: string;
+            /** Match Reason */
+            match_reason: string;
+        };
+        /** KommoDedupContact */
+        KommoDedupContact: {
+            /** Created At */
+            created_at: number | null;
+            /** Id */
+            id: number;
+            /** Leads Count */
+            leads_count: number;
+            /** Name */
+            name: string | null;
+        };
+        /** KommoDedupRunDetail */
+        KommoDedupRunDetail: {
+            /** Clusters */
+            clusters: components["schemas"]["KommoDedupCluster"][];
+            /** Match Breakdown */
+            match_breakdown: components["schemas"]["KommoRankedItem"][];
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+            run: components["schemas"]["KommoDedupRunSummary"];
+            /** Total Clusters */
+            total_clusters: number;
+        };
+        /** KommoDedupRunSummary */
+        KommoDedupRunSummary: {
+            /** Clusters Count */
+            clusters_count: number;
+            /** Contacts Scanned */
+            contacts_scanned: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Duplicates Count */
+            duplicates_count: number;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Leads To Reassign */
+            leads_to_reassign: number;
+            /** Requested By Name */
+            requested_by_name?: string | null;
+            /** Subdomain */
+            subdomain: string;
+        };
+        /** KommoDimension */
+        KommoDimension: {
+            /** Filled */
+            filled: number;
+            /** Items */
+            items: components["schemas"]["KommoRankedItem"][];
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Total */
+            total: number;
+        };
+        /** KommoFieldQuality */
+        KommoFieldQuality: {
+            /** Filled */
+            filled: number;
+            /** Key */
+            key: string;
+            /** Label */
+            label: string;
+            /** Total */
+            total: number;
+        };
         /** KommoMetricsResponse */
         KommoMetricsResponse: {
             /** Pipelines */
             pipelines: components["schemas"]["PipelineMetrics"][];
+        };
+        /** KommoPipelineStage */
+        KommoPipelineStage: {
+            /** Count */
+            count: number;
+            /** Id */
+            id: number;
+            /** Kind */
+            kind: string;
+            /** Name */
+            name: string;
+        };
+        /** KommoPipelineSummary */
+        KommoPipelineSummary: {
+            /** Id */
+            id: number;
+            /** Leads */
+            leads: number;
+            /** Name */
+            name: string;
+            /** Stages */
+            stages: components["schemas"]["KommoPipelineStage"][];
+        };
+        /** KommoRankedItem */
+        KommoRankedItem: {
+            /** Count */
+            count: number;
+            /** Label */
+            label: string;
+            /** Share */
+            share: number;
+        };
+        /** KommoTimelineBucket */
+        KommoTimelineBucket: {
+            /** Label */
+            label: string;
+            /** Leads */
+            leads: number;
+            /** Range Label */
+            range_label: string;
         };
         /** LeadCreateRequest */
         LeadCreateRequest: {
@@ -27301,6 +27566,171 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_kommo_dashboard_integrations__organization_id__kommo_dashboard_get: {
+        parameters: {
+            query?: {
+                /** @description 30, 90, 180 ou 0 para todo o histórico */
+                days?: number;
+            };
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KommoDashboardResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_kommo_dashboard_integrations__organization_id__kommo_dashboard_sync_post: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KommoDashboardResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_kommo_dedup_runs_integrations__organization_id__kommo_dedup_runs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KommoDedupRunSummary"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    run_kommo_dedup_simulation_integrations__organization_id__kommo_dedup_runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                organization_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KommoDedupRunSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_kommo_dedup_run_integrations__organization_id__kommo_dedup_runs__run_id__get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                only_with_leads?: boolean;
+            };
+            header?: never;
+            path: {
+                organization_id: string;
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KommoDedupRunDetail"];
                 };
             };
             /** @description Validation Error */

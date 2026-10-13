@@ -24,7 +24,9 @@ from bioma_api.schemas.github import (
     GitHubProjectActivity,
 )
 from bioma_api.services import github as github_service
+from bioma_api.schemas.kommo import KommoDashboardResponse, KommoDedupRunDetail, KommoDedupRunSummary
 from bioma_api.services import kommo as kommo_service
+from bioma_api.services import kommo_crm as kommo_crm_service
 
 router = APIRouter(prefix="/integrations", tags=["integrations"])
 
@@ -116,6 +118,57 @@ def setup_kommo_config(
         payload.subdomain,
     )
     return {"status": "ok"}
+
+
+@router.get("/{organization_id}/kommo/dashboard", response_model=KommoDashboardResponse)
+def get_kommo_dashboard(
+    organization_id: UUID,
+    days: int = Query(default=0, description="30, 90, 180 ou 0 para todo o histórico"),
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> KommoDashboardResponse:
+    """Painel de dados reais montado sobre a última sincronização do Kommo."""
+    return KommoDashboardResponse(**kommo_crm_service.get_dashboard(user, organization_id, days))
+
+
+@router.post("/{organization_id}/kommo/dashboard/sync", response_model=KommoDashboardResponse)
+def sync_kommo_dashboard(
+    organization_id: UUID,
+    days: int = Query(default=0),
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> KommoDashboardResponse:
+    """Relê os leads no Kommo (somente leitura) e devolve o painel atualizado."""
+    return KommoDashboardResponse(**kommo_crm_service.sync_dashboard(user, organization_id, days))
+
+
+@router.get("/{organization_id}/kommo/dedup/runs", response_model=list[KommoDedupRunSummary])
+def list_kommo_dedup_runs(
+    organization_id: UUID,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> list[KommoDedupRunSummary]:
+    return [KommoDedupRunSummary(**row) for row in kommo_crm_service.list_dedup_runs(user, organization_id)]
+
+
+@router.post("/{organization_id}/kommo/dedup/runs", response_model=KommoDedupRunSummary)
+def run_kommo_dedup_simulation(
+    organization_id: UUID,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> KommoDedupRunSummary:
+    """Varre os contatos do Kommo atrás de duplicatas. Simulação: não altera o CRM."""
+    return KommoDedupRunSummary(**kommo_crm_service.run_dedup_simulation(user, organization_id))
+
+
+@router.get("/{organization_id}/kommo/dedup/runs/{run_id}", response_model=KommoDedupRunDetail)
+def get_kommo_dedup_run(
+    organization_id: UUID,
+    run_id: UUID,
+    page: int = Query(default=1, ge=1),
+    page_size: int = Query(default=25, ge=1, le=100),
+    only_with_leads: bool = Query(default=False),
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> KommoDedupRunDetail:
+    return KommoDedupRunDetail(
+        **kommo_crm_service.get_dedup_run(user, organization_id, run_id, page, page_size, only_with_leads)
+    )
 
 
 @router.get("/github/projects/{project_id}", response_model=GitHubConnectionSummary)
