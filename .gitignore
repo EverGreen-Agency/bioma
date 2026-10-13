@@ -58,3 +58,10 @@ apps/api/*.sqlite
 .coverage
 .coverage.*
 apps/web/coverage/
+
+# Documentos binários e anexos de clientes
+*.docx
+*.doc
+
+# Dados mock gerados localmente para Looker Studio
+apps/api/seed_data/looker_mock/

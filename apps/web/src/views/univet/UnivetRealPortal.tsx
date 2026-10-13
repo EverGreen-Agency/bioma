@@ -15,9 +15,8 @@ const PORTALS = [
 /** Cabeçalho comum aos portais da Univet, com a navegação entre eles. */
 export function UnivetPortalChrome({ subtitle, children, actions }: { subtitle: string; children: React.ReactNode; actions?: React.ReactNode }) {
   const current = window.location.pathname.replace(/\/$/, "");
-  // O atalho para a Operação EG só aparece para quem já entrou com a chave neste navegador.
-  const hasKey = Boolean(sessionStorage.getItem("bioma_portal_key"));
-  const portals = PORTALS.filter((portal) => hasKey || portal.path !== "/portal/univet/eg" || current === portal.path);
+  // Todos os 3 portais acessíveis na navegação superior
+  const portals = PORTALS;
 
   // Destrava e garante scroll nativo livre da página inteira
   useEffect(() => {

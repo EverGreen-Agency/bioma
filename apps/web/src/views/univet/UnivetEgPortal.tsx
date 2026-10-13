@@ -1,14 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle2, CircleDashed, ExternalLink, KeyRound, Play, RefreshCw, ScanSearch, Square } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CircleDashed, ExternalLink, Play, RefreshCw, ScanSearch, Square } from "lucide-react";
 import { fmtInt, fmtPct } from "../../data/univet/univetPortalData";
 import { formatDateTime } from "../../components/KommoRealDashboard";
 import {
   capturePortalKey,
-  clearPortalKey,
-  PortalError,
   portalApi,
-  savePortalKey,
   type EgApplyProgress,
   type EgClassificationField,
   type EgClassifyProgress,
@@ -55,41 +52,14 @@ function Tile({ label, value, caption }: { label: string; value: string; caption
   );
 }
 
-function KeyGate({ onSubmit, invalid }: { onSubmit: (key: string) => void; invalid: boolean }) {
-  const [value, setValue] = useState("");
-  return (
-    <form
-      className="uvNotice"
-      onSubmit={(event: FormEvent) => {
-        event.preventDefault();
-        if (value.trim()) onSubmit(value);
-      }}
-    >
-      <h4><KeyRound size={15} /> Chave do portal</h4>
-      <p>
-        Este portal altera o CRM do cliente, então abre só com a chave da EG. Use o link completo que você recebeu ou cole a chave abaixo.
-      </p>
-      <div className="uvFormRow">
-        <label className="uvField">
-          <span>Chave</span>
-          <input type="password" value={value} onChange={(event) => setValue(event.target.value)} autoComplete="off" />
-          {invalid && <em>Chave não reconhecida.</em>}
-        </label>
-        <button type="submit" className="uvBtnPrimary">Entrar</button>
-      </div>
-    </form>
-  );
-}
-
 export function UnivetEgPortal() {
   const queryClient = useQueryClient();
-  const [key, setKey] = useState(() => capturePortalKey());
+  const [key] = useState(() => capturePortalKey());
   const status = useQuery({
     queryKey: ["eg-status", SLUG, key],
     queryFn: () => portalApi.status(SLUG, key),
     retry: false,
   });
-  const unauthorized = status.error instanceof PortalError && status.error.status === 401;
 
   const [busy, setBusy] = useState<null | "connect" | "sync" | "scan" | "webhook" | "dedup" | "classify">(null);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -206,19 +176,6 @@ export function UnivetEgPortal() {
       return `${stopRef.current ? "Interrompido" : "Concluído"}: ${fmtInt(written)} ${verb}. ${fmtInt(last.remaining)} leads na fila.`;
     });
 
-  if (!key || unauthorized) {
-    return (
-      <UnivetPortalChrome subtitle="Operação EG · Kommo">
-        <KeyGate
-          invalid={unauthorized}
-          onSubmit={(value) => {
-            savePortalKey(value);
-            setKey(value.trim());
-          }}
-        />
-      </UnivetPortalChrome>
-    );
-  }
 
   const kommoUrl = data?.kommo.subdomain ? `https://${data.kommo.subdomain}.kommo.com` : null;
   const classification = data?.classification;
@@ -227,21 +184,7 @@ export function UnivetEgPortal() {
   const dedupPageCount = dedup.data ? Math.max(1, Math.ceil(dedup.data.total_clusters / dedup.data.page_size)) : 1;
 
   return (
-    <UnivetPortalChrome
-      subtitle="Operação EG · Kommo"
-      actions={
-        <button
-          type="button"
-          className="uvBtnSecondary"
-          onClick={() => {
-            clearPortalKey();
-            setKey("");
-          }}
-        >
-          Sair
-        </button>
-      }
-    >
+    <UnivetPortalChrome subtitle="Operação EG · Kommo">
       <section className="uvHero">
         <h2 className="uvHeroHeadline">Higienização e classificação do CRM</h2>
         <p className="uvHeroSubtitle">
