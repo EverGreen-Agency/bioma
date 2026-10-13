@@ -1,7 +1,8 @@
 import { FormEvent, useMemo, useState } from "react";
-import { Building2, Plus, Trash2, ShieldCheck } from "lucide-react";
+import { BarChart3, Building2, Plus, Trash2, ShieldCheck } from "lucide-react";
 import { EmptyState, SectionHeader } from "../components/shared";
 import { KommoDeduplicationPanel } from "../components/KommoDeduplicationPanel";
+import { KommoRealDashboard } from "../components/KommoRealDashboard";
 import {
   type LeadPayload,
   type LeadStage,
@@ -43,7 +44,7 @@ function toNullableNumber(value: string) {
   return normalized ? Number(normalized) : null;
 }
 
-export function CrmView({ clientId }: { clientId: string }) {
+export function CrmView({ clientId, organizationId = null }: { clientId: string; organizationId?: string | null }) {
   const { data: user } = useCurrentUser();
 
   const isEgAdmin = user?.organizations.some((organization: { slug: string; role: string }) => organization.slug === "eg" && organization.role === "eg_admin") ?? false;
@@ -55,7 +56,7 @@ export function CrmView({ clientId }: { clientId: string }) {
   const deleteLead = useDeleteLead();
 
   const [leadDraft, setLeadDraft] = useState<LeadPayload>(emptyLead);
-  const [crmSubTab, setCrmSubTab] = useState<"kanban" | "dedup">("kanban");
+  const [crmSubTab, setCrmSubTab] = useState<"kanban" | "real" | "dedup">("kanban");
 
   const leads = leadsData ?? [];
 
@@ -86,8 +87,9 @@ export function CrmView({ clientId }: { clientId: string }) {
     <section className="operations-layout">
       {error && <div className="notice error">{error}</div>}
 
-      {/* Sub-navegação: O cliente externo só vê o Funil Comercial; o EG Admin alterna entre o Funil e a Higienização/Deduplicação */}
-      {isEgAdmin && (
+      {/* Sub-navegação: quem tem o módulo comercial vê o funil e o painel de dados reais do Kommo;
+          a deduplicação (relatório com nome de contato) é só do EG Admin. */}
+      {organizationId && (
         <div style={{ display: "flex", gap: 10, borderBottom: "1px solid var(--border-light)", paddingBottom: 12, marginBottom: 8 }}>
           <button
             type="button"
@@ -100,21 +102,34 @@ export function CrmView({ clientId }: { clientId: string }) {
           </button>
           <button
             type="button"
-            className={crmSubTab === "dedup" ? "primary-button" : "ghost-button"}
-            onClick={() => setCrmSubTab("dedup")}
+            className={crmSubTab === "real" ? "primary-button" : "ghost-button"}
+            onClick={() => setCrmSubTab("real")}
             style={{ fontSize: 13, padding: "6px 14px", display: "flex", alignItems: "center", gap: 6 }}
           >
-            <ShieldCheck size={14} />
-            Higienização & Deduplicação (Kommo)
-            <span className="demo-badge" style={{ marginLeft: 4, background: "rgba(59, 130, 246, 0.2)", color: "#60A5FA" }}>
-              Operação EG
-            </span>
+            <BarChart3 size={14} />
+            Painel de dados reais (Kommo)
           </button>
+          {isEgAdmin && (
+            <button
+              type="button"
+              className={crmSubTab === "dedup" ? "primary-button" : "ghost-button"}
+              onClick={() => setCrmSubTab("dedup")}
+              style={{ fontSize: 13, padding: "6px 14px", display: "flex", alignItems: "center", gap: 6 }}
+            >
+              <ShieldCheck size={14} />
+              Higienização & Deduplicação (Kommo)
+              <span className="demo-badge" style={{ marginLeft: 4, background: "rgba(59, 130, 246, 0.2)", color: "#60A5FA" }}>
+                Operação EG
+              </span>
+            </button>
+          )}
         </div>
       )}
 
-      {crmSubTab === "dedup" && isEgAdmin ? (
-        <KommoDeduplicationPanel clientId={clientId} />
+      {crmSubTab === "dedup" && isEgAdmin && organizationId ? (
+        <KommoDeduplicationPanel organizationId={organizationId} />
+      ) : crmSubTab === "real" && organizationId ? (
+        <KommoRealDashboard organizationId={organizationId} canSync={isEgAdmin} />
       ) : (
         <>
           <div className="bento-grid">

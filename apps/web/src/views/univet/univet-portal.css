@@ -15,7 +15,8 @@ body:has(.uvPortalWrapper),
   min-height: 100vh !important;
 }
 
-.uvPortalWrapper {
+.uvPortalWrapper,
+.uvScope {
   --uv-bg: #0a0d12;
   --uv-surface: #10151d;
   --uv-surface-2: #161c26;
@@ -52,27 +53,43 @@ body:has(.uvPortalWrapper),
   box-sizing: border-box;
 }
 
+/* .uvScope: mesmos tokens e componentes do portal, embutidos numa tela do Bioma.
+   Não herda as regras de página (fundo, altura mínima, destravamento de scroll). */
+.uvScope {
+  min-height: 0;
+  overflow: visible;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
 .uvPortalWrapper *,
 .uvPortalWrapper *::before,
-.uvPortalWrapper *::after {
+.uvPortalWrapper *::after,
+.uvScope *,
+.uvScope *::before,
+.uvScope *::after {
   box-sizing: border-box;
 }
 
 /* :where() mantém o reset com especificidade zero, para as classes abaixo vencerem */
-:where(.uvPortalWrapper) :where(h1, h2, h3, h4, p, ul, ol, dl, dd) {
+:where(.uvPortalWrapper, .uvScope) :where(h1, h2, h3, h4, p, ul, ol, dl, dd) {
   margin: 0;
   padding: 0;
 }
 
-:where(.uvPortalWrapper) :where(ul, ol) {
+:where(.uvPortalWrapper, .uvScope) :where(ul, ol) {
   list-style: none;
 }
 
-.uvPortalWrapper button {
+.uvPortalWrapper button,
+.uvScope button {
   font-family: inherit;
 }
 
-.uvPortalWrapper :focus-visible {
+.uvPortalWrapper :focus-visible,
+.uvScope :focus-visible {
   outline: 2px solid var(--uv-accent-ink);
   outline-offset: 2px;
 }
@@ -900,6 +917,7 @@ button.uvBarListRow:hover {
 .uvBarListName {
   min-width: 0;
   font-weight: 550;
+  overflow-wrap: anywhere;
 }
 
 .uvBarListName em {
@@ -1085,6 +1103,262 @@ button.uvBarListRow:hover {
   color: var(--uv-warning);
   border-color: rgba(226, 171, 69, 0.38);
   background: rgba(226, 171, 69, 0.09);
+}
+
+/* ---------- Painéis de dados reais (dentro do app) ---------- */
+.uvPanelHeader {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 14px 24px;
+  flex-wrap: wrap;
+}
+
+.uvPanelTitle {
+  font-size: 20px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.uvPanelSubtitle {
+  font-size: 13px;
+  color: var(--uv-text-2);
+  margin-top: 2px;
+  max-width: 78ch;
+}
+
+.uvBtnPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid transparent;
+  border-radius: var(--uv-radius-control);
+  background: var(--uv-accent);
+  color: #06140f;
+  padding: 7px 14px;
+  font-size: 12.5px;
+  font-weight: 650;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.18s var(--uv-ease), transform 0.12s var(--uv-ease);
+}
+
+.uvBtnPrimary:hover:not(:disabled) {
+  background: var(--uv-accent-ink);
+}
+
+.uvBtnPrimary:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.uvBtnPrimary:disabled,
+.uvBtnGhost:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.uvSpin {
+  animation: uvSpin 0.9s linear infinite;
+}
+
+@keyframes uvSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.uvKpiRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+.uvSources {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 0;
+  border: 1px solid var(--uv-line);
+  border-radius: var(--uv-radius-card);
+  background: var(--uv-surface);
+  overflow: hidden;
+}
+
+.uvSource {
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-left: 1px solid var(--uv-line);
+  margin-left: -1px;
+}
+
+.uvSource strong {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.uvSource span {
+  font-size: 12px;
+  color: var(--uv-text-3);
+}
+
+.uvSourceState {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--uv-text-2);
+}
+
+.uvSourceOn .uvSourceState {
+  color: var(--uv-good);
+}
+
+.uvNotice {
+  border: 1px solid var(--uv-line-strong);
+  border-radius: var(--uv-radius-card);
+  background: var(--uv-surface);
+  padding: 28px 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.uvNotice h4 {
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.uvNotice p {
+  font-size: 13.5px;
+  color: var(--uv-text-2);
+  max-width: 70ch;
+}
+
+.uvNoticeError {
+  border-color: rgba(221, 102, 96, 0.45);
+}
+
+.uvNoticeError h4 {
+  color: var(--uv-critical);
+}
+
+.uvSkeleton {
+  border-radius: var(--uv-radius-card);
+  background: linear-gradient(100deg, var(--uv-surface) 30%, var(--uv-surface-2) 50%, var(--uv-surface) 70%);
+  background-size: 220% 100%;
+  animation: uvShimmer 1.4s linear infinite;
+}
+
+@keyframes uvShimmer {
+  to {
+    background-position: -220% 0;
+  }
+}
+
+.uvQualityRow {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.1fr) minmax(0, 1.4fr) 110px;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 0;
+  font-size: 13.5px;
+}
+
+.uvQualityRow + .uvQualityRow {
+  border-top: 1px solid var(--uv-line);
+}
+
+.uvQualityRow > span:last-child {
+  text-align: right;
+  color: var(--uv-text-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.uvQualityRow strong {
+  color: var(--uv-text);
+  font-weight: 600;
+}
+
+.uvRunList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.uvRunItem {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: var(--uv-radius-control);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s linear, border-color 0.15s linear;
+}
+
+.uvRunItem:hover {
+  background: var(--uv-surface-2);
+}
+
+.uvRunItem[aria-pressed='true'] {
+  background: var(--uv-accent-wash);
+  border-color: rgba(39, 174, 130, 0.4);
+}
+
+.uvRunItem strong {
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.uvRunItem span {
+  font-size: 12px;
+  color: var(--uv-text-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.uvLink {
+  color: var(--uv-accent-ink);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.uvLink:hover {
+  text-decoration: underline;
+}
+
+.uvPager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 16px;
+  font-size: 12.5px;
+  color: var(--uv-text-3);
+}
+
+.uvPager div {
+  display: flex;
+  gap: 8px;
+}
+
+.uvCheck {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--uv-text-2);
+  cursor: pointer;
+}
+
+.uvCheck input {
+  accent-color: var(--uv-accent);
 }
 
 /* ---------- Criativos ---------- */

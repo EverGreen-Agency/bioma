@@ -699,6 +699,73 @@ export type KommoMetricsResponse = {
   pipelines: PipelineMetrics[];
 };
 
+export type KommoRankedItem = { label: string; count: number; share: number };
+
+export type KommoDashboard = {
+  period_days: number;
+  totals: {
+    leads_all_time: number;
+    leads: number;
+    leads_previous: number | null;
+    open: number;
+    won: number;
+    lost: number;
+    won_value: number;
+    open_value: number;
+    with_visit: number;
+    last_lead_at: number | null;
+    last_activity_at: number | null;
+  };
+  pipelines: {
+    id: number;
+    name: string;
+    leads: number;
+    stages: { id: number; name: string; kind: "open" | "won" | "lost"; count: number }[];
+  }[];
+  timeline: { label: string; range_label: string; leads: number }[];
+  dimensions: { key: string; label: string; filled: number; total: number; items: KommoRankedItem[] }[];
+  quality: { key: string; label: string; filled: number; total: number }[];
+  loss_reasons: KommoRankedItem[];
+  campaigns: KommoRankedItem[];
+};
+
+export type KommoDashboardResponse = {
+  configured: boolean;
+  subdomain: string | null;
+  fetched_at: string | null;
+  dashboard: KommoDashboard | null;
+};
+
+export type KommoDedupRunSummary = {
+  id: string;
+  subdomain: string;
+  contacts_scanned: number;
+  clusters_count: number;
+  duplicates_count: number;
+  leads_to_reassign: number;
+  created_at: string;
+  requested_by_name: string | null;
+};
+
+export type KommoDedupCluster = {
+  cluster_id: string;
+  match_kind: string;
+  match_reason: string;
+  master_contact_id: number;
+  master_name: string;
+  duplicate_contacts: { id: number; name: string | null; created_at: number | null; leads_count: number }[];
+  leads_to_reassign: number;
+};
+
+export type KommoDedupRunDetail = {
+  run: KommoDedupRunSummary;
+  match_breakdown: KommoRankedItem[];
+  total_clusters: number;
+  page: number;
+  page_size: number;
+  clusters: KommoDedupCluster[];
+};
+
 export type ClientFileVisibility = "internal" | "client";
 
 export type ClientFileSummary = {
@@ -4092,6 +4159,20 @@ export const api = {
     }),
   getKommoAnalytics: (organizationId: string) =>
     request<KommoMetricsResponse>(`/analytics/${organizationId}/kommo`),
+  getKommoDashboard: (organizationId: string, days: number) =>
+    request<KommoDashboardResponse>(`/integrations/${organizationId}/kommo/dashboard?days=${days}`),
+  syncKommoDashboard: (organizationId: string, days: number) =>
+    request<KommoDashboardResponse>(`/integrations/${organizationId}/kommo/dashboard/sync?days=${days}`, {
+      method: "POST",
+    }),
+  listKommoDedupRuns: (organizationId: string) =>
+    request<KommoDedupRunSummary[]>(`/integrations/${organizationId}/kommo/dedup/runs`),
+  runKommoDedupSimulation: (organizationId: string) =>
+    request<KommoDedupRunSummary>(`/integrations/${organizationId}/kommo/dedup/runs`, { method: "POST" }),
+  getKommoDedupRun: (organizationId: string, runId: string, page: number, onlyWithLeads: boolean) =>
+    request<KommoDedupRunDetail>(
+      `/integrations/${organizationId}/kommo/dedup/runs/${runId}?page=${page}&page_size=25&only_with_leads=${onlyWithLeads}`,
+    ),
 
   // Backoffice EG (dados internos do monorepo; EG admin only)
   adminIdeas: () => request<Partial<{ ideas: Idea[] }> & { ideas?: Idea[] }>("/backoffice/ideas"),
