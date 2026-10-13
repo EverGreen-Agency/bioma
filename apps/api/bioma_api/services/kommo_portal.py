@@ -1,8 +1,8 @@
 """Portais sem login de um cliente: painel de dados reais e operação EG do Kommo.
 
-- `/portal/<slug>/kommo/dashboard` é público e só devolve agregados (nenhum nome,
+- `/portal-api/<slug>/kommo/dashboard` é público e só devolve agregados (nenhum nome,
   telefone ou conversa).
-- Tudo sob `/portal/<slug>/eg` exige a chave do portal (`PORTAL_ADMIN_KEY`), enviada
+- Tudo sob `/portal-api/<slug>/eg` exige a chave do portal (`PORTAL_ADMIN_KEY`), enviada
   no cabeçalho `Authorization: Portal <chave>`. Não há sessão: quem tem o link com a
   chave opera. É por aqui que o Bioma ESCREVE no Kommo do cliente: move leads de
   contatos duplicados, marca a duplicata e preenche campos personalizados dos leads.
@@ -554,7 +554,7 @@ def webhook_enable(slug: str, api_base_url: str) -> dict:
         org = _organization(conn, slug)
         api = _api(conn, org["id"])
     secret = secrets.token_urlsafe(24)
-    destination = f"{api_base_url.rstrip('/')}/portal/{slug}/kommo/webhook/{secret}"
+    destination = f"{api_base_url.rstrip('/')}/portal-api/{slug}/kommo/webhook/{secret}"
     try:
         created = api.request("POST", "/api/v4/webhooks", json={"destination": destination, "settings": WEBHOOK_EVENTS})
     except httpx.HTTPError as exc:

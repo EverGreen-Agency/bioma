@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from bioma_api.schemas.kommo import KommoDashboardResponse
 from bioma_api.services import kommo_portal
 
-router = APIRouter(prefix="/portal/{slug}", tags=["portal"])
+router = APIRouter(prefix="/portal-api/{slug}", tags=["portal"])
 
 
 def admin_key(authorization: str | None = Header(default=None)) -> None:

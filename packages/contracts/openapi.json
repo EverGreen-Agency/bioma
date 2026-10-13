@@ -47476,10 +47476,10 @@
         ]
       }
     },
-    "/portal/{slug}/eg/classification/batch": {
+    "/portal-api/{slug}/eg/classification/batch": {
       "post": {
         "description": "Classifica o próximo lote de leads pela conversa e grava os campos vazios no Kommo.",
-        "operationId": "portal_eg_classify_batch_portal__slug__eg_classification_batch_post",
+        "operationId": "portal_eg_classify_batch_portal_api__slug__eg_classification_batch_post",
         "parameters": [
           {
             "in": "path",
@@ -47523,7 +47523,7 @@
               "application/json": {
                 "schema": {
                   "additionalProperties": true,
-                  "title": "Response Portal Eg Classify Batch Portal  Slug  Eg Classification Batch Post",
+                  "title": "Response Portal Eg Classify Batch Portal Api  Slug  Eg Classification Batch Post",
                   "type": "object"
                 }
               }
@@ -47547,9 +47547,9 @@
         ]
       }
     },
-    "/portal/{slug}/eg/classification/results": {
+    "/portal-api/{slug}/eg/classification/results": {
       "get": {
-        "operationId": "portal_eg_classification_results_portal__slug__eg_classification_results_get",
+        "operationId": "portal_eg_classification_results_portal_api__slug__eg_classification_results_get",
         "parameters": [
           {
             "in": "path",
@@ -47606,7 +47606,7 @@
               "application/json": {
                 "schema": {
                   "additionalProperties": true,
-                  "title": "Response Portal Eg Classification Results Portal  Slug  Eg Classification Results Get",
+                  "title": "Response Portal Eg Classification Results Portal Api  Slug  Eg Classification Results Get",
                   "type": "object"
                 }
               }
@@ -47630,9 +47630,9 @@
         ]
       }
     },
-    "/portal/{slug}/eg/dedup/runs": {
+    "/portal-api/{slug}/eg/dedup/runs": {
       "get": {
-        "operationId": "portal_eg_dedup_runs_portal__slug__eg_dedup_runs_get",
+        "operationId": "portal_eg_dedup_runs_portal_api__slug__eg_dedup_runs_get",
         "parameters": [
           {
             "in": "path",
@@ -47669,7 +47669,7 @@
                     "additionalProperties": true,
                     "type": "object"
                   },
-                  "title": "Response Portal Eg Dedup Runs Portal  Slug  Eg Dedup Runs Get",
+                  "title": "Response Portal Eg Dedup Runs Portal Api  Slug  Eg Dedup Runs Get",
                   "type": "array"
                 }
               }
@@ -47693,7 +47693,7 @@
         ]
       },
       "post": {
-        "operationId": "portal_eg_dedup_simulate_portal__slug__eg_dedup_runs_post",
+        "operationId": "portal_eg_dedup_simulate_portal_api__slug__eg_dedup_runs_post",
         "parameters": [
           {
             "in": "path",
@@ -47727,7 +47727,7 @@
               "application/json": {
                 "schema": {
                   "additionalProperties": true,
-                  "title": "Response Portal Eg Dedup Simulate Portal  Slug  Eg Dedup Runs Post",
+                  "title": "Response Portal Eg Dedup Simulate Portal Api  Slug  Eg Dedup Runs Post",
                   "type": "object"
                 }
               }
@@ -47751,9 +47751,9 @@
         ]
       }
     },
-    "/portal/{slug}/eg/dedup/runs/{run_id}": {
+    "/portal-api/{slug}/eg/dedup/runs/{run_id}": {
       "get": {
-        "operationId": "portal_eg_dedup_run_portal__slug__eg_dedup_runs__run_id__get",
+        "operationId": "portal_eg_dedup_run_portal_api__slug__eg_dedup_runs__run_id__get",
         "parameters": [
           {
             "in": "path",
@@ -47830,7 +47830,7 @@
               "application/json": {
                 "schema": {
                   "additionalProperties": true,
-                  "title": "Response Portal Eg Dedup Run Portal  Slug  Eg Dedup Runs  Run Id  Get",
+                  "title": "Response Portal Eg Dedup Run Portal Api  Slug  Eg Dedup Runs  Run Id  Get",
                   "type": "object"
                 }
               }
@@ -47854,10 +47854,10 @@
         ]
       }
     },
-    "/portal/{slug}/eg/dedup/runs/{run_id}/apply": {
+    "/portal-api/{slug}/eg/dedup/runs/{run_id}/apply": {
       "post": {
         "description": "Unifica o próximo lote de grupos no Kommo: move os leads e marca a duplicata.",
-        "operationId": "portal_eg_dedup_apply_portal__slug__eg_dedup_runs__run_id__apply_post",
+        "operationId": "portal_eg_dedup_apply_portal_api__slug__eg_dedup_runs__run_id__apply_post",
         "parameters": [
           {
             "in": "path",
@@ -47911,7 +47911,7 @@
               "application/json": {
                 "schema": {
                   "additionalProperties": true,
-                  "title": "Response Portal Eg Dedup Apply Portal  Slug  Eg Dedup Runs  Run Id  Apply Post",
+                  "title": "Response Portal Eg Dedup Apply Portal Api  Slug  Eg Dedup Runs  Run Id  Apply Post",
                   "type": "object"
                 }
               }
@@ -47935,9 +47935,9 @@
         ]
       }
     },
-    "/portal/{slug}/eg/kommo/connect": {
+    "/portal-api/{slug}/eg/kommo/connect": {
       "post": {
-        "operationId": "portal_eg_connect_portal__slug__eg_kommo_connect_post",
+        "operationId": "portal_eg_connect_portal_api__slug__eg_kommo_connect_post",
         "parameters": [
           {
             "in": "path",
@@ -47981,7 +47981,7 @@
               "application/json": {
                 "schema": {
                   "additionalProperties": true,
-                  "title": "Response Portal Eg Connect Portal  Slug  Eg Kommo Connect Post",
+                  "title": "Response Portal Eg Connect Portal Api  Slug  Eg Kommo Connect Post",
                   "type": "object"
                 }
               }
@@ -48005,9 +48005,9 @@
         ]
       }
     },
-    "/portal/{slug}/eg/kommo/sync": {
+    "/portal-api/{slug}/eg/kommo/sync": {
       "post": {
-        "operationId": "portal_eg_sync_portal__slug__eg_kommo_sync_post",
+        "operationId": "portal_eg_sync_portal_api__slug__eg_kommo_sync_post",
         "parameters": [
           {
             "in": "path",
@@ -48073,9 +48073,9 @@
         ]
       }
     },
-    "/portal/{slug}/eg/status": {
+    "/portal-api/{slug}/eg/status": {
       "get": {
-        "operationId": "portal_eg_status_portal__slug__eg_status_get",
+        "operationId": "portal_eg_status_portal_api__slug__eg_status_get",
         "parameters": [
           {
             "in": "path",
@@ -48109,7 +48109,7 @@
               "application/json": {
                 "schema": {
                   "additionalProperties": true,
-                  "title": "Response Portal Eg Status Portal  Slug  Eg Status Get",
+                  "title": "Response Portal Eg Status Portal Api  Slug  Eg Status Get",
                   "type": "object"
                 }
               }
@@ -48133,10 +48133,10 @@
         ]
       }
     },
-    "/portal/{slug}/eg/webhook": {
+    "/portal-api/{slug}/eg/webhook": {
       "post": {
         "description": "Registra no Kommo o webhook de mensagem e lead novos apontando para esta API.",
-        "operationId": "portal_eg_webhook_enable_portal__slug__eg_webhook_post",
+        "operationId": "portal_eg_webhook_enable_portal_api__slug__eg_webhook_post",
         "parameters": [
           {
             "in": "path",
@@ -48170,7 +48170,7 @@
               "application/json": {
                 "schema": {
                   "additionalProperties": true,
-                  "title": "Response Portal Eg Webhook Enable Portal  Slug  Eg Webhook Post",
+                  "title": "Response Portal Eg Webhook Enable Portal Api  Slug  Eg Webhook Post",
                   "type": "object"
                 }
               }
@@ -48194,10 +48194,10 @@
         ]
       }
     },
-    "/portal/{slug}/kommo/dashboard": {
+    "/portal-api/{slug}/kommo/dashboard": {
       "get": {
         "description": "Painel de dados reais: agregados da última sincronização, sem dado pessoal.",
-        "operationId": "portal_dashboard_portal__slug__kommo_dashboard_get",
+        "operationId": "portal_dashboard_portal_api__slug__kommo_dashboard_get",
         "parameters": [
           {
             "in": "path",
@@ -48247,10 +48247,10 @@
         ]
       }
     },
-    "/portal/{slug}/kommo/webhook/{secret}": {
+    "/portal-api/{slug}/kommo/webhook/{secret}": {
       "post": {
         "description": "Destino do webhook do Kommo. Responde na hora e classifica em segundo plano.",
-        "operationId": "portal_kommo_webhook_portal__slug__kommo_webhook__secret__post",
+        "operationId": "portal_kommo_webhook_portal_api__slug__kommo_webhook__secret__post",
         "parameters": [
           {
             "in": "path",
@@ -48277,7 +48277,7 @@
               "application/json": {
                 "schema": {
                   "additionalProperties": true,
-                  "title": "Response Portal Kommo Webhook Portal  Slug  Kommo Webhook  Secret  Post",
+                  "title": "Response Portal Kommo Webhook Portal Api  Slug  Kommo Webhook  Secret  Post",
                   "type": "object"
                 }
               }

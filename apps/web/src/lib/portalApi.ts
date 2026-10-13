@@ -151,37 +151,37 @@ export type EgClassificationResults = {
 
 export const portalApi = {
   dashboard: (slug: string, days: number) =>
-    portalRequest<KommoDashboardResponse>(`/portal/${slug}/kommo/dashboard?days=${days}`),
+    portalRequest<KommoDashboardResponse>(`/portal-api/${slug}/kommo/dashboard?days=${days}`),
 
-  status: (slug: string, key: string) => portalRequest<EgStatus>(`/portal/${slug}/eg/status`, { key }),
+  status: (slug: string, key: string) => portalRequest<EgStatus>(`/portal-api/${slug}/eg/status`, { key }),
   connect: (slug: string, key: string, subdomain: string, accessToken: string) =>
-    portalRequest<{ status: string; account_name: string | null }>(`/portal/${slug}/eg/kommo/connect`, {
+    portalRequest<{ status: string; account_name: string | null }>(`/portal-api/${slug}/eg/kommo/connect`, {
       method: "POST",
       key,
       body: { subdomain, access_token: accessToken },
     }),
   sync: (slug: string, key: string) =>
-    portalRequest<KommoDashboardResponse>(`/portal/${slug}/eg/kommo/sync`, { method: "POST", key }),
+    portalRequest<KommoDashboardResponse>(`/portal-api/${slug}/eg/kommo/sync`, { method: "POST", key }),
 
   dedupSimulate: (slug: string, key: string) =>
-    portalRequest<{ id: string }>(`/portal/${slug}/eg/dedup/runs`, { method: "POST", key }),
+    portalRequest<{ id: string }>(`/portal-api/${slug}/eg/dedup/runs`, { method: "POST", key }),
   dedupDetail: (slug: string, key: string, runId: string, page: number, onlyPending: boolean) =>
     portalRequest<EgDedupDetail>(
-      `/portal/${slug}/eg/dedup/runs/${runId}?page=${page}&page_size=15&only_pending=${onlyPending}`,
+      `/portal-api/${slug}/eg/dedup/runs/${runId}?page=${page}&page_size=15&only_pending=${onlyPending}`,
       { key },
     ),
   dedupApply: (slug: string, key: string, runId: string, limit: number) =>
-    portalRequest<EgApplyProgress>(`/portal/${slug}/eg/dedup/runs/${runId}/apply`, { method: "POST", key, body: { limit } }),
+    portalRequest<EgApplyProgress>(`/portal-api/${slug}/eg/dedup/runs/${runId}/apply`, { method: "POST", key, body: { limit } }),
 
   classifyBatch: (slug: string, key: string, limit: number, write: boolean) =>
-    portalRequest<EgClassifyProgress>(`/portal/${slug}/eg/classification/batch`, {
+    portalRequest<EgClassifyProgress>(`/portal-api/${slug}/eg/classification/batch`, {
       method: "POST",
       key,
       body: { limit, write },
     }),
   classificationResults: (slug: string, key: string, page: number) =>
-    portalRequest<EgClassificationResults>(`/portal/${slug}/eg/classification/results?page=${page}&page_size=15`, { key }),
+    portalRequest<EgClassificationResults>(`/portal-api/${slug}/eg/classification/results?page=${page}&page_size=15`, { key }),
 
   enableWebhook: (slug: string, key: string) =>
-    portalRequest<{ active: boolean; events: string[] }>(`/portal/${slug}/eg/webhook`, { method: "POST", key }),
+    portalRequest<{ active: boolean; events: string[] }>(`/portal-api/${slug}/eg/webhook`, { method: "POST", key }),
 };
