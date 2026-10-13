@@ -166,3 +166,145 @@ def get_dedup_run(conn, organization_id: UUID, run_id: UUID):
         """,
         (organization_id, run_id),
     ).fetchone()
+
+
+# --- Portal público por slug (painel v2 e portal EG) ---------------------------
+
+
+def find_organization_by_slug(conn, slug: str):
+    return conn.execute("select id, name, slug from organizations where slug = %s", (slug,)).fetchone()
+
+
+def update_dedup_run_report(conn, run_id: UUID, report: dict, clusters_applied: int) -> None:
+    conn.execute(
+        "update kommo_dedup_runs set report = %s, clusters_applied = %s where id = %s",
+        (Jsonb(report), clusters_applied, run_id),
+    )
+
+
+def latest_dedup_run(conn, organization_id: UUID):
+    return conn.execute(
+        """
+        select id, subdomain, contacts_scanned, clusters_count, duplicates_count,
+               leads_to_reassign, clusters_applied, created_at
+        from kommo_dedup_runs
+        where organization_id = %s
+        order by created_at desc
+        limit 1
+        """,
+        (organization_id,),
+    ).fetchone()
+
+
+def upsert_lead_classification(
+    conn,
+    organization_id: UUID,
+    lead_id: int,
+    status: str,
+    engine: str,
+    messages_count: int,
+    fields: dict,
+    fields_written: int,
+    error: str | None,
+    trigger: str,
+) -> None:
+    conn.execute(
+        """
+        insert into kommo_lead_classifications
+          (organization_id, lead_id, status, engine, messages_count, fields, fields_written, error, trigger)
+        values (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        on conflict (organization_id, lead_id) do update set
+            status = excluded.status,
+            engine = excluded.engine,
+            messages_count = excluded.messages_count,
+            fields = excluded.fields,
+            fields_written = kommo_lead_classifications.fields_written + excluded.fields_written,
+            error = excluded.error,
+            trigger = excluded.trigger,
+            classified_at = now()
+        """,
+        (organization_id, lead_id, status, engine, messages_count, Jsonb(fields), fields_written, error, trigger),
+    )
+
+
+def classified_lead_ids(conn, organization_id: UUID, include_simulated: bool) -> set[int]:
+    """Leads que já saíram da fila. Um lead só simulado continua na fila de gravação."""
+    rows = conn.execute(
+        """
+        select lead_id from kommo_lead_classifications
+        where organization_id = %s and (%s or trigger <> 'simulacao')
+        """,
+        (organization_id, include_simulated),
+    ).fetchall()
+    return {row["lead_id"] for row in rows}
+
+
+def get_lead_classification(conn, organization_id: UUID, lead_id: int):
+    return conn.execute(
+        "select classified_at from kommo_lead_classifications where organization_id = %s and lead_id = %s",
+        (organization_id, lead_id),
+    ).fetchone()
+
+
+def classification_summary(conn, organization_id: UUID):
+    return conn.execute(
+        """
+        select count(*) as total,
+               count(*) filter (where trigger = 'simulacao') as simulated,
+               count(*) filter (where status = 'classificado') as classified,
+               count(*) filter (where status = 'sem_conversa') as without_conversation,
+               count(*) filter (where status = 'erro') as errors,
+               coalesce(sum(fields_written), 0) as fields_written,
+               max(classified_at) as last_at
+        from kommo_lead_classifications
+        where organization_id = %s
+        """,
+        (organization_id,),
+    ).fetchone()
+
+
+def list_lead_classifications(conn, organization_id: UUID, limit: int, offset: int):
+    return conn.execute(
+        """
+        select lead_id, status, engine, messages_count, fields, fields_written, error, trigger, classified_at
+        from kommo_lead_classifications
+        where organization_id = %s
+        order by classified_at desc
+        limit %s offset %s
+        """,
+        (organization_id, limit, offset),
+    ).fetchall()
+
+
+def get_webhook(conn, organization_id: UUID):
+    return conn.execute(
+        """
+        select secret, kommo_webhook_id, destination, events, last_event_at, events_received, created_at
+        from kommo_webhooks
+        where organization_id = %s
+        """,
+        (organization_id,),
+    ).fetchone()
+
+
+def upsert_webhook(conn, organization_id: UUID, secret: str, kommo_webhook_id: int | None, destination: str, events: list[str]) -> None:
+    conn.execute(
+        """
+        insert into kommo_webhooks (organization_id, secret, kommo_webhook_id, destination, events)
+        values (%s, %s, %s, %s, %s)
+        on conflict (organization_id) do update set
+            secret = excluded.secret,
+            kommo_webhook_id = excluded.kommo_webhook_id,
+            destination = excluded.destination,
+            events = excluded.events,
+            created_at = now()
+        """,
+        (organization_id, secret, kommo_webhook_id, destination, events),
+    )
+
+
+def touch_webhook(conn, organization_id: UUID) -> None:
+    conn.execute(
+        "update kommo_webhooks set last_event_at = now(), events_received = events_received + 1 where organization_id = %s",
+        (organization_id,),
+    )

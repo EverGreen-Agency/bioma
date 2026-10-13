@@ -58,6 +58,14 @@ class Settings(BaseSettings):
     google_oauth_client_id: str | None = None
     google_oauth_client_secret: str | None = None
     secret_encryption_key: str | None = None
+    # Portais sem login (/portal/<slug>/eg): a chave vai no link, não há sessão.
+    # Sem chave configurada o portal EG fica fechado fora do ambiente local.
+    portal_admin_key: str | None = None
+    # Modelo de decisão para classificar leads (formato TypeSafe /v1/systemone):
+    # Jev (api.typesafe.ai) ou Laya atrás de um servidor compatível. Sem chave, roda o motor de regras.
+    decision_model_url: str = "https://api.typesafe.ai/v1/systemone"
+    decision_model_api_key: str | None = None
+    decision_model_name: str = "jev-latest"
 
     @field_validator("secret_encryption_key")
     @classmethod
