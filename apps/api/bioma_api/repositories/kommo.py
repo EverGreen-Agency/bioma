@@ -276,6 +276,15 @@ def list_lead_classifications(conn, organization_id: UUID, limit: int, offset: i
     ).fetchall()
 
 
+def clear_lead_classifications(conn, organization_id: UUID) -> int:
+    cursor = conn.execute(
+        "delete from kommo_lead_classifications where organization_id = %s",
+        (organization_id,),
+    )
+    return getattr(cursor, "rowcount", 0)
+
+
+
 def get_webhook(conn, organization_id: UUID):
     return conn.execute(
         """
