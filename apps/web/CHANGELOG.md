@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.2.0...bioma-web-v1.3.0) (2026-10-14)
+
+
+### Features
+
+* **univet:** liberar acesso sem chave ao portal eg e registrar estei… ([e13612d](https://github.com/EverGreen-Agency/bioma/commit/e13612d08e7d6f14abf83a6a93957b376b118ce3))
+* **univet:** liberar acesso sem chave ao portal eg e registrar esteira de bi ([773f9ac](https://github.com/EverGreen-Agency/bioma/commit/773f9acf73668e93f137450bea0abe8b53d497be))
+
 ## [1.2.0](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.1.0...bioma-web-v1.2.0) (2026-10-13)
 
 
