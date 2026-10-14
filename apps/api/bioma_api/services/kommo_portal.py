@@ -607,7 +607,17 @@ def classification_results(slug: str, page: int, page_size: int) -> dict:
     }
 
 
+def classification_reset(slug: str) -> dict:
+    """Limpa o histórico de classificações de teste para permitir início limpo."""
+    with connect() as conn:
+        org = _organization(conn, slug)
+        deleted = kommo_repo.clear_lead_classifications(conn, org["id"])
+        _audit(conn, org["id"], "kommo.classification_reset", {"deleted": deleted})
+    return {"status": "ok", "deleted": deleted}
+
+
 def test_classification(slug: str, text: str, phone: str | None = None) -> dict:
+
     """Testa a classificação sob demanda de um texto/mensagem arbitrária com a Laya AI e regras."""
     text = (text or "").strip()
     if not text:

@@ -200,6 +200,10 @@ export const portalApi = {
   classificationResults: (slug: string, key: string, page: number) =>
     portalRequest<EgClassificationResults>(`/portal-api/${slug}/eg/classification/results?page=${page}&page_size=15`, { key }),
 
+  classificationReset: (slug: string, key: string) =>
+    portalRequest<{ status: string; deleted: number }>(`/portal-api/${slug}/eg/classification/reset`, { method: "POST", key }),
+
+
   classifyTest: (slug: string, key: string, text: string, phone?: string) =>
     portalRequest<EgClassifyTestResult>(`/portal-api/${slug}/eg/classification/test`, {
       method: "POST",

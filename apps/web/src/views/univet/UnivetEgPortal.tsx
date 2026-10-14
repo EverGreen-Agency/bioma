@@ -73,10 +73,11 @@ export function UnivetEgPortal() {
     retry: false,
   });
 
-  const [busy, setBusy] = useState<null | "connect" | "sync" | "scan" | "webhook" | "dedup" | "classify">(null);
+  const [busy, setBusy] = useState<null | "connect" | "sync" | "scan" | "webhook" | "dedup" | "classify" | "reset">(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const stopRef = useRef(false);
+
 
   const [subdomain, setSubdomain] = useState("");
   const [token, setToken] = useState("");
@@ -195,6 +196,13 @@ export function UnivetEgPortal() {
       const verb = writeToKommo ? "campos gravados no Kommo" : "campos decididos (simulação, nada gravado)";
       return `${stopRef.current ? "Interrompido" : "Concluído"}: ${fmtInt(written)} ${verb}. ${fmtInt(last.remaining)} leads na fila.`;
     });
+
+  const handleResetHistory = () =>
+    run("reset", async () => {
+      const res = await portalApi.classificationReset(SLUG, key);
+      return `Histórico limpo: ${fmtInt(res.deleted)} registros de teste removidos. Base pronta para o WhatsApp.`;
+    });
+
 
 
   const kommoUrl = data?.kommo.subdomain ? `https://${data.kommo.subdomain}.kommo.com` : null;
@@ -532,7 +540,19 @@ export function UnivetEgPortal() {
                         <Play size={13} /> {writeToKommo ? "Classificar lote (5 leads)" : "Simular lote (5 leads)"}
                       </button>
                     )}
+                    {(classification?.total ?? 0) > 0 && (
+                      <button
+                        type="button"
+                        className="uvBtnGhost"
+                        disabled={busy !== null}
+                        onClick={handleResetHistory}
+                        title="Limpa registros de teste antigos para começar 100% limpo com o WhatsApp"
+                      >
+                        {busy === "reset" ? "Limpando..." : "Limpar registros de teste"}
+                      </button>
+                    )}
                   </div>
+
                 </div>
 
                 {!data.kommo.fetched_at ? (

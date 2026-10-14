@@ -126,3 +126,10 @@ def portal_eg_webhook_enable(slug: str, request: Request) -> dict:
     forwarded_proto = request.headers.get("x-forwarded-proto", request.url.scheme)
     host = request.headers.get("x-forwarded-host", request.headers.get("host", request.url.netloc))
     return kommo_portal.webhook_enable(slug, f"{forwarded_proto}://{host}")
+
+
+@router.post("/eg/classification/reset", dependencies=[Depends(admin_key)])
+def portal_eg_classification_reset(slug: str) -> dict:
+    """Limpa o histórico de classificações de teste para permitir início limpo."""
+    return kommo_portal.classification_reset(slug)
+
