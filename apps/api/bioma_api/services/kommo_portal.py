@@ -190,6 +190,63 @@ def sync(slug: str, days: int) -> dict:
     return kommo_crm._dashboard_response(snapshot, True, subdomain, days)
 
 
+def debug_kommo(slug: str) -> dict:
+    with connect() as conn:
+        org = _organization(conn, slug)
+        subdomain, token = kommo_crm._credentials(conn, org["id"])
+
+    base_url = f"https://{subdomain}.kommo.com"
+    headers = {"Authorization": f"Bearer {token}"}
+
+    with httpx.Client(base_url=base_url, headers=headers, timeout=30) as client:
+        account_res = client.get("/api/v4/account?with=version")
+        account = account_res.json() if account_res.status_code == 200 else account_res.status_code
+
+        pipe_res = client.get("/api/v4/leads/pipelines")
+        pipelines = (pipe_res.json().get("_embedded") or {}).get("pipelines") or [] if pipe_res.status_code == 200 else []
+        pipe_info = [
+            {
+                "id": p.get("id"),
+                "name": p.get("name"),
+                "statuses": [
+                    {"id": s.get("id"), "name": s.get("name")}
+                    for s in ((p.get("_embedded") or {}).get("statuses") or [])
+                ],
+            }
+            for p in pipelines
+        ]
+
+        r_pure = client.get("/api/v4/leads?limit=50")
+        pure_leads = (r_pure.json().get("_embedded") or {}).get("leads") or [] if r_pure.status_code == 200 else []
+
+        pipe_leads_count = {}
+        for p in pipelines:
+            pid = p.get("id")
+            rp = client.get(f"/api/v4/leads?filter[pipeline_id]={pid}&limit=50")
+            bl = (rp.json().get("_embedded") or {}).get("leads") or [] if rp.status_code == 200 else []
+            pipe_leads_count[p.get("name")] = {
+                "code": rp.status_code,
+                "first_page_count": len(bl),
+                "sample": [{"id": l["id"], "name": l.get("name"), "status_id": l.get("status_id")} for l in bl[:3]],
+            }
+
+        ru = client.get("/api/v4/leads/unsorted?limit=50")
+        unsorted = (ru.json().get("_embedded") or {}).get("unsorted") or [] if ru.status_code == 200 else []
+
+    return {
+        "subdomain": subdomain,
+        "account": account,
+        "pipelines": pipe_info,
+        "pure_leads_50_count": len(pure_leads),
+        "pure_sample": [
+            {"id": l["id"], "name": l.get("name"), "pipeline_id": l.get("pipeline_id"), "status_id": l.get("status_id")}
+            for l in pure_leads[:5]
+        ],
+        "by_pipeline": pipe_leads_count,
+        "unsorted_count": len(unsorted),
+    }
+
+
 # --- Deduplicação -------------------------------------------------------------
 
 

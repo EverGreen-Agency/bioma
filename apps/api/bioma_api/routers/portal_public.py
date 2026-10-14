@@ -67,6 +67,11 @@ def portal_eg_sync(slug: str, days: int = Query(default=0)) -> KommoDashboardRes
     return KommoDashboardResponse(**kommo_portal.sync(slug, days))
 
 
+@router.get("/eg/kommo/debug", dependencies=[Depends(admin_key)])
+def portal_eg_kommo_debug(slug: str) -> dict:
+    return kommo_portal.debug_kommo(slug)
+
+
 @router.get("/eg/dedup/runs", dependencies=[Depends(admin_key)])
 def portal_eg_dedup_runs(slug: str) -> list[dict]:
     return kommo_portal.dedup_runs(slug)
