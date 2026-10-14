@@ -434,11 +434,25 @@ def _classify_lead(api: KommoApi, specs: list[lead_classifier.FieldSpec], lead_i
     }
 
 
+_SPECS_CACHE: dict[UUID, tuple[float, list[lead_classifier.FieldSpec]]] = {}
+_SPECS_CACHE_TTL = 300.0  # 5 minutos
+
+
 def _field_specs(api: KommoApi) -> list[lead_classifier.FieldSpec]:
     custom_fields = (
         api.request("GET", "/api/v4/leads/custom_fields", params={"limit": 250}).get("_embedded") or {}
     ).get("custom_fields") or []
     return lead_classifier.field_specs(custom_fields, _FIELD_TO_KEY)
+
+
+def _cached_field_specs(api: KommoApi, org_id: UUID) -> list[lead_classifier.FieldSpec]:
+    now = time.time()
+    cached = _SPECS_CACHE.get(org_id)
+    if cached and (now - cached[0]) < _SPECS_CACHE_TTL:
+        return cached[1]
+    specs = _field_specs(api)
+    _SPECS_CACHE[org_id] = (now, specs)
+    return specs
 
 
 def _classify_and_store(org_id: UUID, api: KommoApi, specs, lead_id: int, write: bool, trigger: str) -> dict:
@@ -533,6 +547,81 @@ def classification_results(slug: str, page: int, page_size: int) -> dict:
             }
             for row in rows
         ],
+    }
+
+
+def test_classification(slug: str, text: str, phone: str | None = None) -> dict:
+    """Testa a classificação sob demanda de um texto/mensagem arbitrária com a Laya AI e regras."""
+    text = (text or "").strip()
+    if not text:
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Informe o texto para teste.")
+
+    with connect() as conn:
+        org = _organization(conn, slug)
+        api = _api(conn, org["id"])
+
+    try:
+        specs = _cached_field_specs(api, org["id"])
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Não foi possível ler campos do Kommo para simulação: {str(exc)[:120]}",
+        )
+    finally:
+        api.close()
+
+    transcript = f"Cliente: {text}"
+    customer_text = text
+
+    decisions = lead_classifier.classify_with_rules(customer_text, phone, specs)
+    engine = "regras"
+    settings = get_settings()
+    model_name = settings.decision_model_name or "multilingual"
+    latency_ms: int | None = None
+    model_error: str | None = None
+    answers: dict[str, Any] = {}
+
+    if settings.decision_model_api_key and transcript and specs:
+        questions = lead_classifier.build_questions(specs)
+        start = time.perf_counter()
+        try:
+            answers = lead_classifier.ask_decision_model(
+                transcript,
+                questions,
+                settings.decision_model_url,
+                settings.decision_model_api_key,
+                model_name,
+            )
+            latency_ms = int((time.perf_counter() - start) * 1000)
+            model_decisions = lead_classifier.decisions_from_answers(answers, specs)
+            decisions = lead_classifier.merge_decisions(model_decisions, decisions)
+            engine = "modelo"
+        except Exception as exc:
+            latency_ms = int((time.perf_counter() - start) * 1000)
+            model_error = str(exc)[:200]
+
+    labels = {key: label for key, label, _names in kommo_insights.DIMENSIONS}
+    fields = [
+        {
+            "key": key,
+            "label": labels.get(key, key),
+            "values": item["values"],
+            "confidence": item["confidence"],
+            "source": item["source"],
+        }
+        for key, item in decisions.items()
+    ]
+
+    return {
+        "status": "classificado" if decisions else "sem_sinal",
+        "engine": engine,
+        "model_name": model_name,
+        "latency_ms": latency_ms,
+        "model_error": model_error,
+        "text": text,
+        "phone": phone,
+        "fields": fields,
+        "raw_answers": answers,
     }
 
 
