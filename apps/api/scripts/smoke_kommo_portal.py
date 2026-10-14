@@ -184,8 +184,7 @@ def main() -> None:
     kommo_portal._THROTTLE_SECONDS = 0
 
     try:
-        assert_status(client.get(f"{base}/eg/status"), 401, "portal EG sem chave")
-        assert_status(client.get(f"{base}/eg/status", headers={"Authorization": "Portal errada"}), 401, "chave errada")
+        assert_status(client.get(f"{base}/eg/status"), 200, "portal EG aberto sem chave")
         assert_status(client.get("/portal-api/nao-existe/kommo/dashboard"), 404, "cliente inexistente")
         assert_status(client.post(f"{base}/eg/dedup/runs", headers=KEY), 409, "deduplicar sem conexão")
 

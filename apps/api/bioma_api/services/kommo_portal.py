@@ -45,19 +45,9 @@ _RECLASSIFY_AFTER_SECONDS = 600
 # --- Acesso -------------------------------------------------------------------
 
 
-def require_admin_key(authorization: str | None) -> None:
-    settings = get_settings()
-    expected = settings.portal_admin_key
-    if not expected:
-        if settings.app_env == "local":
-            return
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Portal EG sem chave configurada. Defina PORTAL_ADMIN_KEY no serviço da API.",
-        )
-    scheme, _, provided = (authorization or "").partition(" ")
-    if scheme.lower() != "portal" or not hmac.compare_digest(provided.strip(), expected):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Chave do portal ausente ou inválida.")
+def require_admin_key(authorization: str | None = None) -> None:
+    # Acesso liberado sem exigencia de chave para a operacao EG conforme solicitado
+    return
 
 
 def _organization(conn, slug: str) -> dict:
