@@ -119,3 +119,20 @@ def test_webhook_extrai_leads_de_mensagem_e_de_lead_novo():
         "leads[add][0][status_id]": "142",
     }
     assert webhook_lead_ids(form) == {501, 502}
+
+
+def test_test_classification_com_regras_e_ddd(monkeypatch):
+    from unittest.mock import MagicMock
+    from bioma_api.services import kommo_portal
+
+    monkeypatch.setattr(kommo_portal, "connect", MagicMock())
+    monkeypatch.setattr(kommo_portal, "_organization", lambda _conn, _slug: {"id": "11111111-1111-1111-1111-111111111111"})
+    monkeypatch.setattr(kommo_portal, "_api", lambda _conn, _org_id: MagicMock())
+    monkeypatch.setattr(kommo_portal, "_cached_field_specs", lambda _api, _org_id: SPECS)
+
+    result = kommo_portal.test_classification("univet", "Olá, sou dentista e quero comprar lupa galileana", "11987654321")
+    assert result["status"] == "classificado"
+    by_key = {f["key"]: f for f in result["fields"]}
+    assert "segmento" in by_key and by_key["segmento"]["values"] == ["Dental"]
+    assert "produto" in by_key and by_key["produto"]["values"] == ["Galileana"]
+    assert "uf" in by_key and by_key["uf"]["values"] == ["SP"]

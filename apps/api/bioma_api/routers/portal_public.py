@@ -32,6 +32,11 @@ class PortalClassifyInput(PortalBatchInput):
     write: bool = True
 
 
+class PortalClassifyTestInput(BaseModel):
+    text: str = Field(..., min_length=1, max_length=2000)
+    phone: str | None = None
+
+
 @router.get("/kommo/dashboard", response_model=KommoDashboardResponse)
 def portal_dashboard(slug: str, days: int = Query(default=0)) -> KommoDashboardResponse:
     """Painel de dados reais: agregados da última sincronização, sem dado pessoal."""
@@ -102,6 +107,12 @@ def portal_eg_classification_results(
     page_size: int = Query(default=20, ge=1, le=100),
 ) -> dict:
     return kommo_portal.classification_results(slug, page, page_size)
+
+
+@router.post("/eg/classification/test", dependencies=[Depends(admin_key)])
+def portal_eg_classify_test(slug: str, payload: PortalClassifyTestInput) -> dict:
+    """Testa a classificação de uma mensagem sob demanda com Laya AI e regras sem alterar o CRM."""
+    return kommo_portal.test_classification(slug, payload.text, payload.phone)
 
 
 @router.post("/eg/webhook", dependencies=[Depends(admin_key)])

@@ -149,6 +149,24 @@ export type EgClassificationResults = {
   }[];
 };
 
+export type EgClassifyTestResult = {
+  status: "classificado" | "sem_sinal";
+  engine: "modelo" | "regras";
+  model_name: string;
+  latency_ms: number | null;
+  model_error: string | null;
+  text: string;
+  phone: string | null;
+  fields: {
+    key: string;
+    label: string;
+    values: string[];
+    confidence: number;
+    source: "modelo" | "regra" | "ddd";
+  }[];
+  raw_answers?: Record<string, { choice: string; confidence: number }>;
+};
+
 export const portalApi = {
   dashboard: (slug: string, days: number) =>
     portalRequest<KommoDashboardResponse>(`/portal-api/${slug}/kommo/dashboard?days=${days}`),
@@ -181,6 +199,13 @@ export const portalApi = {
     }),
   classificationResults: (slug: string, key: string, page: number) =>
     portalRequest<EgClassificationResults>(`/portal-api/${slug}/eg/classification/results?page=${page}&page_size=15`, { key }),
+
+  classifyTest: (slug: string, key: string, text: string, phone?: string) =>
+    portalRequest<EgClassifyTestResult>(`/portal-api/${slug}/eg/classification/test`, {
+      method: "POST",
+      key,
+      body: { text, phone: phone || undefined },
+    }),
 
   enableWebhook: (slug: string, key: string) =>
     portalRequest<{ active: boolean; events: string[] }>(`/portal-api/${slug}/eg/webhook`, { method: "POST", key }),
