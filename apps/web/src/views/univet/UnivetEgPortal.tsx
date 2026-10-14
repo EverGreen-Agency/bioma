@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Activity,
   AlertTriangle,
   CheckCircle2,
   CircleDashed,
+  Cpu,
   ExternalLink,
   Play,
   Radio,
@@ -89,6 +91,7 @@ export function UnivetEgPortal() {
   const [writeToKommo, setWriteToKommo] = useState(true);
   const [classifyProgress, setClassifyProgress] = useState<EgClassifyProgress | null>(null);
   const [liveStream, setLiveStream] = useState(true);
+  const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null);
 
   const data = status.data;
   const runId = data?.dedup?.id ?? null;
@@ -105,6 +108,11 @@ export function UnivetEgPortal() {
     placeholderData: (previous) => previous,
     refetchInterval: liveStream ? 4000 : false,
   });
+
+  const activeLead =
+    results.data?.results.find((r) => r.lead_id === selectedLeadId) ??
+    results.data?.results[0] ??
+    null;
 
   useEffect(() => setDedupPage(1), [runId, onlyPending]);
 
@@ -494,12 +502,84 @@ export function UnivetEgPortal() {
                       <p className="uvChartNote">Lendo conversas: {fmtInt(classifyProgress.remaining)} leads na fila. Cada lead exige de 4 a 6 consultas ao Kommo.</p>
                     )}
 
+                    {/* Diagnóstico em Tempo Real · Laya AI Inspector */}
+                    {activeLead && (
+                      <div className="uvInspectorCard">
+                        <div className="uvInspectorHeader">
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                            <strong style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
+                              <Cpu size={14} style={{ color: "var(--uv-accent-ink)" }} />
+                              Diagnóstico Laya AI · Lead #{activeLead.lead_id}
+                            </strong>
+                            <a
+                              className="uvLink"
+                              style={{ fontSize: 12, fontWeight: 600 }}
+                              href={`${kommoUrl}/leads/detail/${activeLead.lead_id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Abrir no Kommo <ExternalLink size={10} />
+                            </a>
+                            <span className={`uvVerdict ${activeLead.status === "classificado" ? "uvVerdictGood" : "uvVerdictWarn"}`}>
+                              {STATUS_LABEL[activeLead.status] ?? activeLead.status}
+                            </span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "var(--uv-text-3)", flexWrap: "wrap" }}>
+                            <span>{activeLead.messages_count} mensagens analisadas</span>
+                            <span>·</span>
+                            <span>{formatDateTime(activeLead.classified_at)}</span>
+                            <span className="uvLatencyBadge">
+                              <Activity size={10} /> {activeLead.engine === "modelo" ? "Laya AI (ModernBERT)" : "Regras + DDD"}
+                            </span>
+                          </div>
+                        </div>
+
+                        {activeLead.fields.length === 0 ? (
+                          <p className="uvCellSub" style={{ padding: "8px 0" }}>
+                            {activeLead.status === "sem_conversa"
+                              ? "Nenhuma mensagem encontrada para este lead no Kommo."
+                              : "Conversa lida, mas sem termos conclusivos de especialidade, armação ou fotóforo."}
+                          </p>
+                        ) : (
+                          <div className="uvInspectorGrid">
+                            {activeLead.fields.map((f) => (
+                              <div key={f.key} className="uvInspectorField">
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                                  <span style={{ fontSize: 11, color: "var(--uv-text-3)", fontWeight: 550 }}>{f.label}</span>
+                                  <span className={`uvSourceTag ${f.source}`}>
+                                    {f.source === "modelo" ? "Laya AI" : f.source === "ddd" ? "DDD" : "Regra"}
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--uv-text)" }}>
+                                  {f.values.join(", ")}
+                                </div>
+                                <div>
+                                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--uv-text-3)" }}>
+                                    <span>Confiança</span>
+                                    <strong style={{ fontFamily: "monospace" }}>{fmtPct(f.confidence, 0)}</strong>
+                                  </div>
+                                  <div className="uvConfidenceTrack">
+                                    <div className="uvConfidenceFill" style={{ width: `${Math.min(100, Math.max(8, f.confidence * 100))}%` }} />
+                                  </div>
+                                </div>
+                                <div style={{ fontSize: 10, color: f.written ? "var(--uv-good)" : "var(--uv-text-3)", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600, marginTop: 2 }}>
+                                  {f.written ? "Gravado no Kommo" : f.already_filled ? "Mantido (já existia)" : "Simulado"}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     {results.data && results.data.results.length > 0 ? (
                       <div className="uvFeedList">
                         {results.data.results.map((row) => (
                           <div
                             key={row.lead_id}
-                            className={`uvFeedItem ${row.status === "classificado" ? "good" : row.status === "erro" ? "error" : "warn"}`}
+                            className={`uvFeedItem ${row.status === "classificado" ? "good" : row.status === "erro" ? "error" : "warn"} ${activeLead?.lead_id === row.lead_id ? "selected" : ""}`}
+                            style={{ cursor: "pointer" }}
+                            onClick={() => setSelectedLeadId(row.lead_id)}
                           >
                             <div className="uvFeedItemHeader">
                               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
