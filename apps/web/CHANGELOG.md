@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.4.0](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.3.0...bioma-web-v1.4.0) (2026-10-14)
+
+
+### Features
+
+* **univet:** add entity lifecycle and API quota intelligence panel ([2a0d9c0](https://github.com/EverGreen-Agency/bioma/commit/2a0d9c0eea316a2fd9b75bcd648c53372d4b3cde))
+* **univet:** add live Laya AI inspector for real lead diagnostics ([c41367e](https://github.com/EverGreen-Agency/bioma/commit/c41367e52d44753b5fe11f501d26a9ff7478ce3a))
+* **univet:** add test history reset to support clean CRM baseline ([09614b6](https://github.com/EverGreen-Agency/bioma/commit/09614b61a8e8d1725b7eccd8f8f49eb7873ddbb5))
+* **univet:** implementar simulador laya ai e feed em tempo real no portal eg ([086da40](https://github.com/EverGreen-Agency/bioma/commit/086da4033eab616ead6b0d190c83f8b001115771))
+* **univet:** implementar simulador laya ai e feed em tempo real no portal eg ([f132c65](https://github.com/EverGreen-Agency/bioma/commit/f132c65f4cc19f8f7fe9b7dae82e60dafdf7aa2c))
+* **univet:** remove simulator and enforce minimalist UI without emojis ([9910af3](https://github.com/EverGreen-Agency/bioma/commit/9910af348af80ae33ea41477d3f61aeba43566fe))
+* **univet:** remove simulator and enforce minimalist UI without emojis ([7907fac](https://github.com/EverGreen-Agency/bioma/commit/7907facb2deac3a5f55cceb9aa206a1a67f971eb))
+
 ## [1.3.0](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.2.0...bioma-web-v1.3.0) (2026-10-14)
 
 
