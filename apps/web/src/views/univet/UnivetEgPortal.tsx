@@ -1,21 +1,15 @@
-import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
-  Bot,
   CheckCircle2,
   CircleDashed,
   ExternalLink,
-  History,
-  MessageSquare,
   Play,
   Radio,
   RefreshCw,
   ScanSearch,
-  Send,
-  Sparkles,
   Square,
-  Zap,
 } from "lucide-react";
 import { fmtInt, fmtPct } from "../../data/univet/univetPortalData";
 import { formatDateTime } from "../../components/KommoRealDashboard";
@@ -25,7 +19,6 @@ import {
   type EgApplyProgress,
   type EgClassificationField,
   type EgClassifyProgress,
-  type EgClassifyTestResult,
 } from "../../lib/portalApi";
 import { UnivetPortalChrome } from "./UnivetRealPortal";
 import "./univet-portal.css";
@@ -97,15 +90,6 @@ export function UnivetEgPortal() {
   const [classifyProgress, setClassifyProgress] = useState<EgClassifyProgress | null>(null);
   const [liveStream, setLiveStream] = useState(true);
 
-  // Simulador de testes em tempo real da Laya AI
-  const [testText, setTestText] = useState("");
-  const [testPhone, setTestPhone] = useState("");
-  const [testBusy, setTestBusy] = useState(false);
-  const [testError, setTestError] = useState<string | null>(null);
-  const [testResult, setTestResult] = useState<EgClassifyTestResult | null>(null);
-  const [testHistory, setTestHistory] = useState<EgClassifyTestResult[]>([]);
-  const [filterFeed, setFilterFeed] = useState<"todos" | "classificado" | "sem_conversa" | "erro">("todos");
-
   const data = status.data;
   const runId = data?.dedup?.id ?? null;
   const dedup = useQuery({
@@ -121,53 +105,6 @@ export function UnivetEgPortal() {
     placeholderData: (previous) => previous,
     refetchInterval: liveStream ? 4000 : false,
   });
-
-  const QUICK_EXAMPLES = [
-    {
-      title: "🦷 Odonto · Galileana",
-      text: "Olá, sou cirurgião-dentista especialista em endodontia em São Paulo. Gostaria de saber os valores da lupa galileana TTL com armação esportiva.",
-      phone: "11 98765-4321",
-    },
-    {
-      title: "🩺 Médico · Prismática Ergo",
-      text: "Bom dia, sou cirurgião vascular em Belo Horizonte. Preciso de orçamento da lupa prismática Ergo de 4.5x com iluminação LED fotóforo.",
-      phone: "31 99123-4567",
-    },
-    {
-      title: "💡 Manutenção · Fotóforo",
-      text: "Boa tarde, comprei uma lupa Univet ano passado e a bateria do fotóforo parou de carregar. Vocês fazem reparo ou vendem a peça avulsa?",
-      phone: "21 97654-3210",
-    },
-    {
-      title: "📅 Visita · CIOSP",
-      text: "Olá, vi o stand de vocês no CIOSP! Gostaria de agendar uma visita com representante aqui no meu consultório em Curitiba para testar.",
-      phone: "41 98888-7777",
-    },
-  ];
-
-  async function handleTestClassification(customText?: string, customPhone?: string) {
-    const textToRun = (customText ?? testText).trim();
-    const phoneToRun = (customPhone ?? testPhone).trim();
-    if (!textToRun) return;
-    setTestBusy(true);
-    setTestError(null);
-    try {
-      const res = await portalApi.classifyTest(SLUG, key, textToRun, phoneToRun);
-      setTestResult(res);
-      setTestHistory((prev) => [res, ...prev.filter((item) => item.text !== res.text).slice(0, 4)]);
-    } catch (err) {
-      setTestError(errorMessage(err));
-    } finally {
-      setTestBusy(false);
-    }
-  }
-
-  function handleKeyDownTest(e: KeyboardEvent<HTMLTextAreaElement>) {
-    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
-      e.preventDefault();
-      void handleTestClassification();
-    }
-  }
 
   useEffect(() => setDedupPage(1), [runId, onlyPending]);
 
@@ -501,203 +438,6 @@ export function UnivetEgPortal() {
                 )}
               </section>
 
-              {/* Classificação */}
-              {/* Laya AI Engine · Simulador Interativo */}
-              <section className="uvCard uvLayaCard">
-                <div className="uvCardHeader">
-                  <div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                      <span className="uvSourceTag modelo" style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-                        <Sparkles size={11} /> Laya AI Engine
-                      </span>
-                      <span className="uvLatencyBadge">
-                        <Zap size={11} /> ModernBERT Multilingual · Railway
-                      </span>
-                    </div>
-                    <h3 className="uvCardTitle">Simulador de Classificação em Tempo Real</h3>
-                    <p className="uvCardSubtitle">
-                      Exclusivo EG: teste como a Laya interpreta mensagens e perguntas antes ou durante o atendimento. Resposta ultrarrápida (milissegundos) sem poluir o CRM.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="uvSimGrid">
-                  <div className="uvSimBox">
-                    <label className="uvField">
-                      <span style={{ display: "flex", justifyContent: "space-between" }}>
-                        <span>Mensagem ou transcrição de teste</span>
-                        <span style={{ fontSize: 11, color: "var(--uv-text-3)" }}>Ctrl + Enter para testar</span>
-                      </span>
-                      <textarea
-                        className="uvSimTextarea"
-                        placeholder="Ex: Olá, sou cirurgião vascular em SP (11), gostaria de saber o valor da lupa prismática 4.5x com fotóforo LED..."
-                        value={testText}
-                        onChange={(e) => setTestText(e.target.value)}
-                        onKeyDown={handleKeyDownTest}
-                        rows={4}
-                      />
-                    </label>
-
-                    <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
-                      <label className="uvField" style={{ width: 170 }}>
-                        <span>DDD / Telefone (opcional)</span>
-                        <input
-                          type="text"
-                          placeholder="Ex: 11 99999-9999"
-                          value={testPhone}
-                          onChange={(e) => setTestPhone(e.target.value)}
-                        />
-                      </label>
-                      <button
-                        type="button"
-                        className="uvBtnPrimary"
-                        style={{ height: 38, flex: 1 }}
-                        disabled={testBusy || !testText.trim()}
-                        onClick={() => handleTestClassification()}
-                      >
-                        {testBusy ? (
-                          <>
-                            <RefreshCw size={13} className="uvSpin" /> Classificando com Laya...
-                          </>
-                        ) : (
-                          <>
-                            <Send size={13} /> Testar Classificação
-                          </>
-                        )}
-                      </button>
-                    </div>
-
-                    <div>
-                      <span style={{ fontSize: 11.5, color: "var(--uv-text-3)", display: "block", marginBottom: 6 }}>
-                        Exemplos rápidos de 1 clique:
-                      </span>
-                      <div className="uvChipsRow">
-                        {QUICK_EXAMPLES.map((ex) => (
-                          <button
-                            key={ex.title}
-                            type="button"
-                            className="uvChipBtn"
-                            onClick={() => {
-                              setTestText(ex.text);
-                              setTestPhone(ex.phone);
-                              void handleTestClassification(ex.text, ex.phone);
-                            }}
-                          >
-                            {ex.title}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {testError && (
-                      <div className="uvNotice uvNoticeError" role="alert" style={{ marginTop: 8 }}>
-                        <p><AlertTriangle size={14} /> {testError}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="uvSimBox" style={{ background: "var(--uv-surface)", borderRadius: "var(--uv-radius-control)", padding: 14, border: "1px solid var(--uv-line)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid var(--uv-line)", paddingBottom: 8 }}>
-                      <strong style={{ fontSize: 13, display: "flex", alignItems: "center", gap: 6 }}>
-                        <Bot size={15} style={{ color: "var(--uv-accent-ink)" }} /> Diagnóstico do Modelo
-                      </strong>
-                      {testResult && (
-                        <span className="uvLatencyBadge">
-                          <Zap size={11} /> {testResult.latency_ms !== null ? `${testResult.latency_ms}ms` : "< 50ms"}
-                        </span>
-                      )}
-                    </div>
-
-                    {testBusy ? (
-                      <div style={{ padding: "30px 10px", textAlign: "center", color: "var(--uv-text-3)" }}>
-                        <RefreshCw size={20} className="uvSpin" style={{ margin: "0 auto 8px" }} />
-                        <p>Laya AI avaliando intenção e campos...</p>
-                      </div>
-                    ) : testResult ? (
-                      <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", fontSize: 12 }}>
-                          <span style={{ color: "var(--uv-text-3)" }}>Motor:</span>
-                          <span className="uvVerdict uvVerdictGood">
-                            {testResult.engine === "modelo" ? "Laya AI (ModernBERT)" : "Regras / DDD"}
-                          </span>
-                          <span style={{ color: "var(--uv-text-3)" }}>Decisões:</span>
-                          <strong>{testResult.fields.length} campos</strong>
-                        </div>
-
-                        {testResult.fields.length === 0 ? (
-                          <p className="uvCellSub" style={{ padding: "10px 0" }}>Nenhum campo com confiança suficiente detectado na frase.</p>
-                        ) : (
-                          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                            {testResult.fields.map((f) => (
-                              <div
-                                key={f.key}
-                                className={`uvDecisionPill source-${f.source}`}
-                                style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "6px 10px" }}
-                              >
-                                <div>
-                                  <span style={{ color: "var(--uv-text-3)", fontSize: 11, display: "block" }}>{f.label}</span>
-                                  <strong style={{ fontSize: 13 }}>{f.values.join(", ")}</strong>
-                                </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                  <span className={`uvSourceTag ${f.source}`}>
-                                    {f.source === "modelo" ? "🤖 Laya" : f.source === "ddd" ? "📍 DDD" : "📐 Regra"}
-                                  </span>
-                                  <span style={{ fontSize: 11, color: "var(--uv-text-2)", fontWeight: 600 }}>
-                                    {fmtPct(f.confidence, 0)}
-                                  </span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ) : (
-                      <div style={{ padding: "26px 10px", textAlign: "center", color: "var(--uv-text-3)" }}>
-                        <MessageSquare size={22} style={{ margin: "0 auto 8px", opacity: 0.5 }} />
-                        <p>Digite uma frase ao lado ou clique num exemplo rápido para ver a classificação da Laya.</p>
-                      </div>
-                    )}
-
-                    {testHistory.length > 1 && (
-                      <div style={{ marginTop: 8, paddingTop: 10, borderTop: "1px solid var(--uv-line)" }}>
-                        <span style={{ fontSize: 11, color: "var(--uv-text-3)", display: "flex", alignItems: "center", gap: 4, marginBottom: 6 }}>
-                          <History size={11} /> Testes recentes nesta sessão:
-                        </span>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                          {testHistory.slice(1, 4).map((h, i) => (
-                            <div
-                              key={i}
-                              style={{
-                                fontSize: 11.5,
-                                padding: "4px 8px",
-                                borderRadius: 4,
-                                background: "var(--uv-surface-2)",
-                                cursor: "pointer",
-                                display: "flex",
-                                justifyContent: "space-between",
-                                color: "var(--uv-text-2)",
-                              }}
-                              onClick={() => {
-                                setTestText(h.text);
-                                setTestPhone(h.phone ?? "");
-                                setTestResult(h);
-                              }}
-                            >
-                              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "70%" }}>
-                                {h.text}
-                              </span>
-                              <span style={{ color: "var(--uv-accent-ink)", fontWeight: 600 }}>
-                                {h.fields.length} campos ({h.latency_ms ?? 45}ms)
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </section>
-
               {/* Feed Descendente de Classificações em Tempo Real */}
               <section className="uvCard">
                 <div className="uvCardHeader">
@@ -715,7 +455,7 @@ export function UnivetEgPortal() {
                       </button>
                     </div>
                     <p className="uvCardSubtitle">
-                      Lista cronológica descendente: a cada webhook de mensagem nova ou lote do histórico, os leads classificados descem nesta lista.
+                      Lista cronológica descendente: a cada webhook de mensagem nova ou execução em lote, os leads classificados descem nesta lista.
                     </p>
                   </div>
                   <div className="uvControlGroup">
@@ -729,7 +469,7 @@ export function UnivetEgPortal() {
                       </button>
                     ) : (
                       <button type="button" className="uvBtnPrimary" disabled={busy !== null || !data.kommo.fetched_at} onClick={handleClassify}>
-                        <Play size={13} /> {writeToKommo ? "Classificar lote de 5" : "Simular lote de 5"}
+                        <Play size={13} /> {writeToKommo ? "Classificar lote (5 leads)" : "Simular lote (5 leads)"}
                       </button>
                     )}
                   </div>
@@ -776,7 +516,7 @@ export function UnivetEgPortal() {
                                   {STATUS_LABEL[row.status] ?? row.status}
                                 </span>
                                 <span className={`uvTriggerBadge ${row.trigger === "webhook" ? "webhook" : ""}`}>
-                                  {row.trigger === "webhook" ? "⚡ Mensagem nova (Webhook)" : row.trigger === "simulacao" ? "🧪 Simulação" : "📦 Lote Histórico"}
+                                  {row.trigger === "webhook" ? "Webhook" : row.trigger === "simulacao" ? "Simulação" : "Lote"}
                                 </span>
                               </div>
 
@@ -802,11 +542,11 @@ export function UnivetEgPortal() {
                                     <span style={{ color: "var(--uv-text-3)", fontSize: 11 }}>{field.label}:</span>
                                     <strong>{field.values.join(", ")}</strong>
                                     <span className={`uvSourceTag ${field.source}`}>
-                                      {field.source === "modelo" ? "🤖 Laya" : field.source === "ddd" ? "📍 DDD" : "📐 Regra"}
+                                      {field.source === "modelo" ? "Laya AI" : field.source === "ddd" ? "DDD" : "Regra"}
                                     </span>
-                                    <span style={{ fontSize: 11, color: "var(--uv-text-2)" }}>{fmtPct(field.confidence, 0)}</span>
-                                    <span style={{ fontSize: 10, color: field.written ? "var(--uv-good)" : "var(--uv-text-3)" }}>
-                                      {field.written ? "✓ gravado" : field.already_filled ? "• mantido" : "• simulado"}
+                                    <span style={{ fontSize: 11, color: "var(--uv-text-2)", fontFamily: "monospace" }}>{fmtPct(field.confidence, 0)}</span>
+                                    <span style={{ fontSize: 10, color: field.written ? "var(--uv-good)" : "var(--uv-text-3)", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600 }}>
+                                      {field.written ? "Gravado" : field.already_filled ? "Mantido" : "Simulado"}
                                     </span>
                                   </div>
                                 ))}
@@ -822,7 +562,7 @@ export function UnivetEgPortal() {
                         ))}
                       </div>
                     ) : (
-                      <p className="uvEmpty">Nenhum lead classificado ainda. Clique em "Classificar lote de 5" acima ou ative o webhook.</p>
+                      <p className="uvEmpty">Nenhum lead classificado ainda. Clique em "Classificar lote (5 leads)" acima ou ative o webhook.</p>
                     )}
 
                     {results.data && results.data.results.length > 0 && (

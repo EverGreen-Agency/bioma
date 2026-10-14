@@ -390,7 +390,7 @@ export function UnivetExecutiveCockpit() {
             fontSize: 12,
             color: '#93C5FD'
           }}>
-            💡 <strong>Insight Evergreen:</strong> 71% das perdas acontecem por objeção de preço e concorrência direta. A pré-qualificação com demonstração presencial aumenta o fechamento em 2.4x.
+            <strong>Insight Evergreen:</strong> 71% das perdas acontecem por objeção de preço e concorrência direta. A pré-qualificação com demonstração presencial aumenta o fechamento em 2.4x.
           </div>
         </div>
       </section>
