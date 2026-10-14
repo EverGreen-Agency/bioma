@@ -312,6 +312,58 @@ export function UnivetEgPortal() {
 
           {data.kommo.configured && (
             <>
+              {/* Inteligência Operacional · Entidades & Cotas */}
+              <section className="uvCard">
+                <div className="uvCardHeader">
+                  <div>
+                    <h3 className="uvCardTitle">Inteligência Operacional · Entidades & Cotas</h3>
+                    <p className="uvCardSubtitle">
+                      Relação estrutural do CRM Univet (1 Contato : N Negócios) e monitoramento de consumo de cotas de API.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="uvKpiRow">
+                  <Tile
+                    label="Negócios (Leads)"
+                    value={fmtInt(leadsTotal)}
+                    caption="oportunidades comerciais no funil"
+                  />
+                  <Tile
+                    label="Contatos analisados"
+                    value={fmtInt(data.dedup?.contacts_scanned ?? 0)}
+                    caption={data.dedup ? `${fmtInt(data.dedup.duplicates_count)} cadastros repetidos detectados` : "aguardando varredura"}
+                  />
+                  <Tile
+                    label="Cota API Kommo"
+                    value="7 req/s"
+                    caption="throttling de 160ms ativo (0 risco 429)"
+                  />
+                  <Tile
+                    label="Laya AI (ModernBERT)"
+                    value="~35ms"
+                    caption="inferência local · custo R$ 0 em tokens"
+                  />
+                </div>
+
+                <div className="uvArchitectureBanner">
+                  <div className="uvArchitectureItem">
+                    <strong>Lead = Negócio / Oportunidade</strong>
+                    <span>Cada lead representa uma transação comercial (Venda Nova, Pós-venda, Manutenção ou Recompra).</span>
+                  </div>
+                  <div className="uvArchitectureDivider" />
+                  <div className="uvArchitectureItem">
+                    <strong>Contato = Pessoa Física (Médico/Dentista)</strong>
+                    <span>Detém o telefone/WhatsApp, DDD e especialidade. Um mesmo contato ter múltiplos leads representa o ciclo de vida (LTV) e histórico do cliente.</span>
+                  </div>
+                  <div className="uvArchitectureDivider" />
+                  <div className="uvArchitectureItem">
+                    <strong>Deduplicação Inteligente</strong>
+                    <span>Unifica apenas cadastros duplicados do mesmo contato (por telefone ou e-mail), mantendo todos os seus negócios associados ao Contato Mestre.</span>
+                  </div>
+                </div>
+              </section>
+
               {/* Deduplicação */}
               <section className="uvCard">
                 <div className="uvCardHeader">
