@@ -23,6 +23,7 @@ import {
   type EgClassifyProgress,
 } from "../../lib/portalApi";
 import { UnivetPortalChrome } from "./UnivetRealPortal";
+import { CaptureHealth, ConnectionsChecklist } from "./UnivetEgInsights";
 import "./univet-portal.css";
 
 // Operação EG da Univet: onde o Bioma lê e ESCREVE no Kommo do cliente.
@@ -317,6 +318,9 @@ export function UnivetEgPortal() {
               </div>
             </form>
           )}
+
+          {data.kommo.configured && <CaptureHealth slug={SLUG} />}
+          <ConnectionsChecklist status={data} />
 
           {data.kommo.configured && (
             <>

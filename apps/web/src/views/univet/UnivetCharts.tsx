@@ -309,9 +309,27 @@ interface BrazilMapProps {
   renderTooltip: (uf: string) => React.ReactNode;
   legendFormat: (value: number) => string;
   ariaLabel: string;
+  /** Modo território: cada UF pintada com a cor do seu dono (representante), em vez da escala de valor. */
+  territories?: { colorOf: Map<string, string>; legend: { label: string; color: string }[] };
 }
 
-export function BrazilMap({ values, selected, onSelect, renderTooltip, legendFormat, ariaLabel }: BrazilMapProps) {
+/** Cores categóricas para territórios, distinguíveis entre si sobre o fundo escuro. */
+export const TERRITORY_COLORS = ['#3987e5', '#d95926', '#199e70', '#8a6be0', '#c9a227', '#d1508f', '#2fa7b8', '#7d8b3a'];
+
+const plainText = (text: string) => text.normalize('NFKD').replace(/\p{M}/gu, '').trim().toLowerCase();
+// Nome mais longo primeiro: "Paraná" e "Paraíba" não podem cair em "Pará".
+const STATES_BY_NAME = [...BRAZIL_STATES].sort((a, b) => b.name.length - a.name.length).map((s) => ({ uf: s.uf, name: plainText(s.name) }));
+
+/** Converte o valor do campo UF do Kommo ("SP", "sp", "São Paulo", "SP - Interior") na sigla do mapa. */
+export function toUfCode(value: string): string | null {
+  const plain = plainText(value);
+  const byName = STATES_BY_NAME.find((s) => plain === s.name || plain.startsWith(`${s.name} `) || plain.startsWith(`${s.name}-`));
+  if (byName) return byName.uf;
+  const sigla = /^([a-z]{2})\b/.exec(plain)?.[1].toUpperCase();
+  return sigla && BRAZIL_STATES.some((s) => s.uf === sigla) ? sigla : null;
+}
+
+export function BrazilMap({ values, selected, onSelect, renderTooltip, legendFormat, ariaLabel, territories }: BrazilMapProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [tip, setTip] = useState<{ uf: string; x: number; y: number } | null>(null);
 
@@ -347,11 +365,14 @@ export function BrazilMap({ values, selected, onSelect, renderTooltip, legendFor
       <svg viewBox={`0 0 ${BRAZIL_VIEWBOX.width} ${BRAZIL_VIEWBOX.height}`} role="group" aria-label={ariaLabel}>
         {ordered.map((state) => {
           const cls = classOf(values.get(state.uf) ?? 0);
+          const fill = territories
+            ? territories.colorOf.get(state.uf) ?? 'var(--uv-surface-3)'
+            : cls < 0 ? 'var(--uv-surface-3)' : MAP_RAMP[cls];
           return (
             <path
               key={state.uf}
               d={state.d}
-              fill={cls < 0 ? 'var(--uv-surface-3)' : MAP_RAMP[cls]}
+              fill={fill}
               className={`uvMapState ${selected === state.uf ? 'uvMapStateSelected' : ''}`}
               tabIndex={0}
               role="button"
@@ -373,22 +394,36 @@ export function BrazilMap({ values, selected, onSelect, renderTooltip, legendFor
         })}
         {BRAZIL_STATES.filter((s) => MAP_LABELED.has(s.uf)).map((state) => {
           const cls = classOf(values.get(state.uf) ?? 0);
+          const tone = territories
+            ? territories.colorOf.has(state.uf) ? '' : 'uvMapLabelEmpty'
+            : cls >= 3 ? 'uvMapLabelDark' : cls < 0 ? 'uvMapLabelEmpty' : '';
           return (
-            <text key={state.uf} x={state.cx} y={state.cy} dy="0.35em" textAnchor="middle" className={`uvMapLabel ${cls >= 3 ? 'uvMapLabelDark' : cls < 0 ? 'uvMapLabelEmpty' : ''}`}>
+            <text key={state.uf} x={state.cx} y={state.cy} dy="0.35em" textAnchor="middle" className={`uvMapLabel ${tone}`}>
               {state.uf}
             </text>
           );
         })}
       </svg>
-      <div className="uvMapLegend" aria-hidden="true">
-        <span>{max > 0 ? legendFormat(min) : 'Sem dados'}</span>
-        <span className="uvMapLegendRamp">
-          {MAP_RAMP.map((color) => (
-            <i key={color} style={{ background: color }} />
+      {territories ? (
+        <ul className="uvMapLegend uvMapLegendKeys">
+          {territories.legend.map((item) => (
+            <li key={item.label}>
+              <i style={{ background: item.color }} aria-hidden="true" />
+              {item.label}
+            </li>
           ))}
-        </span>
-        <span>{max > 0 ? legendFormat(max) : ''}</span>
-      </div>
+        </ul>
+      ) : (
+        <div className="uvMapLegend" aria-hidden="true">
+          <span>{max > 0 ? legendFormat(min) : 'Sem dados'}</span>
+          <span className="uvMapLegendRamp">
+            {MAP_RAMP.map((color) => (
+              <i key={color} style={{ background: color }} />
+            ))}
+          </span>
+          <span>{max > 0 ? legendFormat(max) : ''}</span>
+        </div>
+      )}
       <ChartTooltip
         containerWidth={wrapRef.current?.clientWidth ?? 0}
         tip={tip ? { x: tip.x, y: tip.y, content: renderTooltip(tip.uf) } : null}

@@ -701,6 +701,17 @@ export type KommoMetricsResponse = {
 
 export type KommoRankedItem = { label: string; count: number; share: number };
 
+export type KommoRepSummary = {
+  label: string;
+  leads: number;
+  open: number;
+  won: number;
+  lost: number;
+  stale_open: number;
+  won_value: number;
+  ufs: { label: string; count: number }[];
+};
+
 export type KommoDashboard = {
   period_days: number;
   totals: {
@@ -715,7 +726,11 @@ export type KommoDashboard = {
     with_visit: number;
     last_lead_at: number | null;
     last_activity_at: number | null;
+    stale_open: number;
+    without_rep: number;
   };
+  stale_after_days: number;
+  reps: KommoRepSummary[];
   pipelines: {
     id: number;
     name: string;

@@ -361,6 +361,14 @@ body:has(.uvPortalWrapper),
   text-align: center;
 }
 
+/* Estado vazio que ocupa a altura do card vizinho em vez de deixar um buraco no topo */
+.uvEmptyFill {
+  min-height: 240px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* ---------- Indicadores ---------- */
 .uvKpiBand {
   display: grid;
@@ -872,6 +880,169 @@ body:has(.uvPortalWrapper),
 
 .uvGeoSide {
   min-width: 0;
+}
+
+/* Legenda categórica do modo território */
+.uvMapLegendKeys {
+  flex-wrap: wrap;
+  gap: 6px 14px;
+  list-style: none;
+  padding: 0;
+  color: var(--uv-text-2);
+}
+
+.uvMapLegendKeys li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.uvMapLegendKeys i,
+.uvRepKeys i {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: none;
+}
+
+.uvGeoEmpty {
+  border: 1px dashed var(--uv-line-strong);
+  border-radius: var(--uv-radius-card);
+  padding: 20px 22px;
+}
+
+.uvGeoEmpty strong {
+  display: block;
+  font-size: 14px;
+  color: var(--uv-text);
+  margin-bottom: 6px;
+}
+
+.uvGeoEmpty p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--uv-text-3);
+}
+
+.uvRepKeys {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.uvRepKeys li {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--uv-line);
+  font-size: 13px;
+}
+
+.uvRepKeys li:last-child {
+  border-bottom: 0;
+}
+
+.uvRepKeys strong {
+  color: var(--uv-text);
+  font-weight: 600;
+}
+
+.uvRepKeys span {
+  color: var(--uv-text-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.uvRepKeys .uvRepGap {
+  color: var(--uv-warning);
+}
+
+.uvTable .uvTextWarn,
+.uvTileFoot .uvTextWarn {
+  color: var(--uv-warning);
+}
+
+/* Checklist de conexões da Operação EG */
+.uvChecklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.uvChecklist li {
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 14px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--uv-line);
+  align-items: start;
+}
+
+.uvChecklist li:last-child {
+  border-bottom: 0;
+}
+
+.uvChecklistIcon {
+  color: var(--uv-text-3);
+  padding-top: 1px;
+}
+
+.uvChecklistOn .uvChecklistIcon,
+.uvChecklistOn .uvChecklistState {
+  color: var(--uv-accent-ink);
+}
+
+.uvChecklist strong {
+  display: block;
+  font-size: 13.5px;
+  color: var(--uv-text);
+  font-weight: 600;
+}
+
+.uvChecklistState {
+  display: block;
+  font-size: 12px;
+  color: var(--uv-text-3);
+  margin-top: 2px;
+}
+
+.uvChecklist p {
+  margin: 6px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--uv-text-2);
+}
+
+.uvChecklistNext .uvChip {
+  margin-left: 0;
+}
+
+@media (max-width: 720px) {
+  .uvChecklist li {
+    grid-template-columns: 20px minmax(0, 1fr);
+  }
+
+  .uvChecklistNext {
+    grid-column: 2;
+  }
+}
+
+.uvChip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--uv-line-strong);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--uv-text-3);
+  vertical-align: 1px;
 }
 
 .uvSideTitle {
