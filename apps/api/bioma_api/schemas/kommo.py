@@ -24,6 +24,24 @@ class KommoDashboardTotals(BaseModel):
     with_visit: int
     last_lead_at: int | None
     last_activity_at: int | None
+    stale_open: int = 0
+    without_rep: int = 0
+
+
+class KommoUfCount(BaseModel):
+    label: str
+    count: int
+
+
+class KommoRepSummary(BaseModel):
+    label: str
+    leads: int
+    open: int
+    won: int
+    lost: int
+    stale_open: int
+    won_value: float
+    ufs: list[KommoUfCount]
 
 
 class KommoPipelineStage(BaseModel):
@@ -70,6 +88,8 @@ class KommoDashboard(BaseModel):
     quality: list[KommoFieldQuality]
     loss_reasons: list[KommoRankedItem]
     campaigns: list[KommoRankedItem]
+    stale_after_days: int = 7
+    reps: list[KommoRepSummary] = []
 
 
 class KommoDashboardResponse(BaseModel):
