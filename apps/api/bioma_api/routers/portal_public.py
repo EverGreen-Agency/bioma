@@ -133,3 +133,15 @@ def portal_eg_classification_reset(slug: str) -> dict:
     """Limpa o histórico de classificações de teste para permitir início limpo."""
     return kommo_portal.classification_reset(slug)
 
+
+@router.post("/eg/classification/leads/{lead_id}/apply", dependencies=[Depends(admin_key)])
+def portal_eg_classification_apply_lead(slug: str, lead_id: int) -> dict:
+    """Aprova e envia as decisões de um lead sugerido diretamente ao Kommo."""
+    return kommo_portal.apply_classification(slug, lead_id)
+
+
+@router.post("/eg/classification/apply-batch", dependencies=[Depends(admin_key)])
+def portal_eg_classification_apply_batch(slug: str, payload: PortalBatchInput) -> dict:
+    """Aprova e envia as decisões de leads sugeridos em lote para o Kommo."""
+    return kommo_portal.apply_classification_batch(slug, payload.limit)
+

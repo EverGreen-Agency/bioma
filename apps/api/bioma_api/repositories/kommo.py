@@ -241,9 +241,57 @@ def classified_lead_ids(conn, organization_id: UUID, include_simulated: bool) ->
 
 def get_lead_classification(conn, organization_id: UUID, lead_id: int):
     return conn.execute(
-        "select classified_at from kommo_lead_classifications where organization_id = %s and lead_id = %s",
+        "select classified_at, status, fields_written from kommo_lead_classifications where organization_id = %s and lead_id = %s",
         (organization_id, lead_id),
     ).fetchone()
+
+
+def get_lead_classification_detail(conn, organization_id: UUID, lead_id: int):
+    return conn.execute(
+        """
+        select lead_id, status, engine, messages_count, fields, fields_written, error, trigger, classified_at
+        from kommo_lead_classifications
+        where organization_id = %s and lead_id = %s
+        """,
+        (organization_id, lead_id),
+    ).fetchone()
+
+
+def update_lead_classification_applied(
+    conn,
+    organization_id: UUID,
+    lead_id: int,
+    fields: dict,
+    fields_written: int,
+) -> None:
+    conn.execute(
+        """
+        update kommo_lead_classifications
+        set status = 'gravado',
+            fields = %s,
+            fields_written = %s,
+            classified_at = now()
+        where organization_id = %s and lead_id = %s
+        """,
+        (Jsonb(fields), fields_written, organization_id, lead_id),
+    )
+
+
+def list_pending_suggested_lead_ids(conn, organization_id: UUID, limit: int) -> list[int]:
+    rows = conn.execute(
+        """
+        select lead_id
+        from kommo_lead_classifications
+        where organization_id = %s
+          and status in ('sugerido', 'classificado')
+          and fields_written = 0
+          and fields <> '{}'::jsonb
+        order by classified_at desc
+        limit %s
+        """,
+        (organization_id, limit),
+    ).fetchall()
+    return [r["lead_id"] for r in rows]
 
 
 def classification_summary(conn, organization_id: UUID):
@@ -251,7 +299,10 @@ def classification_summary(conn, organization_id: UUID):
         """
         select count(*) as total,
                count(*) filter (where trigger = 'simulacao') as simulated,
-               count(*) filter (where status = 'classificado') as classified,
+               count(*) filter (where status in ('classificado', 'sugerido', 'gravado')) as classified,
+               count(*) filter (where status in ('sugerido', 'classificado') and fields_written = 0) as suggested,
+               count(*) filter (where status = 'gravado' or fields_written > 0) as written_leads,
+               count(*) filter (where status = 'aguardando_cliente') as waiting_customer,
                count(*) filter (where status = 'sem_conversa') as without_conversation,
                count(*) filter (where status = 'erro') as errors,
                coalesce(sum(fields_written), 0) as fields_written,

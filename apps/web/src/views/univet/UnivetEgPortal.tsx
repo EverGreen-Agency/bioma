@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
   AlertTriangle,
+  Check,
   CheckCircle2,
   CircleDashed,
   Cpu,
@@ -12,6 +13,7 @@ import {
   RefreshCw,
   ScanSearch,
   Square,
+  UploadCloud,
 } from "lucide-react";
 import { fmtInt, fmtPct } from "../../data/univet/univetPortalData";
 import { formatDateTime } from "../../components/KommoRealDashboard";
@@ -34,8 +36,16 @@ const SLUG = "univet";
 const DEDUP_BATCH = 15;
 const CLASSIFY_BATCH = 5;
 
-const SOURCE_LABEL: Record<EgClassificationField["source"], string> = { modelo: "modelo", regra: "regra", ddd: "DDD" };
+const SOURCE_LABEL: Record<EgClassificationField["source"], string> = {
+  modelo: "Laya AI",
+  regra: "Regra",
+  ddd: "DDD",
+  texto: "Texto",
+};
 const STATUS_LABEL: Record<string, string> = {
+  sugerido: "Sugerido (Pendente)",
+  gravado: "Gravado no Kommo",
+  aguardando_cliente: "Aguardando Cliente",
   classificado: "Classificado",
   sem_conversa: "Sem conversa",
   sem_sinal: "Conversa sem sinal",
@@ -74,7 +84,7 @@ export function UnivetEgPortal() {
     retry: false,
   });
 
-  const [busy, setBusy] = useState<null | "connect" | "sync" | "scan" | "webhook" | "dedup" | "classify" | "reset">(null);
+  const [busy, setBusy] = useState<null | "connect" | "sync" | "scan" | "webhook" | "dedup" | "classify" | "apply_lead" | "apply_batch" | "reset">(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const stopRef = useRef(false);
@@ -90,7 +100,6 @@ export function UnivetEgPortal() {
   const [applyProgress, setApplyProgress] = useState<EgApplyProgress | null>(null);
 
   const [resultsPage, setResultsPage] = useState(1);
-  const [writeToKommo, setWriteToKommo] = useState(true);
   const [classifyProgress, setClassifyProgress] = useState<EgClassifyProgress | null>(null);
   const [liveStream, setLiveStream] = useState(true);
   const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null);
@@ -187,14 +196,36 @@ export function UnivetEgPortal() {
   const handleClassify = (all = false) =>
     run("classify", async () => {
       let last: EgClassifyProgress | null = null;
-      let written = 0;
+      let count = 0;
       do {
-        last = await portalApi.classifyBatch(SLUG, key, CLASSIFY_BATCH, true);
-        written += last.fields_written;
+        // write=false: apenas sugere a classificação para revisão prévia
+        last = await portalApi.classifyBatch(SLUG, key, CLASSIFY_BATCH, false);
+        count += last.classified;
         setClassifyProgress(last);
         void queryClient.invalidateQueries({ queryKey: ["eg-classification", SLUG] });
       } while (all && last.remaining > 0 && last.processed > 0 && !stopRef.current);
-      return `${stopRef.current ? "Interrompido" : "Concluído"}: ${fmtInt(written)} campos gravados no Kommo. ${fmtInt(last?.remaining ?? 0)} leads restantes na fila.`;
+      return `${stopRef.current ? "Interrompido" : "Concluído"}: ${fmtInt(count)} leads analisados com sugestões geradas. ${fmtInt(last?.remaining ?? 0)} restantes na fila.`;
+    });
+
+  const handleApplyLead = (leadId: number) =>
+    run("apply_lead", async () => {
+      const res = await portalApi.applyClassificationLead(SLUG, key, leadId);
+      void queryClient.invalidateQueries({ queryKey: ["eg-classification", SLUG] });
+      return `Gravado com sucesso! Lead #${leadId} atualizado no Kommo com ${res.fields_written} campos preenchidos.`;
+    });
+
+  const handleApplyBatch = () =>
+    run("apply_batch", async () => {
+      let totalApplied = 0;
+      let totalFields = 0;
+      let last: { processed: number; fields_written: number; remaining: number } | null = null;
+      do {
+        last = await portalApi.applyClassificationBatch(SLUG, key, 10);
+        totalApplied += last.processed;
+        totalFields += last.fields_written;
+        void queryClient.invalidateQueries({ queryKey: ["eg-classification", SLUG] });
+      } while (last.remaining > 0 && last.processed > 0 && !stopRef.current);
+      return `Lote enviado com sucesso ao Kommo: ${fmtInt(totalApplied)} leads aprovados (${fmtInt(totalFields)} campos gravados no CRM).`;
     });
 
   const handleResetHistory = () =>
@@ -542,6 +573,16 @@ export function UnivetEgPortal() {
                         <button type="button" className="uvBtnSecondary" disabled={busy !== null || !data.kommo.fetched_at} onClick={() => handleClassify(true)}>
                           <Play size={13} /> Classificar todos os leads
                         </button>
+                        <button
+                          type="button"
+                          className="uvBtnPrimary"
+                          style={{ background: "#27ae82", color: "#0b1a15" }}
+                          disabled={busy !== null || !data.kommo.fetched_at || ((results.data?.summary.suggested ?? 0) === 0 && !results.data?.results.some((r) => r.status === "sugerido" || (r.status === "classificado" && r.fields_written === 0)))}
+                          onClick={handleApplyBatch}
+                          title="Envia ao Kommo todas as classificações sugeridas pendentes de aprovação"
+                        >
+                          <UploadCloud size={13} /> {busy === "apply_batch" ? "Enviando lote..." : "Enviar sugestões ao Kommo"}
+                        </button>
                       </>
                     )}
                     {(classification?.total ?? 0) > 0 && (
@@ -569,9 +610,21 @@ export function UnivetEgPortal() {
                         value={fmtInt(classification?.total ?? 0)}
                         caption={`de ${fmtInt(leadsTotal)} leads na conta`}
                       />
-                      <Tile label="Classificados" value={fmtInt(classification?.classified ?? 0)} caption="com ao menos um campo decidido" />
-                      <Tile label="Campos gravados" value={fmtInt(classification?.fields_written ?? 0)} caption="preenchidos no Kommo" />
-                      <Tile label="Sem conversa" value={fmtInt(classification?.without_conversation ?? 0)} caption="leads sem mensagem no Kommo" />
+                      <Tile
+                        label="Sugeridos (Pendentes)"
+                        value={fmtInt(results.data?.summary.suggested ?? results.data?.results.filter((r) => r.status === "sugerido" || (r.status === "classificado" && r.fields_written === 0)).length ?? 0)}
+                        caption="aguardando envio ao Kommo"
+                      />
+                      <Tile
+                        label="Gravados no Kommo"
+                        value={fmtInt(classification?.fields_written ?? 0)}
+                        caption="campos preenchidos no CRM"
+                      />
+                      <Tile
+                        label="Aguardando cliente"
+                        value={fmtInt(results.data?.summary.waiting_customer ?? results.data?.results.filter((r) => r.status === "aguardando_cliente").length ?? 0)}
+                        caption="apenas saudação ('Bom dia')"
+                      />
                     </div>
                     <Progress done={classification?.total ?? 0} total={leadsTotal} />
                     {busy === "classify" && classifyProgress && (
@@ -596,7 +649,7 @@ export function UnivetEgPortal() {
                             >
                               Abrir no Kommo <ExternalLink size={10} />
                             </a>
-                            <span className={`uvVerdict ${activeLead.status === "classificado" ? "uvVerdictGood" : "uvVerdictWarn"}`}>
+                            <span className={`uvVerdict ${activeLead.status === "gravado" || activeLead.status === "classificado" ? "uvVerdictGood" : activeLead.status === "sugerido" ? "sugerido" : activeLead.status === "aguardando_cliente" ? "aguardando" : "uvVerdictWarn"}`}>
                               {STATUS_LABEL[activeLead.status] ?? activeLead.status}
                             </span>
                           </div>
@@ -610,10 +663,64 @@ export function UnivetEgPortal() {
                           </div>
                         </div>
 
+                        {activeLead.status === "sugerido" || (activeLead.status === "classificado" && activeLead.fields_written === 0) ? (
+                          <div className="uvInspectorActionBanner">
+                            <div>
+                              <strong style={{ fontSize: 13, color: "var(--uv-accent-ink)", display: "flex", alignItems: "center", gap: 6 }}>
+                                <CheckCircle2 size={16} /> Sugestão gerada · Confirmação necessária
+                              </strong>
+                              <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--uv-text-2)" }}>
+                                Os campos abaixo foram classificados pela IA e Regras. Clique para confirmar e gravar no Kommo CRM.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              className="uvBtnApplyPrimary"
+                              disabled={busy !== null}
+                              onClick={() => handleApplyLead(activeLead.lead_id)}
+                            >
+                              <Check size={13} /> {busy === "apply_lead" ? "Gravando..." : "Aprovar e Gravar no Kommo"}
+                            </button>
+                          </div>
+                        ) : activeLead.status === "gravado" || activeLead.fields_written > 0 ? (
+                          <div className="uvInspectorActionBanner" style={{ background: "rgba(39, 174, 130, 0.05)", borderColor: "rgba(39, 174, 130, 0.2)" }}>
+                            <div>
+                              <strong style={{ fontSize: 13, color: "var(--uv-good)", display: "flex", alignItems: "center", gap: 6 }}>
+                                <CheckCircle2 size={16} /> Gravado no Kommo CRM
+                              </strong>
+                              <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--uv-text-3)" }}>
+                                {activeLead.fields_written} campos sincronizados com a conta da Univet.
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              className="uvBtnGhost"
+                              disabled={busy !== null}
+                              onClick={() => handleApplyLead(activeLead.lead_id)}
+                              title="Reenvia as decisões para o Kommo caso queira sincronizar novamente"
+                            >
+                              <RefreshCw size={12} /> {busy === "apply_lead" ? "Enviando..." : "Reenviar ao Kommo"}
+                            </button>
+                          </div>
+                        ) : activeLead.status === "aguardando_cliente" ? (
+                          <div className="uvInspectorActionBanner" style={{ background: "rgba(251, 191, 36, 0.08)", borderColor: "rgba(251, 191, 36, 0.3)" }}>
+                            <div>
+                              <strong style={{ fontSize: 13, color: "#d97706", display: "flex", alignItems: "center", gap: 6 }}>
+                                <AlertTriangle size={16} /> Aguardando detalhamento do cliente
+                              </strong>
+                              <p style={{ margin: "2px 0 0", fontSize: 12, color: "var(--uv-text-2)" }}>
+                                O cliente apenas enviou saudação inicial (ex: "Bom dia"). A classificação aguarda a manifestação da dúvida para não gerar falsos positivos.
+                              </p>
+                            </div>
+                          </div>
+                        ) : null}
+
                         {activeLead.fields.length === 0 ? (
                           <p className="uvCellSub" style={{ padding: "8px 0" }}>
                             {activeLead.status === "sem_conversa"
                               ? "Nenhuma mensagem encontrada para este lead no Kommo."
+                              : activeLead.status === "aguardando_cliente"
+                              ? "Cliente ainda não expressou interesse ou segmento."
                               : "Conversa lida, mas sem termos conclusivos de especialidade, armação ou fotóforo."}
                           </p>
                         ) : (
@@ -623,7 +730,7 @@ export function UnivetEgPortal() {
                                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                                   <span style={{ fontSize: 11, color: "var(--uv-text-3)", fontWeight: 550 }}>{f.label}</span>
                                   <span className={`uvSourceTag ${f.source}`}>
-                                    {f.source === "modelo" ? "Laya AI" : f.source === "ddd" ? "DDD" : "Regra"}
+                                    {f.source === "modelo" ? "Laya AI" : f.source === "ddd" ? "DDD" : f.source === "texto" ? "Texto" : "Regra"}
                                   </span>
                                 </div>
                                 <div style={{ fontSize: 13, fontWeight: 700, color: "var(--uv-text)" }}>
@@ -638,8 +745,8 @@ export function UnivetEgPortal() {
                                     <div className="uvConfidenceFill" style={{ width: `${Math.min(100, Math.max(8, f.confidence * 100))}%` }} />
                                   </div>
                                 </div>
-                                <div style={{ fontSize: 10, color: f.written ? "var(--uv-good)" : "var(--uv-text-3)", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600, marginTop: 2 }}>
-                                  {f.written ? "Gravado no Kommo" : "Mantido (já preenchido)"}
+                                <div style={{ fontSize: 10, color: f.written ? "var(--uv-good)" : f.status === "sugerido" ? "#38bdf8" : "var(--uv-text-3)", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600, marginTop: 2 }}>
+                                  {f.written ? "Gravado no Kommo" : f.status === "sugerido" ? "Sugerido (Pendente)" : "Mantido (já preenchido)"}
                                 </div>
                               </div>
                             ))}
@@ -653,7 +760,7 @@ export function UnivetEgPortal() {
                         {results.data.results.map((row) => (
                           <div
                             key={row.lead_id}
-                            className={`uvFeedItem ${row.status === "classificado" ? "good" : row.status === "erro" ? "error" : "warn"} ${activeLead?.lead_id === row.lead_id ? "selected" : ""}`}
+                            className={`uvFeedItem ${row.status === "gravado" || row.status === "classificado" ? "good" : row.status === "sugerido" ? "sugerido" : row.status === "erro" ? "error" : "warn"} ${activeLead?.lead_id === row.lead_id ? "selected" : ""}`}
                             style={{ cursor: "pointer" }}
                             onClick={() => setSelectedLeadId(row.lead_id)}
                           >
@@ -668,7 +775,21 @@ export function UnivetEgPortal() {
                                 >
                                   Lead #{row.lead_id} <ExternalLink size={11} />
                                 </a>
-                                <span className={`uvVerdict ${row.status === "classificado" ? "uvVerdictGood" : row.status === "erro" ? "uvVerdictWarn" : ""}`} title={row.error ?? undefined}>
+                                {(row.status === "sugerido" || (row.status === "classificado" && row.fields_written === 0)) && (
+                                  <button
+                                    type="button"
+                                    className="uvBtnActionQuick"
+                                    disabled={busy !== null}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleApplyLead(row.lead_id);
+                                    }}
+                                    title="Gravar decisões deste lead no Kommo"
+                                  >
+                                    <Check size={11} /> Gravar no Kommo
+                                  </button>
+                                )}
+                                <span className={`uvVerdict ${row.status === "gravado" || row.status === "classificado" ? "uvVerdictGood" : row.status === "sugerido" ? "sugerido" : row.status === "aguardando_cliente" ? "aguardando" : row.status === "erro" ? "uvVerdictWarn" : ""}`} title={row.error ?? undefined}>
                                   {STATUS_LABEL[row.status] ?? row.status}
                                 </span>
                                 <span className={`uvTriggerBadge ${row.trigger === "webhook" ? "webhook" : ""}`}>
@@ -685,7 +806,7 @@ export function UnivetEgPortal() {
 
                             {row.fields.length === 0 ? (
                               <div style={{ fontSize: 12, color: "var(--uv-text-3)", fontStyle: "italic" }}>
-                                {row.status === "sem_conversa" ? "Nenhuma mensagem encontrada para este lead no Kommo." : "Conversa sem termos identificáveis."}
+                                {row.status === "sem_conversa" ? "Nenhuma mensagem encontrada para este lead no Kommo." : row.status === "aguardando_cliente" ? "Aguardando cliente enviar mensagem substantiva." : "Conversa sem termos identificáveis."}
                               </div>
                             ) : (
                               <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 4 }}>
@@ -698,11 +819,11 @@ export function UnivetEgPortal() {
                                     <span style={{ color: "var(--uv-text-3)", fontSize: 11 }}>{field.label}:</span>
                                     <strong>{field.values.join(", ")}</strong>
                                     <span className={`uvSourceTag ${field.source}`}>
-                                      {field.source === "modelo" ? "Laya AI" : field.source === "ddd" ? "DDD" : "Regra"}
+                                      {field.source === "modelo" ? "Laya AI" : field.source === "ddd" ? "DDD" : field.source === "texto" ? "Texto" : "Regra"}
                                     </span>
                                     <span style={{ fontSize: 11, color: "var(--uv-text-2)", fontFamily: "monospace" }}>{fmtPct(field.confidence, 0)}</span>
-                                    <span style={{ fontSize: 10, color: field.written ? "var(--uv-good)" : "var(--uv-text-3)", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600 }}>
-                                      {field.written ? "Gravado" : "Mantido"}
+                                    <span style={{ fontSize: 10, color: field.written ? "var(--uv-good)" : field.status === "sugerido" ? "#38bdf8" : "var(--uv-text-3)", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600 }}>
+                                      {field.written ? "Gravado" : field.status === "sugerido" ? "Sugerido" : "Mantido"}
                                     </span>
                                   </div>
                                 ))}
@@ -718,7 +839,7 @@ export function UnivetEgPortal() {
                         ))}
                       </div>
                     ) : (
-                      <p className="uvEmpty">Nenhum lead classificado ainda. Clique em "Classificar lote (5 leads)" acima ou ative o webhook.</p>
+                      <p className="uvEmpty">Nenhum lead classificado ainda. Clique em "Classificar 5 leads" acima ou aguarde mensagens pelo webhook.</p>
                     )}
 
                     {results.data && results.data.results.length > 0 && (
