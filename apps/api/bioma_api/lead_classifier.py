@@ -211,11 +211,28 @@ def decisions_from_answers(answers: dict[str, Any], specs: list[FieldSpec]) -> d
     return decisions
 
 
+def normalize_model_name(model: str | None) -> str:
+    """Garante um identificador unitário válido para o TypeSafe / Laya.
+
+    Evita falhas caso a variável contenha múltiplos modelos (ex: 'english,multilingual')
+    ou apenas 'multilingual' em vez de 'laya-multilingual'.
+    """
+    raw = (model or "").strip()
+    if not raw or raw in ("english,multilingual", "multilingual", "laya-multilingual"):
+        return "laya-multilingual"
+    if raw in ("english", "laya-english"):
+        return "laya-english"
+    if raw in ("auto", "laya-auto"):
+        return "laya-auto"
+    return raw
+
+
 def ask_decision_model(state: str, questions: dict[str, Any], url: str, api_key: str, model: str) -> dict[str, Any]:
+    resolved_model = normalize_model_name(model)
     response = httpx.post(
         url,
         headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-        json={"state": state, "model": model, "questions": questions},
+        json={"state": state, "model": resolved_model, "questions": questions},
         timeout=30,
     )
     response.raise_for_status()

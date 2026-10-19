@@ -184,24 +184,23 @@ export function UnivetEgPortal() {
         : `Concluído: ${fmtInt(last.unified)} grupos unificados.`;
     });
 
-  const handleClassify = () =>
+  const handleClassify = (all = false) =>
     run("classify", async () => {
       let last: EgClassifyProgress | null = null;
       let written = 0;
       do {
-        last = await portalApi.classifyBatch(SLUG, key, CLASSIFY_BATCH, writeToKommo);
+        last = await portalApi.classifyBatch(SLUG, key, CLASSIFY_BATCH, true);
         written += last.fields_written;
         setClassifyProgress(last);
         void queryClient.invalidateQueries({ queryKey: ["eg-classification", SLUG] });
-      } while (last.remaining > 0 && last.processed > 0 && !stopRef.current);
-      const verb = writeToKommo ? "campos gravados no Kommo" : "campos decididos (simulação, nada gravado)";
-      return `${stopRef.current ? "Interrompido" : "Concluído"}: ${fmtInt(written)} ${verb}. ${fmtInt(last.remaining)} leads na fila.`;
+      } while (all && last.remaining > 0 && last.processed > 0 && !stopRef.current);
+      return `${stopRef.current ? "Interrompido" : "Concluído"}: ${fmtInt(written)} campos gravados no Kommo. ${fmtInt(last?.remaining ?? 0)} leads restantes na fila.`;
     });
 
   const handleResetHistory = () =>
     run("reset", async () => {
       const res = await portalApi.classificationReset(SLUG, key);
-      return `Histórico limpo: ${fmtInt(res.deleted)} registros de teste removidos. Base pronta para o WhatsApp.`;
+      return `Histórico de execuções limpo: ${fmtInt(res.deleted)} logs removidos do feed.`;
     });
 
 
@@ -531,18 +530,19 @@ export function UnivetEgPortal() {
                     </p>
                   </div>
                   <div className="uvControlGroup">
-                    <label className="uvCheck">
-                      <input type="checkbox" checked={writeToKommo} disabled={busy !== null} onChange={(event) => setWriteToKommo(event.target.checked)} />
-                      Gravar no Kommo
-                    </label>
                     {busy === "classify" ? (
                       <button type="button" className="uvBtnSecondary" onClick={() => (stopRef.current = true)}>
                         <Square size={13} /> Parar
                       </button>
                     ) : (
-                      <button type="button" className="uvBtnPrimary" disabled={busy !== null || !data.kommo.fetched_at} onClick={handleClassify}>
-                        <Play size={13} /> {writeToKommo ? "Classificar lote (5 leads)" : "Simular lote (5 leads)"}
-                      </button>
+                      <>
+                        <button type="button" className="uvBtnPrimary" disabled={busy !== null || !data.kommo.fetched_at} onClick={() => handleClassify(false)}>
+                          <Play size={13} /> Classificar 5 leads
+                        </button>
+                        <button type="button" className="uvBtnSecondary" disabled={busy !== null || !data.kommo.fetched_at} onClick={() => handleClassify(true)}>
+                          <Play size={13} /> Classificar todos os leads
+                        </button>
+                      </>
                     )}
                     {(classification?.total ?? 0) > 0 && (
                       <button
@@ -550,9 +550,9 @@ export function UnivetEgPortal() {
                         className="uvBtnGhost"
                         disabled={busy !== null}
                         onClick={handleResetHistory}
-                        title="Limpa registros de teste antigos para começar 100% limpo com o WhatsApp"
+                        title="Apaga os logs de execução e falhas anteriores do feed local. Não altera dados no Kommo."
                       >
-                        {busy === "reset" ? "Limpando..." : "Limpar registros de teste"}
+                        {busy === "reset" ? "Limpando..." : "Limpar histórico de execuções"}
                       </button>
                     )}
                   </div>
@@ -567,7 +567,7 @@ export function UnivetEgPortal() {
                       <Tile
                         label="Leads lidos"
                         value={fmtInt(classification?.total ?? 0)}
-                        caption={classification?.simulated ? `de ${fmtInt(leadsTotal)}, sendo ${fmtInt(classification.simulated)} só simulados` : `de ${fmtInt(leadsTotal)} leads na conta`}
+                        caption={`de ${fmtInt(leadsTotal)} leads na conta`}
                       />
                       <Tile label="Classificados" value={fmtInt(classification?.classified ?? 0)} caption="com ao menos um campo decidido" />
                       <Tile label="Campos gravados" value={fmtInt(classification?.fields_written ?? 0)} caption="preenchidos no Kommo" />
@@ -639,7 +639,7 @@ export function UnivetEgPortal() {
                                   </div>
                                 </div>
                                 <div style={{ fontSize: 10, color: f.written ? "var(--uv-good)" : "var(--uv-text-3)", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600, marginTop: 2 }}>
-                                  {f.written ? "Gravado no Kommo" : f.already_filled ? "Mantido (já existia)" : "Simulado"}
+                                  {f.written ? "Gravado no Kommo" : "Mantido (já preenchido)"}
                                 </div>
                               </div>
                             ))}
@@ -672,7 +672,7 @@ export function UnivetEgPortal() {
                                   {STATUS_LABEL[row.status] ?? row.status}
                                 </span>
                                 <span className={`uvTriggerBadge ${row.trigger === "webhook" ? "webhook" : ""}`}>
-                                  {row.trigger === "webhook" ? "Webhook" : row.trigger === "simulacao" ? "Simulação" : "Lote"}
+                                  {row.trigger === "webhook" ? "Webhook" : "Lote"}
                                 </span>
                               </div>
 
@@ -702,7 +702,7 @@ export function UnivetEgPortal() {
                                     </span>
                                     <span style={{ fontSize: 11, color: "var(--uv-text-2)", fontFamily: "monospace" }}>{fmtPct(field.confidence, 0)}</span>
                                     <span style={{ fontSize: 10, color: field.written ? "var(--uv-good)" : "var(--uv-text-3)", textTransform: "uppercase", letterSpacing: "0.04em", fontWeight: 600 }}>
-                                      {field.written ? "Gravado" : field.already_filled ? "Mantido" : "Simulado"}
+                                      {field.written ? "Gravado" : "Mantido"}
                                     </span>
                                   </div>
                                 ))}

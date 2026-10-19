@@ -416,13 +416,20 @@ def dedup_apply(slug: str, run_id: UUID, limit: int) -> dict:
 _FIELD_TO_KEY = {name: key for key, _label, names in kommo_insights.DIMENSIONS for name in names}
 
 
-def _lead_messages(api: KommoApi, lead_id: int) -> list[dict]:
+def _lead_messages(api: KommoApi, lead_id: int, contact_id: int | None = None) -> list[dict]:
     talks = (
         api.request(
             "GET", "/api/v4/talks", params={"filter[entity_id][]": lead_id, "filter[entity_type]": "lead", "limit": 50}
         ).get("_embedded")
         or {}
     ).get("talks") or []
+    if not talks and contact_id:
+        talks = (
+            api.request(
+                "GET", "/api/v4/talks", params={"filter[entity_id][]": contact_id, "filter[entity_type]": "contact", "limit": 50}
+            ).get("_embedded")
+            or {}
+        ).get("talks") or []
     messages: list[dict] = []
     for talk in talks[:5]:
         page = api.request("GET", f"/api/v4/talks/{talk['talk_id']}/messages", params={"limit": 250})
@@ -451,23 +458,31 @@ def _classify_lead(api: KommoApi, specs: list[lead_classifier.FieldSpec], lead_i
         for f in lead.get("custom_fields_values") or []
         if kommo_insights.normalize(f.get("field_name")) in _FIELD_TO_KEY and f.get("values")
     }
-    messages = _lead_messages(api, lead_id)
+    contacts = (lead.get("_embedded") or {}).get("contacts") or []
+    main_contact = next((c for c in contacts if c.get("is_main")), contacts[0] if contacts else None)
+    contact_id = main_contact.get("id") if main_contact else None
+
+    messages = _lead_messages(api, lead_id, contact_id)
     transcript, customer_text = lead_classifier.build_state(messages)
     phone = _contact_phone(api, lead)
 
     decisions = lead_classifier.classify_with_rules(customer_text, phone, specs)
     engine = "regras"
+    model_error = None
     settings = get_settings()
     if settings.decision_model_api_key and transcript:
-        answers = lead_classifier.ask_decision_model(
-            transcript,
-            lead_classifier.build_questions(specs),
-            settings.decision_model_url,
-            settings.decision_model_api_key,
-            settings.decision_model_name,
-        )
-        decisions = lead_classifier.merge_decisions(lead_classifier.decisions_from_answers(answers, specs), decisions)
-        engine = "modelo"
+        try:
+            answers = lead_classifier.ask_decision_model(
+                transcript,
+                lead_classifier.build_questions(specs),
+                settings.decision_model_url,
+                settings.decision_model_api_key,
+                settings.decision_model_name,
+            )
+            decisions = lead_classifier.merge_decisions(lead_classifier.decisions_from_answers(answers, specs), decisions)
+            engine = "modelo"
+        except httpx.HTTPError as exc:
+            model_error = exc.response.text[:160] if isinstance(exc, httpx.HTTPStatusError) else str(exc)[:160]
 
     payload = lead_classifier.payload_for_kommo(decisions, specs, filled)
     if write and payload:
@@ -488,6 +503,7 @@ def _classify_lead(api: KommoApi, specs: list[lead_classifier.FieldSpec], lead_i
         "messages_count": len(messages),
         "fields": fields,
         "fields_written": len(written_ids),
+        "model_error": model_error,
     }
 
 
@@ -515,7 +531,7 @@ def _cached_field_specs(api: KommoApi, org_id: UUID) -> list[lead_classifier.Fie
 def _classify_and_store(org_id: UUID, api: KommoApi, specs, lead_id: int, write: bool, trigger: str) -> dict:
     try:
         result = _classify_lead(api, specs, lead_id, write)
-        error = None
+        error = result.get("model_error")
     except httpx.HTTPError as exc:
         detail = exc.response.text[:160] if isinstance(exc, httpx.HTTPStatusError) else str(exc)[:160]
         result = {"status": "erro", "engine": "regras", "messages_count": 0, "fields": {}, "fields_written": 0}
@@ -536,7 +552,7 @@ def _classify_and_store(org_id: UUID, api: KommoApi, specs, lead_id: int, write:
     return {**result, "error": error}
 
 
-def classify_batch(slug: str, limit: int, write: bool) -> dict:
+def classify_batch(slug: str, limit: int, write: bool = True) -> dict:
     """Classifica os próximos `limit` leads do histórico que ainda não foram lidos."""
     with connect() as conn:
         org = _organization(conn, slug)
@@ -545,8 +561,7 @@ def classify_batch(slug: str, limit: int, write: bool) -> dict:
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT, detail="Sincronize os leads do Kommo antes de classificar."
             )
-        # Simular não consome a fila de gravação: o lead simulado volta a ser lido quando for para valer.
-        done = kommo_repo.classified_lead_ids(conn, org["id"], include_simulated=not write)
+        done = kommo_repo.classified_lead_ids(conn, org["id"], include_simulated=False)
         api = _api(conn, org["id"])
 
     # Mais recentes primeiro: é onde a classificação ainda muda o atendimento.
@@ -557,7 +572,7 @@ def classify_batch(slug: str, limit: int, write: bool) -> dict:
     try:
         specs = _field_specs(api) if batch else []
         for lead_id in batch:
-            result = _classify_and_store(org["id"], api, specs, lead_id, write, "historico" if write else "simulacao")
+            result = _classify_and_store(org["id"], api, specs, lead_id, write=True, trigger="lote")
             written += result["fields_written"]
             classified += 1 if result["status"] == "classificado" else 0
     except httpx.HTTPError as exc:
