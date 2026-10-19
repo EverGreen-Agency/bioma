@@ -37,6 +37,7 @@ UNDECIDED = "nao_informado"
 MIN_CONFIDENCE = 0.6
 RULE_CONFIDENCE = 0.7
 DDD_CONFIDENCE = 0.85
+TEXT_LOCATION_CONFIDENCE = 0.95
 _STATE_BUDGET = 3200  # caracteres; o Laya multilíngue aceita ~1.024 tokens de contexto
 
 _DDD_TO_UF = {
@@ -53,11 +54,58 @@ _DDD_TO_UF = {
     91: "PA", 93: "PA", 94: "PA", 92: "AM", 97: "AM", 95: "RR", 96: "AP", 98: "MA", 99: "MA",
 }
 
+# Mapeamento de cidades polo/capitais brasileiras para UF (nomes normalizados em minúsculo e sem acento)
+_CITY_TO_UF: dict[str, str] = {
+    "pelotas": "RS", "porto alegre": "RS", "caxias do sul": "RS", "passo fundo": "RS",
+    "santa maria": "RS", "canoas": "RS", "novo hamburgo": "RS", "sao leopoldo": "RS",
+    "rio grande": "RS", "bento goncalves": "RS", "erechim": "RS", "lajeado": "RS",
+    "florianopolis": "SC", "joinville": "SC", "blumenau": "SC", "chapeco": "SC",
+    "itajai": "SC", "criciuma": "SC", "balneario camboriu": "SC",
+    "curitiba": "PR", "londrina": "PR", "maringa": "PR", "cascavel": "PR",
+    "ponta grossa": "PR", "foz do iguacu": "PR", "sao jose dos pinhais": "PR",
+    "sao paulo": "SP", "campinas": "SP", "santos": "SP", "sao bernardo do campo": "SP",
+    "santo andre": "SP", "osasco": "SP", "ribeirao preto": "SP", "sorocaba": "SP",
+    "sao jose dos campos": "SP", "piracicaba": "SP", "bauru": "SP", "jundiai": "SP",
+    "araraquara": "SP", "sao carlos": "SP", "presidente prudente": "SP", "franca": "SP",
+    "belo horizonte": "MG", "uberlandia": "MG", "contagem": "MG", "juiz de fora": "MG",
+    "betim": "MG", "montes claros": "MG", "uberaba": "MG", "governador valadares": "MG",
+    "rio de janeiro": "RJ", "niteroi": "RJ", "duque de caxias": "RJ", "sao goncalo": "RJ",
+    "nova iguacu": "RJ", "petropolis": "RJ", "volta redonda": "RJ", "campos dos goytacazes": "RJ",
+    "vitoria": "ES", "vila velha": "ES", "serra": "ES", "cariacica": "ES",
+    "brasilia": "DF", "goiania": "GO", "anapolis": "GO", "aparecida de goiania": "GO",
+    "salvador": "BA", "feira de santana": "BA", "vitoria da conquista": "BA",
+    "recife": "PE", "olinda": "PE", "caruaru": "PE", "petrolina": "PE",
+    "fortaleza": "CE", "caucaia": "CE", "juazeiro do norte": "CE", "sobral": "CE",
+    "natal": "RN", "mossoro": "RN", "joao pessoa": "PB", "campina grande": "PB",
+    "maceio": "AL", "aracaju": "SE", "sao luis": "MA", "imperatriz": "MA",
+    "teresina": "PI", "parnaiba": "PI", "belem": "PA", "santarem": "PA", "manaus": "AM",
+    "cuiaba": "MT", "varzea grande": "MT", "campo grande": "MS", "dourados": "MS",
+    "palmas": "TO", "porto velho": "RO", "rio branco": "AC", "boa vista": "RR", "macapa": "AP",
+}
+
+_STATE_NAME_TO_UF: dict[str, str] = {
+    "sao paulo": "SP", "rio de janeiro": "RJ", "minas gerais": "MG", "rio grande do sul": "RS",
+    "parana": "PR", "santa catarina": "SC", "bahia": "BA", "goias": "GO", "espirito santo": "ES",
+    "ceara": "CE", "pernambuco": "PE", "distrito federal": "DF", "paraiba": "PB",
+    "rio grande do norte": "RN", "alagoas": "AL", "sergipe": "SE", "maranhao": "MA",
+    "piaui": "PI", "para": "PA", "amazonas": "AM", "mato grosso do sul": "MS",
+    "mato grosso": "MT", "rondonia": "RO", "roraima": "RR", "acre": "AC",
+    "amapa": "AP", "tocantins": "TO",
+}
+
+_SAFE_UFS = {"RS", "SP", "SC", "PR", "MG", "RJ", "BA", "DF", "ES", "CE", "PE", "RN", "PB", "AL", "MT", "MS", "RO", "RR", "AC", "AP", "PI"}
+
+_GREETING_WORDS = {
+    "ola", "oi", "oie", "opa", "bom", "dia", "boa", "tarde", "noite",
+    "tudo", "bem", "tudo bem", "tudo bom", "td", "obrigado", "obrigada",
+    "valeu", "ok", "por", "favor", "gentileza", "sim", "nao",
+}
+
 # (campo, opção desejada, padrão). A opção só vale se existir na conta; ver `_match_option`.
 _KEYWORD_RULES: list[tuple[str, str, str]] = [
     ("produto", "Galileana", r"\bgalilean"),
     ("produto", "Prismática", r"\bprismatic|\bkepler|\bergo\b"),
-    ("produto", "Fotóforo", r"\bfotoforo|\biluminacao|\bled\b|\bluz\b|\beos\b"),
+    ("produto", "Fotóforo", r"\bfotoforo|\bfotoforos|\biluminacao frontal|\bfoco de luz|\beos\b"),
     ("produto", "Combo", r"\bcombo\b|\bkit\b"),
     ("produto", "Acessórios/Peça", r"\bpeca\b|\bacessorio|\bbateria|\bcabo\b|\bcarregador"),
     ("produto", "Reparo/Manutenção", r"\breparo|\bconsert|\bmanutencao"),
@@ -66,7 +114,7 @@ _KEYWORD_RULES: list[tuple[str, str, str]] = [
     ("segmento", "Veterinário", r"\bveterinar|\bclinica vet|\bpet\b"),
     ("segmento", "Beauty", r"\bestetic|\bmicropigment|\bcilios|\bsobrancelha|\btatua"),
     ("solicitacao", "Preço", r"\bpreco|\bvalor(es)?\b|\bquanto custa|\borcamento|\bcusta\b"),
-    ("solicitacao", "Dúvidas/Catálogo", r"\bcatalogo|\bmodelos\b|\bopcoes\b"),
+    ("solicitacao", "Dúvidas/Catálogo", r"\bcatalogo|\bmodelos\b|\bopcoes\b|\bprazo|\bqto tempo|\bquanto tempo"),
     ("solicitacao", "Visita/demonstração", r"\bvisita|\bdemonstra|\btestar\b|\bexperimentar"),
     ("solicitacao", "Dúvida técnica/Pós-venda", r"\bgarantia|\bdefeito|\bassistencia|\bnao funciona|\bquebrou"),
     ("solicitacao", "Representante", r"\brepresentante"),
@@ -134,6 +182,87 @@ def uf_from_phone(phone: str | None) -> str | None:
     return _DDD_TO_UF.get(int(digits[:2]))
 
 
+def extract_location(customer_text: str, phone: str | None) -> tuple[str | None, float, str]:
+    """Determina a UF priorizando a fala explícita do cliente sobre o DDD do telefone.
+
+    Retorna (uf, confiança, source) onde source é 'texto' (0.95) ou 'ddd' (0.85).
+    """
+    text = normalize(customer_text)
+    if text:
+        # 1. Padrão direto "cidade UF" ou "cidade - UF" (ex: "pelotas rs", "porto alegre - rs")
+        pattern_sigla = re.search(r"\b([a-z\s]{3,25})\s*[-/,\s]\s*([a-z]{2})\b", text)
+        if pattern_sigla:
+            sigla = pattern_sigla.group(2).upper()
+            if sigla in _SAFE_UFS or sigla in _DDD_TO_UF.values():
+                return sigla, TEXT_LOCATION_CONFIDENCE, "texto"
+
+        # 2. Cidades polo conhecidas (ex: "pelotas", "porto alegre", "campinas", etc.)
+        for city, uf in sorted(_CITY_TO_UF.items(), key=lambda item: len(item[0]), reverse=True):
+            if re.search(rf"\b{re.escape(city)}\b", text):
+                return uf, TEXT_LOCATION_CONFIDENCE, "texto"
+
+        # 3. Nomes de estado por extenso (ex: "rio grande do sul", "sao paulo", "minas gerais")
+        for state_name, uf in sorted(_STATE_NAME_TO_UF.items(), key=lambda item: len(item[0]), reverse=True):
+            if re.search(rf"\b{re.escape(state_name)}\b", text):
+                return uf, TEXT_LOCATION_CONFIDENCE, "texto"
+
+        # 4. Sigla não ambígua no texto acompanhada de preposição ou contexto de lugar (ex: "sou de rs")
+        prep_sigla = re.search(r"\b(em|de|no|na|sou de|moro em|estou em|falo de|aqui em)\s+([a-z]{2})\b", text)
+        if prep_sigla:
+            sigla = prep_sigla.group(2).upper()
+            if sigla in _DDD_TO_UF.values():
+                return sigla, TEXT_LOCATION_CONFIDENCE, "texto"
+
+        # 5. Siglas seguras isoladas no texto (ex: apenas "RS" ou "pelotas RS")
+        for sigla in _SAFE_UFS:
+            if re.search(rf"\b{sigla.lower()}\b", text):
+                return sigla, TEXT_LOCATION_CONFIDENCE, "texto"
+
+    # Se nada no texto, usa o DDD do telefone como fallback
+    uf_ddd = uf_from_phone(phone)
+    if uf_ddd:
+        return uf_ddd, DDD_CONFIDENCE, "ddd"
+
+    return None, 0.0, "nenhum"
+
+
+def has_sufficient_customer_signal(customer_text: str) -> bool:
+    """Verifica se o cliente trouxe demanda real ou se apenas enviou saudações/mensagens vazias."""
+    cleaned = normalize(customer_text).strip()
+    if not cleaned:
+        return False
+    tokens = [w for w in re.split(r"[^\w]+", cleaned) if w]
+    substantive = [w for w in tokens if w not in _GREETING_WORDS]
+    if not substantive:
+        return False
+    # Exige ao menos 2 palavras de conteúdo ou uma palavra de pelo menos 6 letras (ex: "ortodontia", "catalogo", "preco")
+    if len(substantive) < 2 and not any(len(w) >= 6 for w in substantive):
+        return False
+    return True
+
+
+def is_customer_message(message: dict[str, Any]) -> bool:
+    """Identifica se uma mensagem partiu do cliente e não de um atendente/bot."""
+    author = message.get("author") or {}
+    if isinstance(author, dict):
+        author_type = (author.get("type") or "").lower()
+        if author_type in ("contact", "client", "customer"):
+            return True
+        if author_type in ("user", "bot", "agent", "manager"):
+            return False
+    direction = (message.get("direction") or "").lower()
+    if direction in ("in", "incoming", "inbound"):
+        return True
+    if direction in ("out", "outgoing", "outbound"):
+        return False
+    msg_type = (message.get("type") or "").lower()
+    if msg_type in ("incoming", "in", "inbound"):
+        return True
+    if msg_type in ("outgoing", "out", "outbound"):
+        return False
+    return False
+
+
 def build_state(messages: list[dict[str, Any]]) -> tuple[str, str]:
     """Devolve (transcrição para o modelo, só as falas do cliente para as regras).
 
@@ -146,7 +275,7 @@ def build_state(messages: list[dict[str, Any]]) -> tuple[str, str]:
         text = (message.get("text") or "").strip()
         if not text:
             continue
-        incoming = message.get("type") == "incoming"
+        incoming = is_customer_message(message)
         lines.append(f"{'Cliente' if incoming else 'Atendente'}: {text}")
         if incoming:
             customer.append(text)
@@ -163,26 +292,29 @@ def classify_with_rules(customer_text: str, phone: str | None, specs: list[Field
     text = normalize(customer_text)
     decisions: dict[str, dict[str, Any]] = {}
 
-    for key, wanted, pattern in _KEYWORD_RULES:
-        spec = by_key.get(key)
-        if not spec or not text or not re.search(pattern, text):
-            continue
-        option = _match_option(spec, wanted)
-        if not option:
-            continue
-        current = decisions.get(key)
-        if current is None:
-            decisions[key] = {"values": [option], "confidence": RULE_CONFIDENCE, "source": "regra"}
-        elif spec.multiple and option not in current["values"]:
-            current["values"].append(option)
-        # Campo de escolha única: vale a primeira regra que casou (a lista está em ordem de prioridade).
+    # Se o cliente não teve sinal suficiente (apenas saudações como "Bom dia"), não adivinha produtos/segmentos
+    if has_sufficient_customer_signal(customer_text):
+        for key, wanted, pattern in _KEYWORD_RULES:
+            spec = by_key.get(key)
+            if not spec or not text or not re.search(pattern, text):
+                continue
+            option = _match_option(spec, wanted)
+            if not option:
+                continue
+            current = decisions.get(key)
+            if current is None:
+                decisions[key] = {"values": [option], "confidence": RULE_CONFIDENCE, "source": "regra"}
+            elif spec.multiple and option not in current["values"]:
+                current["values"].append(option)
 
+    # Localização: Texto do cliente tem prioridade sobre DDD
     uf_spec = by_key.get("uf")
-    uf = uf_from_phone(phone)
-    if uf_spec and uf:
-        option = _match_option(uf_spec, uf)
-        if option:
-            decisions["uf"] = {"values": [option], "confidence": DDD_CONFIDENCE, "source": "ddd"}
+    if uf_spec:
+        uf, conf, src = extract_location(customer_text, phone)
+        if uf:
+            option = _match_option(uf_spec, uf)
+            if option:
+                decisions["uf"] = {"values": [option], "confidence": conf, "source": src}
     return decisions
 
 
@@ -191,10 +323,11 @@ def build_questions(specs: list[FieldSpec]) -> dict[str, dict[str, Any]]:
     questions = {}
     for spec in specs:
         if spec.key == "uf":
-            continue  # estado vem do DDD; 27 opções também estouram o orçamento do Laya
-        criteria = {option: f"A conversa indica: {option}" for option in spec.options}
-        criteria[UNDECIDED] = "A conversa não deixa isso claro"
-        questions[spec.key] = {"type": "choice", "instructions": TARGET_FIELDS[spec.key], "criteria": criteria}
+            continue  # estado vem do texto/DDD; 27 opções também estouram o orçamento do Laya
+        criteria = {option: f"O cliente procura ou solicitou: {option}" for option in spec.options}
+        criteria[UNDECIDED] = "O cliente não deixou isso claro na conversa"
+        instructions = f"{TARGET_FIELDS[spec.key]} (Atenção: considere EXCLUSIVAMENTE o interesse do CLIENTE; ignore PDFs e opções sugeridas pelo atendente)."
+        questions[spec.key] = {"type": "choice", "instructions": instructions, "criteria": criteria}
     return questions
 
 
@@ -240,11 +373,13 @@ def ask_decision_model(state: str, questions: dict[str, Any], url: str, api_key:
 
 
 def merge_decisions(model: dict[str, dict[str, Any]], rules: dict[str, dict[str, Any]]) -> dict[str, dict[str, Any]]:
-    """O modelo decide onde tem confiança; a regra cobre o resto. UF é sempre do DDD."""
+    """O modelo decide onde tem confiança; a regra cobre o resto. UF do texto ou DDD é mantida."""
     merged = dict(rules)
     for key, decision in model.items():
         if key != "uf":
             merged[key] = decision
+    if "uf" in rules:
+        merged["uf"] = rules["uf"]
     return merged
 
 

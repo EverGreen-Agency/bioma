@@ -126,19 +126,24 @@ export type EgClassificationField = {
   label: string;
   values: string[];
   confidence: number;
-  source: "modelo" | "regra" | "ddd";
+  source: "modelo" | "regra" | "ddd" | "texto";
   already_filled: boolean;
   written: boolean;
+  status?: "sugerido" | "gravado" | "mantido";
 };
 
 export type EgClassificationResults = {
   subdomain: string | null;
-  summary: EgStatus["classification"];
+  summary: EgStatus["classification"] & {
+    suggested?: number;
+    written_leads?: number;
+    waiting_customer?: number;
+  };
   page: number;
   page_size: number;
   results: {
     lead_id: number;
-    status: "classificado" | "sem_conversa" | "sem_sinal" | "erro";
+    status: "classificado" | "sugerido" | "gravado" | "aguardando_cliente" | "sem_conversa" | "sem_sinal" | "erro";
     engine: string;
     trigger: "historico" | "webhook" | "simulacao";
     messages_count: number;
@@ -203,6 +208,18 @@ export const portalApi = {
   classificationReset: (slug: string, key: string) =>
     portalRequest<{ status: string; deleted: number }>(`/portal-api/${slug}/eg/classification/reset`, { method: "POST", key }),
 
+
+  applyClassificationLead: (slug: string, key: string, leadId: number) =>
+    portalRequest<{ status: string; lead_id: number; fields_written: number; fields: Record<string, EgClassificationField> }>(
+      `/portal-api/${slug}/eg/classification/leads/${leadId}/apply`,
+      { method: "POST", key },
+    ),
+
+  applyClassificationBatch: (slug: string, key: string, limit: number) =>
+    portalRequest<{ processed: number; fields_written: number; remaining: number }>(
+      `/portal-api/${slug}/eg/classification/apply-batch`,
+      { method: "POST", key, body: { limit } },
+    ),
 
   classifyTest: (slug: string, key: string, text: string, phone?: string) =>
     portalRequest<EgClassifyTestResult>(`/portal-api/${slug}/eg/classification/test`, {

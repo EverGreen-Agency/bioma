@@ -2255,6 +2255,79 @@ button.uvBarListRow:hover {
   color: #1a1200;
 }
 
+.uvSourceTag.texto {
+  background: #0284c7;
+  color: #fff;
+}
+
+.uvVerdict.sugerido {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.uvVerdict.aguardando {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.12);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+
+.uvInspectorActionBanner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(39, 174, 130, 0.08);
+  border: 1px solid rgba(39, 174, 130, 0.25);
+  border-radius: 6px;
+  padding: 10px 14px;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.uvBtnApplyPrimary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #27ae82;
+  color: #0b1a15;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 6px 14px;
+  border-radius: 4px;
+  border: none;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+.uvBtnApplyPrimary:hover {
+  filter: brightness(1.1);
+}
+
+.uvBtnApplyPrimary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.uvBtnActionQuick {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(39, 174, 130, 0.15);
+  color: #27ae82;
+  border: 1px solid rgba(39, 174, 130, 0.35);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.uvBtnActionQuick:hover {
+  background: #27ae82;
+  color: #0b1a15;
+}
+
 /* Feed vertical descendente de interações */
 .uvFeedList {
   display: flex;

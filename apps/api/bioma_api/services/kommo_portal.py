@@ -466,11 +466,14 @@ def _classify_lead(api: KommoApi, specs: list[lead_classifier.FieldSpec], lead_i
     transcript, customer_text = lead_classifier.build_state(messages)
     phone = _contact_phone(api, lead)
 
+    has_signal = lead_classifier.has_sufficient_customer_signal(customer_text)
     decisions = lead_classifier.classify_with_rules(customer_text, phone, specs)
     engine = "regras"
     model_error = None
     settings = get_settings()
-    if settings.decision_model_api_key and transcript:
+
+    # O modelo Laya só é consultado se houver sinal real do cliente (evita contaminação por PDFs/boas-vindas do atendente)
+    if settings.decision_model_api_key and transcript and has_signal:
         try:
             answers = lead_classifier.ask_decision_model(
                 transcript,
@@ -493,12 +496,23 @@ def _classify_lead(api: KommoApi, specs: list[lead_classifier.FieldSpec], lead_i
         key: {
             **decision,
             "already_filled": key in filled,
-            "written": by_key[key].field_id in written_ids,
+            "written": by_key[key].field_id in written_ids if key in by_key else False,
+            "status": "gravado" if (by_key.get(key) and by_key[key].field_id in written_ids) else ("mantido" if key in filled else "sugerido"),
         }
         for key, decision in decisions.items()
     }
+
+    if not transcript and not customer_text:
+        lead_status = "sem_conversa"
+    elif not has_signal:
+        lead_status = "aguardando_cliente"
+    elif decisions:
+        lead_status = "gravado" if (write and written_ids) else "sugerido"
+    else:
+        lead_status = "sem_sinal"
+
     return {
-        "status": "classificado" if decisions else ("sem_conversa" if not transcript else "sem_sinal"),
+        "status": lead_status,
         "engine": engine,
         "messages_count": len(messages),
         "fields": fields,
@@ -552,8 +566,8 @@ def _classify_and_store(org_id: UUID, api: KommoApi, specs, lead_id: int, write:
     return {**result, "error": error}
 
 
-def classify_batch(slug: str, limit: int, write: bool = True) -> dict:
-    """Classifica os próximos `limit` leads do histórico que ainda não foram lidos."""
+def classify_batch(slug: str, limit: int, write: bool = False) -> dict:
+    """Classifica os próximos `limit` leads do histórico gerando sugestões para aprovação."""
     with connect() as conn:
         org = _organization(conn, slug)
         snapshot = kommo_repo.get_crm_snapshot(conn, org["id"])
@@ -572,13 +586,124 @@ def classify_batch(slug: str, limit: int, write: bool = True) -> dict:
     try:
         specs = _field_specs(api) if batch else []
         for lead_id in batch:
-            result = _classify_and_store(org["id"], api, specs, lead_id, write=True, trigger="lote")
+            result = _classify_and_store(org["id"], api, specs, lead_id, write=write, trigger="lote")
             written += result["fields_written"]
-            classified += 1 if result["status"] == "classificado" else 0
+            classified += 1 if result["status"] in ("classificado", "sugerido", "gravado") else 0
     except httpx.HTTPError as exc:
         raise kommo_crm._kommo_error(exc) from exc
     finally:
         api.close()
+    if batch:
+        with connect() as conn:
+            _audit(conn, org["id"], "kommo.leads_classified", {"leads": len(batch), "fields_written": written, "write": write})
+    return {
+        "processed": len(batch),
+        "classified": classified,
+        "fields_written": written,
+        "remaining": len(queue) - len(batch),
+        "total": len(snapshot["leads"]),
+    }
+
+
+def apply_classification(slug: str, lead_id: int) -> dict:
+    """Aprova e envia as classificações sugeridas para um lead específico diretamente ao Kommo."""
+    with connect() as conn:
+        org = _organization(conn, slug)
+        row = kommo_repo.get_lead_classification_detail(conn, org["id"], lead_id)
+        if not row:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Lead ainda não classificado.")
+        api = _api(conn, org["id"])
+
+    try:
+        specs = _cached_field_specs(api, org["id"])
+        lead = api.request("GET", f"/api/v4/leads/{lead_id}")
+        filled = {
+            _FIELD_TO_KEY[kommo_insights.normalize(f.get("field_name"))]
+            for f in lead.get("custom_fields_values") or []
+            if kommo_insights.normalize(f.get("field_name")) in _FIELD_TO_KEY and f.get("values")
+        }
+        decisions = row["fields"] or {}
+        payload = lead_classifier.payload_for_kommo(decisions, specs, already_filled=set())
+        if payload:
+            api.request("PATCH", f"/api/v4/leads/{lead_id}", json={"custom_fields_values": payload})
+        written_ids = {item["field_id"] for item in payload}
+        by_key = {spec.key: spec for spec in specs}
+        updated_fields = {
+            key: {
+                **dec,
+                "already_filled": key in filled,
+                "written": by_key[key].field_id in written_ids if key in by_key else False,
+                "status": "gravado" if (by_key.get(key) and by_key[key].field_id in written_ids) else "mantido",
+            }
+            for key, dec in decisions.items()
+        }
+        with connect() as conn:
+            kommo_repo.update_lead_classification_applied(conn, org["id"], lead_id, updated_fields, len(payload))
+            _audit(conn, org["id"], "kommo.lead_classification_applied", {"lead_id": lead_id, "fields_written": len(payload)})
+        return {
+            "status": "gravado",
+            "lead_id": lead_id,
+            "fields_written": len(payload),
+            "fields": updated_fields,
+        }
+    except httpx.HTTPError as exc:
+        raise kommo_crm._kommo_error(exc) from exc
+    finally:
+        api.close()
+
+
+def apply_classification_batch(slug: str, limit: int = 15) -> dict:
+    """Aprova e envia as classificações sugeridas pendentes em lote para o Kommo."""
+    with connect() as conn:
+        org = _organization(conn, slug)
+        pending_ids = kommo_repo.list_pending_suggested_lead_ids(conn, org["id"], limit)
+        if not pending_ids:
+            return {"processed": 0, "fields_written": 0, "remaining": 0}
+        api = _api(conn, org["id"])
+
+    applied = 0
+    total_written = 0
+    try:
+        specs = _cached_field_specs(api, org["id"])
+        by_key = {spec.key: spec for spec in specs}
+        for lead_id in pending_ids:
+            with connect() as conn:
+                row = kommo_repo.get_lead_classification_detail(conn, org["id"], lead_id)
+            if not row or not row["fields"]:
+                continue
+            decisions = row["fields"]
+            payload = lead_classifier.payload_for_kommo(decisions, specs, already_filled=set())
+            if payload:
+                api.request("PATCH", f"/api/v4/leads/{lead_id}", json={"custom_fields_values": payload})
+            written_ids = {item["field_id"] for item in payload}
+            updated_fields = {
+                key: {
+                    **dec,
+                    "written": by_key[key].field_id in written_ids if key in by_key else False,
+                    "status": "gravado" if (by_key.get(key) and by_key[key].field_id in written_ids) else "mantido",
+                }
+                for key, dec in decisions.items()
+            }
+            with connect() as conn:
+                kommo_repo.update_lead_classification_applied(conn, org["id"], lead_id, updated_fields, len(payload))
+            applied += 1
+            total_written += len(payload)
+    except httpx.HTTPError as exc:
+        raise kommo_crm._kommo_error(exc) from exc
+    finally:
+        api.close()
+
+    with connect() as conn:
+        remaining_rows = kommo_repo.list_pending_suggested_lead_ids(conn, org["id"], 500)
+        remaining = len(remaining_rows)
+        if applied:
+            _audit(conn, org["id"], "kommo.classification_batch_applied", {"leads": applied, "fields_written": total_written})
+
+    return {
+        "processed": applied,
+        "fields_written": total_written,
+        "remaining": remaining,
+    }
     if batch:
         with connect() as conn:
             _audit(conn, org["id"], "kommo.leads_classified", {"leads": len(batch), "fields_written": written})
@@ -756,20 +881,22 @@ def webhook_authorize(slug: str, secret: str) -> UUID:
 
 
 def webhook_process(organization_id: UUID, lead_ids: set[int]) -> None:
-    """Roda em segundo plano depois de responder 200 ao Kommo."""
+    """Roda em segundo plano depois de responder 200 ao Kommo. Gera sugestões sem gravar direto."""
     if not lead_ids:
         return
     with connect() as conn:
         recent = set()
         for lead_id in lead_ids:
             row = kommo_repo.get_lead_classification(conn, organization_id, lead_id)
-            if row and (time.time() - row["classified_at"].timestamp()) < _RECLASSIFY_AFTER_SECONDS:
+            # Se o lead estava aguardando o cliente detalhar, não bloqueia a reclassificação quando uma nova mensagem chegar
+            if row and row.get("status") != "aguardando_cliente" and (time.time() - row["classified_at"].timestamp()) < _RECLASSIFY_AFTER_SECONDS:
                 recent.add(lead_id)
         api = _api(conn, organization_id)
     try:
         specs = _field_specs(api)
         for lead_id in lead_ids - recent:
-            _classify_and_store(organization_id, api, specs, lead_id, True, "webhook")
+            # write=False: apenas classifica e sugere para confirmação humana, nunca sobrescreve o CRM sem aprovação
+            _classify_and_store(organization_id, api, specs, lead_id, False, "webhook")
     except httpx.HTTPError:
         pass  # o lead continua na fila do histórico; nada a devolver para o Kommo
     finally:

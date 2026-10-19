@@ -148,3 +148,32 @@ def test_normalize_model_name():
     assert normalize_model_name("jev-latest") == "jev-latest"
     assert normalize_model_name(None) == "laya-multilingual"
     assert normalize_model_name("") == "laya-multilingual"
+
+
+def test_localizacao_prioriza_texto_sobre_ddd():
+    from bioma_api.lead_classifier import extract_location
+
+    # Telefone com DDD 11 (SP), mas cliente disse no texto "pelotas RS"
+    uf, conf, src = extract_location("pelotas RS", "11999998888")
+    assert uf == "RS"
+    assert src == "texto"
+    assert conf == 0.95
+
+
+def test_localizacao_por_cidade_polo():
+    from bioma_api.lead_classifier import extract_location
+
+    uf, conf, src = extract_location("estou atendendo em Porto Alegre e Caxias", None)
+    assert uf == "RS"
+    assert src == "texto"
+
+
+def test_sinal_minimo_cliente_evita_classificacao_prematura():
+    from bioma_api.lead_classifier import has_sufficient_customer_signal
+
+    assert has_sufficient_customer_signal("Bom dia") is False
+    assert has_sufficient_customer_signal("Oi, boa tarde!") is False
+    assert has_sufficient_customer_signal("Tudo bem? Obrigado") is False
+    assert has_sufficient_customer_signal("Sou dentista e gostaria de saber o valor da lupa") is True
+    assert has_sufficient_customer_signal("qto tempo leva para uma lupa ficar pronta?") is True
+
