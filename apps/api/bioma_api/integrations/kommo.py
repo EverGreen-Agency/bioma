@@ -54,13 +54,15 @@ class KommoClient:
         """Iterate through pagination and fetch all leads."""
         all_leads = []
         page = 1
-        while True:
-            leads = await self.get_leads(limit=250, page=page)
+        while page <= 200:
+            params = {"limit": 250, "page": page}
+            data = await self._request("GET", "/api/v4/leads", params=params)
+            leads = (data.get("_embedded") or {}).get("leads") or []
             if not leads:
                 break
             all_leads.extend(leads)
-            # If we received less than the limit, we're at the end
-            if len(leads) < 250:
+            has_next = bool((data.get("_links") or {}).get("next"))
+            if not has_next:
                 break
             page += 1
         return all_leads

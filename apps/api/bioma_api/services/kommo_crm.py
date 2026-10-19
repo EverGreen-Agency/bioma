@@ -71,10 +71,48 @@ def _fetch_crm(subdomain: str, token: str) -> tuple[list[dict], list[dict]]:
             if response.status_code == 204:
                 break
             response.raise_for_status()
-            batch = (response.json().get("_embedded") or {}).get("leads") or []
-            leads.extend(batch)
-            if len(batch) < _PAGE_SIZE:
+            data = response.json()
+            batch = (data.get("_embedded") or {}).get("leads") or []
+            if not batch:
                 break
+            leads.extend(batch)
+            has_next = bool((data.get("_links") or {}).get("next"))
+            if not has_next:
+                break
+
+        # Unsorted leads (solicitações pendentes na etapa de entrada)
+        try:
+            for u_page in range(1, 20):
+                u_res = client.get(f"{base_url}/api/v4/leads/unsorted", params={"limit": 50, "page": u_page})
+                if u_res.status_code in (204, 404):
+                    break
+                u_res.raise_for_status()
+                u_data = u_res.json()
+                u_batch = (u_data.get("_embedded") or {}).get("unsorted") or []
+                if not u_batch:
+                    break
+                for item in u_batch:
+                    pid = item.get("pipeline_id")
+                    target_pipe = next((p for p in pipelines if p.get("id") == pid), pipelines[0] if pipelines else None)
+                    entry_status_id = None
+                    if target_pipe:
+                        p_statuses = (target_pipe.get("_embedded") or {}).get("statuses") or []
+                        if p_statuses:
+                            sorted_statuses = sorted(p_statuses, key=lambda s: s.get("sort") or 0)
+                            entry_status_id = sorted_statuses[0].get("id")
+                    emb_leads = (item.get("_embedded") or {}).get("leads") or []
+                    for emb_lead in emb_leads:
+                        ul = dict(emb_lead)
+                        ul.setdefault("pipeline_id", pid)
+                        if entry_status_id and not ul.get("status_id"):
+                            ul["status_id"] = entry_status_id
+                        ul.setdefault("created_at", item.get("created_at") or int(time.time()))
+                        ul.setdefault("updated_at", item.get("updated_at") or int(time.time()))
+                        leads.append(ul)
+                if not (u_data.get("_links") or {}).get("next"):
+                    break
+        except Exception:
+            pass
     return pipelines, leads
 
 

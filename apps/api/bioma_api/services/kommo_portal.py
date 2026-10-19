@@ -704,16 +704,58 @@ def apply_classification_batch(slug: str, limit: int = 15) -> dict:
         "fields_written": total_written,
         "remaining": remaining,
     }
-    if batch:
+
+
+def clear_lead_fields(slug: str, lead_id: int) -> dict:
+    """Limpa os campos personalizados preenchidos pela IA/classificador em um lead no Kommo e reseta no banco."""
+    with connect() as conn:
+        org = _organization(conn, slug)
+        api = _api(conn, org["id"])
+    try:
+        specs = _cached_field_specs(api, org["id"])
+        # No Kommo API v4, para limpar/apagar o valor de um campo customizado, envia-se values: []
+        clear_payload = [{"field_id": spec.field_id, "values": []} for spec in specs]
+        if clear_payload:
+            api.request("PATCH", f"/api/v4/leads/{lead_id}", json={"custom_fields_values": clear_payload})
         with connect() as conn:
-            _audit(conn, org["id"], "kommo.leads_classified", {"leads": len(batch), "fields_written": written})
-    return {
-        "processed": len(batch),
-        "classified": classified,
-        "fields_written": written,
-        "remaining": len(queue) - len(batch),
-        "total": len(snapshot["leads"]),
-    }
+            kommo_repo.update_lead_classification_cleared(conn, org["id"], lead_id)
+            _audit(conn, org["id"], "kommo.lead_classification_cleared", {"lead_id": lead_id, "fields_cleared": len(clear_payload)})
+        return {"status": "limpo", "lead_id": lead_id, "fields_cleared": len(clear_payload)}
+    except httpx.HTTPError as exc:
+        raise kommo_crm._kommo_error(exc) from exc
+    finally:
+        api.close()
+
+
+def clear_classification_batch(slug: str, limit: int = 50) -> dict:
+    """Limpa em lote os campos do Kommo para todos os leads que tiveram campos gravados."""
+    with connect() as conn:
+        org = _organization(conn, slug)
+        lead_ids = kommo_repo.list_written_lead_ids(conn, org["id"], limit)
+        if not lead_ids:
+            return {"processed": 0, "fields_cleared": 0, "remaining": 0}
+        api = _api(conn, org["id"])
+
+    cleared = 0
+    total_fields = 0
+    try:
+        specs = _cached_field_specs(api, org["id"])
+        clear_payload = [{"field_id": spec.field_id, "values": []} for spec in specs]
+        for lead_id in lead_ids:
+            if clear_payload:
+                api.request("PATCH", f"/api/v4/leads/{lead_id}", json={"custom_fields_values": clear_payload})
+            with connect() as conn:
+                kommo_repo.update_lead_classification_cleared(conn, org["id"], lead_id)
+            cleared += 1
+            total_fields += len(clear_payload)
+        with connect() as conn:
+            remaining = len(kommo_repo.list_written_lead_ids(conn, org["id"], 500))
+            _audit(conn, org["id"], "kommo.batch_classification_cleared", {"processed": cleared, "remaining": remaining})
+        return {"processed": cleared, "fields_cleared": total_fields, "remaining": remaining}
+    except httpx.HTTPError as exc:
+        raise kommo_crm._kommo_error(exc) from exc
+    finally:
+        api.close()
 
 
 def classification_results(slug: str, page: int, page_size: int) -> dict:

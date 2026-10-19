@@ -221,6 +221,18 @@ export const portalApi = {
       { method: "POST", key, body: { limit } },
     ),
 
+  clearLeadClassification: (slug: string, key: string, leadId: number) =>
+    portalRequest<{ status: string; lead_id: number; fields_cleared: number }>(
+      `/portal-api/${slug}/eg/classification/leads/${leadId}/clear`,
+      { method: "POST", key },
+    ),
+
+  clearClassificationBatch: (slug: string, key: string, limit: number) =>
+    portalRequest<{ processed: number; fields_cleared: number; remaining: number }>(
+      `/portal-api/${slug}/eg/classification/clear-batch`,
+      { method: "POST", key, body: { limit } },
+    ),
+
   classifyTest: (slug: string, key: string, text: string, phone?: string) =>
     portalRequest<EgClassifyTestResult>(`/portal-api/${slug}/eg/classification/test`, {
       method: "POST",
