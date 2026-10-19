@@ -35,6 +35,8 @@ DIMENSIONS: list[tuple[str, str, tuple[str, ...]]] = [
 _VISIT_FIELDS = ("data da visita/agendamento", "data da visita")
 _UTM_FIELDS = {"utm_source": "source", "utm_medium": "medium", "utm_campaign": "campaign"}
 _TIMELINE_BUCKETS = 12
+# Lead em aberto sem nenhuma atualização há mais que isso conta como parado.
+STALE_AFTER_DAYS = 7
 
 
 def normalize(text: str | None) -> str:
@@ -199,6 +201,34 @@ def build_dashboard(
     loss_counter = Counter(lead["loss_reason"] for lead in lost if lead["loss_reason"])
     utm_counter = Counter(lead["utm"]["campaign"] for lead in scoped if lead["utm"].get("campaign"))
 
+    stale_cutoff = now_ts - STALE_AFTER_DAYS * 86400
+    stale_ids = {
+        lead["id"]
+        for lead in scoped
+        if _stage_kind(lead["status_id"]) == "open" and (lead["updated_at"] or lead["created_at"]) < stale_cutoff
+    }
+
+    # Representantes como aparecem no campo do Kommo, com os estados dos leads de cada um.
+    # O território sai dos próprios leads; não há cadastro paralelo de representantes.
+    rep_rows: dict[str, dict[str, Any]] = {}
+    for lead in scoped:
+        for rep in dict.fromkeys(lead["dims"].get("representante") or []):
+            row = rep_rows.setdefault(
+                rep, {"label": rep, "leads": 0, "open": 0, "won": 0, "lost": 0, "stale_open": 0, "won_value": 0.0, "ufs": Counter()}
+            )
+            kind = _stage_kind(lead["status_id"])
+            row["leads"] += 1
+            row[kind] += 1
+            if kind == "won":
+                row["won_value"] += float(lead["price"])
+            if lead["id"] in stale_ids:
+                row["stale_open"] += 1
+            row["ufs"].update(list(dict.fromkeys(lead["dims"].get("uf") or [])))
+    reps = [
+        {**row, "ufs": [{"label": uf, "count": count} for uf, count in row["ufs"].most_common()]}
+        for row in sorted(rep_rows.values(), key=lambda item: -item["leads"])
+    ]
+
     return {
         "period_days": days,
         "totals": {
@@ -215,7 +245,11 @@ def build_dashboard(
             "with_visit": sum(1 for lead in scoped if lead["has_visit"]),
             "last_lead_at": max((lead["created_at"] for lead in leads), default=None),
             "last_activity_at": max((lead["updated_at"] for lead in leads), default=None),
+            "stale_open": len(stale_ids),
+            "without_rep": sum(1 for lead in scoped if not lead["dims"].get("representante")),
         },
+        "stale_after_days": STALE_AFTER_DAYS,
+        "reps": reps,
         "pipelines": pipeline_rows,
         "timeline": timeline,
         "dimensions": dimensions,

@@ -130,15 +130,20 @@ export interface RepDef {
   role: string;
   territory: string;
   ufs: string[];
+  /** Mediana, em minutos, entre o lead entrar e o primeiro contato do representante. */
+  responseMin: number;
+  /** Parcela dos leads em aberto sem movimento há mais de 7 dias. */
+  staleShare: number;
 }
 
+// Nomes e territórios ilustrativos: a lista real ainda será confirmada com a Univet.
 export const REPS: RepDef[] = [
-  { id: 'sp', name: 'Carlos Eduardo', role: 'Especialista clínico sênior', territory: 'São Paulo', ufs: ['SP'] },
-  { id: 'rj_es', name: 'Mariana Souza', role: 'Consultora óptica regional', territory: 'Rio de Janeiro e ES', ufs: ['RJ', 'ES'] },
-  { id: 'mg', name: 'Roberto Alencar', role: 'Consultor de campo', territory: 'Minas Gerais', ufs: ['MG'] },
-  { id: 'sul', name: 'Lucas Fagundes', role: 'Especialista em ergonomia cirúrgica', territory: 'Região Sul', ufs: ['PR', 'SC', 'RS'] },
-  { id: 'ne', name: 'Fernanda Lima', role: 'Consultora técnica', territory: 'Nordeste', ufs: ['BA', 'PE', 'CE'] },
-  { id: 'co', name: 'Thiago Mendes', role: 'Consultor regional', territory: 'Centro-Oeste', ufs: ['DF', 'GO', 'MT'] },
+  { id: 'sp', name: 'Carlos Eduardo', role: 'Especialista clínico sênior', territory: 'São Paulo', ufs: ['SP'], responseMin: 18, staleShare: 0.06 },
+  { id: 'rj_es', name: 'Mariana Souza', role: 'Consultora óptica regional', territory: 'Rio de Janeiro e ES', ufs: ['RJ', 'ES'], responseMin: 42, staleShare: 0.11 },
+  { id: 'mg', name: 'Roberto Alencar', role: 'Consultor de campo', territory: 'Minas Gerais', ufs: ['MG'], responseMin: 95, staleShare: 0.19 },
+  { id: 'sul', name: 'Lucas Fagundes', role: 'Especialista em ergonomia cirúrgica', territory: 'Região Sul', ufs: ['PR', 'SC', 'RS'], responseMin: 27, staleShare: 0.08 },
+  { id: 'ne', name: 'Fernanda Lima', role: 'Consultora técnica', territory: 'Nordeste', ufs: ['BA', 'PE', 'CE'], responseMin: 64, staleShare: 0.14 },
+  { id: 'co', name: 'Thiago Mendes', role: 'Consultor regional', territory: 'Centro-Oeste', ufs: ['DF', 'GO', 'MT'], responseMin: 210, staleShare: 0.27 },
 ];
 
 const REP_BY_UF = new Map<string, RepDef>();
@@ -488,6 +493,8 @@ export interface RepRow {
   orders: number;
   revenue: number;
   convRate: number | null;
+  responseMin: number;
+  staleOpen: number;
 }
 
 export interface ChannelRow {
@@ -727,7 +734,16 @@ export function computeSnapshot(filter: PortalFilter): PortalSnapshot {
         agg[k] += part[k];
       });
     });
-    return { ...rep, leads: agg.leads, demos: agg.demos, props: agg.props, orders: agg.orders, revenue: agg.revenue, convRate: ratio(agg.orders, agg.leads) };
+    return {
+      ...rep,
+      leads: agg.leads,
+      demos: agg.demos,
+      props: agg.props,
+      orders: agg.orders,
+      revenue: agg.revenue,
+      convRate: ratio(agg.orders, agg.leads),
+      staleOpen: Math.round(Math.max(agg.leads - agg.orders, 0) * rep.staleShare),
+    };
   });
   const uncoveredAgg = emptyAgg();
   states.filter((s) => s.rep === null).forEach((s) => {

@@ -56,9 +56,9 @@ export function UnivetPortalChrome({ subtitle, children, actions }: { subtitle: 
       <main className="uvPortalMain">{children}</main>
       <footer className="uvPortalFooter">
         <div>
-          <strong>Univet Loupes Brasil</strong> · Fonte: Kommo CRM
+          <strong>Univet Loupes Brasil</strong>
         </div>
-        <div>EverGreen Agency 2026</div>
+        <div>EverGreen Consultoria e Tecnologia · 2026</div>
       </footer>
     </div>
   );

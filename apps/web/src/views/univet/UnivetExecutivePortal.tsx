@@ -9,6 +9,7 @@ import {
   fmtPct,
   ORIGIN_GROUPS,
   PERIODS,
+  REPS,
   type CreativeFormat,
   type CreativeRow,
   type Insight,
@@ -20,10 +21,10 @@ import {
   type StateRow,
   type Verdict,
 } from '../../data/univet/univetPortalData';
-import { BrazilMap, ScatterPlot, Sparkline, StackedColumns } from './UnivetCharts';
+import { BrazilMap, ScatterPlot, Sparkline, StackedColumns, TERRITORY_COLORS } from './UnivetCharts';
 import './univet-portal.css';
 
-type MapMetric = 'revenue' | 'leads' | 'orders' | 'convRate';
+type MapMetric = 'revenue' | 'leads' | 'orders' | 'convRate' | 'coverage';
 type CreativeSort = 'spend' | 'orders' | 'cpl';
 
 const CREATIVE_SORTS: { id: CreativeSort; label: string }[] = [
@@ -58,7 +59,21 @@ const MAP_METRICS: { id: MapMetric; label: string; format: (v: number) => string
   { id: 'leads', label: 'Leads', format: fmtInt },
   { id: 'orders', label: 'Pedidos', format: fmtInt },
   { id: 'convRate', label: 'Conversão', format: (v) => fmtPct(v) },
+  { id: 'coverage', label: 'Cobertura', format: fmtInt },
 ];
+
+// Cobertura: cada estado com a cor do consultor responsável; sem consultor fica neutro.
+const REP_COLOR = new Map(REPS.map((rep, index) => [rep.id, TERRITORY_COLORS[index % TERRITORY_COLORS.length]]));
+const COVERAGE = {
+  colorOf: new Map(REPS.flatMap((rep) => rep.ufs.map((code) => [code, REP_COLOR.get(rep.id) as string] as const))),
+  legend: [...REPS.map((rep) => ({ label: rep.name, color: REP_COLOR.get(rep.id) as string })), { label: 'Sem consultor', color: 'var(--uv-surface-3)' }],
+};
+
+function fmtResponse(minutes: number) {
+  if (minutes < 60) return `${minutes} min`;
+  const hours = minutes / 60;
+  return `${hours.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} h`;
+}
 
 const ORIGIN_COLOR: Record<OriginGroup, string> = {
   paga: 'var(--uv-series-1)',
@@ -197,6 +212,7 @@ function CreativeCard({ creative }: { creative: CreativeRow }) {
 }
 
 function stateMetric(state: StateRow, metric: MapMetric) {
+  if (metric === 'coverage') return state.leads;
   return metric === 'convRate' ? state.convRate ?? 0 : state[metric];
 }
 
@@ -241,6 +257,10 @@ export function UnivetExecutivePortal() {
   );
   const rankingMax = ranking.length ? stateMetric(ranking[0], mapMetric) : 0;
   const selectedState = uf ? data.states.find((s) => s.uf === uf) ?? null : null;
+  const uncoveredTop = useMemo(
+    () => data.states.filter((s) => !s.rep && s.leads > 0).sort((a, b) => b.leads - a.leads).slice(0, 3),
+    [data.states],
+  );
 
   const campaigns = platform === 'todas' ? data.campaigns : data.campaigns.filter((c) => c.platform === platform);
   const maxCampaignSpend = Math.max(...data.campaigns.map((c) => c.spend), 1);
@@ -440,7 +460,14 @@ export function UnivetExecutivePortal() {
 
         {/* Geografia */}
         <section className="uvCard">
-          <CardHeader title="Demanda e vendas por estado" subtitle="Clique em um estado para filtrar o painel inteiro">
+          <CardHeader
+            title={mapMetric === 'coverage' ? 'Cobertura comercial por estado' : 'Demanda e vendas por estado'}
+            subtitle={
+              mapMetric === 'coverage'
+                ? 'Território de cada consultor e estados atendidos à distância. Nomes ilustrativos.'
+                : 'Clique em um estado para filtrar o painel inteiro'
+            }
+          >
             <Segmented options={MAP_METRICS} value={mapMetric} onChange={setMapMetric} label="Métrica do mapa" />
           </CardHeader>
           <div className="uvGeo">
@@ -449,6 +476,7 @@ export function UnivetExecutivePortal() {
               selected={uf}
               onSelect={setUf}
               legendFormat={metric.format}
+              territories={mapMetric === 'coverage' ? COVERAGE : undefined}
               ariaLabel={`Mapa do Brasil por ${metric.label.toLowerCase()}`}
               renderTooltip={(code) => {
                 const state = data.states.find((s) => s.uf === code);
@@ -486,6 +514,31 @@ export function UnivetExecutivePortal() {
                     <div><dt>Ticket médio</dt><dd>{orDash(selectedState.ticket, fmtBRL)}</dd></div>
                   </dl>
                 </div>
+              ) : mapMetric === 'coverage' ? (
+                <>
+                  <div className="uvSideTitle">Consultores e territórios</div>
+                  <ul className="uvRepKeys">
+                    {data.reps.map((rep) => (
+                      <li key={rep.id}>
+                        <i style={{ background: REP_COLOR.get(rep.id) }} aria-hidden="true" />
+                        <strong>{rep.name}</strong>
+                        <span>{rep.ufs.join(', ')} · {fmtInt(rep.leads)} leads</span>
+                      </li>
+                    ))}
+                    <li>
+                      <i style={{ background: 'var(--uv-surface-3)' }} aria-hidden="true" />
+                      <strong>Sem consultor</strong>
+                      <span className="uvRepGap">
+                        {data.states.filter((s) => !s.rep).length} estados · {fmtInt(data.uncovered.leads)} leads
+                      </span>
+                    </li>
+                  </ul>
+                  {uncoveredTop.length > 0 && (
+                    <p className="uvChartNote">
+                      Maior demanda sem consultor: {uncoveredTop.map((s) => `${s.name} (${fmtInt(s.leads)} leads)`).join(', ')}.
+                    </p>
+                  )}
+                </>
               ) : (
                 <>
                   <div className="uvSideTitle">Maiores estados por {metric.label.toLowerCase()}</div>
@@ -526,6 +579,8 @@ export function UnivetExecutivePortal() {
                   <th className="uvNum">Pedidos</th>
                   <th className="uvNum">Faturamento</th>
                   <th className="uvNum">Lead em pedido</th>
+                  <th className="uvNum">1ª resposta</th>
+                  <th className="uvNum">Parados +7d</th>
                 </tr>
               </thead>
               <tbody>
@@ -545,6 +600,8 @@ export function UnivetExecutivePortal() {
                     <td className="uvNum">{fmtInt(rep.orders)}</td>
                     <td className="uvNum"><strong>{fmtBRL(rep.revenue)}</strong></td>
                     <td className="uvNum">{orDash(rep.convRate, (v) => fmtPct(v))}</td>
+                    <td className={`uvNum ${rep.responseMin > 120 ? 'uvTextWarn' : ''}`}>{fmtResponse(rep.responseMin)}</td>
+                    <td className={`uvNum ${rep.staleOpen > 0 && rep.staleOpen / Math.max(rep.leads, 1) > 0.15 ? 'uvTextWarn' : ''}`}>{fmtInt(rep.staleOpen)}</td>
                   </tr>
                 ))}
                 <tr className="uvRowMuted">
@@ -559,6 +616,8 @@ export function UnivetExecutivePortal() {
                   <td className="uvNum">{fmtInt(data.uncovered.orders)}</td>
                   <td className="uvNum"><strong>{fmtBRL(data.uncovered.revenue)}</strong></td>
                   <td className="uvNum">{data.uncovered.leads > 0 ? fmtPct(data.uncovered.orders / data.uncovered.leads) : 'n/d'}</td>
+                  <td className="uvNum">n/d</td>
+                  <td className="uvNum">n/d</td>
                 </tr>
               </tbody>
             </table>
@@ -808,9 +867,9 @@ export function UnivetExecutivePortal() {
 
       <footer className="uvPortalFooter">
         <div>
-          <strong>Univet Loupes Brasil</strong> · Fontes: Nomus ERP, Kommo CRM, Google Ads, Meta Ads e Instagram
+          <strong>Univet Loupes Brasil</strong> · Dados demonstrativos
         </div>
-        <div>Dados demonstrativos · EverGreen Agency 2026</div>
+        <div>EverGreen Consultoria e Tecnologia · 2026</div>
       </footer>
     </div>
   );

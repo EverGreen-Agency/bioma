@@ -136,3 +136,15 @@ def test_test_classification_com_regras_e_ddd(monkeypatch):
     assert "segmento" in by_key and by_key["segmento"]["values"] == ["Dental"]
     assert "produto" in by_key and by_key["produto"]["values"] == ["Galileana"]
     assert "uf" in by_key and by_key["uf"]["values"] == ["SP"]
+
+
+def test_normalize_model_name():
+    from bioma_api.lead_classifier import normalize_model_name
+
+    assert normalize_model_name("english,multilingual") == "laya-multilingual"
+    assert normalize_model_name("multilingual") == "laya-multilingual"
+    assert normalize_model_name("english") == "laya-english"
+    assert normalize_model_name("auto") == "laya-auto"
+    assert normalize_model_name("jev-latest") == "jev-latest"
+    assert normalize_model_name(None) == "laya-multilingual"
+    assert normalize_model_name("") == "laya-multilingual"
