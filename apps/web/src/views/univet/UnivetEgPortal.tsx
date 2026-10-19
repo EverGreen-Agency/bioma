@@ -85,7 +85,7 @@ export function UnivetEgPortal() {
     retry: false,
   });
 
-  const [busy, setBusy] = useState<null | "connect" | "sync" | "scan" | "webhook" | "dedup" | "classify" | "apply_lead" | "apply_batch" | "reset">(null);
+  const [busy, setBusy] = useState<null | "connect" | "sync" | "scan" | "webhook" | "dedup" | "classify" | "apply_lead" | "apply_batch" | "reset" | "clear_lead" | "clear_batch">(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const stopRef = useRef(false);
