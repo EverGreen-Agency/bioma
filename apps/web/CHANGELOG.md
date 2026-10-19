@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.0](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.4.0...bioma-web-v1.5.0) (2026-10-19)
+
+
+### Features
+
+* **univet:** show map and funnel without leads, add rep coverage layer ([67f4499](https://github.com/EverGreen-Agency/bioma/commit/67f4499e416aa39809f6a759083a401ed885bf3b))
+
+
+### Bug Fixes
+
+* **univet:** eliminar simulacao e normalizar modelo da laya no kommo ([00bf051](https://github.com/EverGreen-Agency/bioma/commit/00bf051c735c9a08efe0585b1923fa9d56b63c13))
+
 ## [1.4.0](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.3.0...bioma-web-v1.4.0) (2026-10-14)
 
 
