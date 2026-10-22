@@ -59,6 +59,7 @@ from bioma_api.routers import (
     social_connect,
     seo,
     offer_lab,
+    seo_geo,
 )
 
 
@@ -153,6 +154,8 @@ app.include_router(mcp_http.router)
 app.include_router(offer_lab.router)
 app.include_router(offer_lab.workspace_router)
 app.include_router(offer_lab.client_router)
+app.include_router(seo_geo.router)
+app.include_router(seo_geo.workspace_router)
 
 
 @app.get("/")
