@@ -8,6 +8,7 @@ SCAN_COLUMNS = "id, created_by, niche, city, query_text, status, source, error_m
 PROSPECT_COLUMNS = (
     "id, scan_id, place_id, name, address, phone, website, google_maps_url, rating, "
     "rating_count, business_status, place_types, presence_score, presence_gaps, changes, "
+    "emails, social_links, crawler_status, crawler_error, enriched_at, "
     "audit, audit_mode, outreach_message, review_status, reviewed_by, reviewed_at, lead_id, "
     "sent_at, created_at, updated_at"
 )
@@ -109,12 +110,16 @@ def update_prospect(conn, prospect_id: UUID, updates: dict[str, Any]) -> dict[st
     allowed = {
         "audit", "audit_mode", "outreach_message", "review_status",
         "reviewed_by", "reviewed_at", "lead_id", "sent_at",
+        "emails", "social_links", "crawler_status", "crawler_error", "enriched_at",
     }
     fields = {key: value for key, value in updates.items() if key in allowed}
     if not fields:
         return get_prospect(conn, prospect_id)
     assignments = ", ".join(f"{key} = %s" for key in fields)
-    values = [Jsonb(value) if key == "audit" else value for key, value in fields.items()]
+    values = [
+        Jsonb(value) if key in ("audit", "emails", "social_links") else value
+        for key, value in fields.items()
+    ]
     return conn.execute(
         f"""
         update local_radar_prospects set {assignments}, updated_at = now()
@@ -122,6 +127,30 @@ def update_prospect(conn, prospect_id: UUID, updates: dict[str, Any]) -> dict[st
         returning {PROSPECT_COLUMNS}
         """,
         (*values, prospect_id),
+    ).fetchone()
+
+
+def update_prospect_enrichment(
+    conn,
+    prospect_id: UUID,
+    emails: list[str],
+    social_links: dict[str, str],
+    crawler_status: str,
+    crawler_error: str | None = None,
+) -> dict[str, Any] | None:
+    return conn.execute(
+        f"""
+        update local_radar_prospects
+        set emails = %s,
+            social_links = %s,
+            crawler_status = %s,
+            crawler_error = %s,
+            enriched_at = now(),
+            updated_at = now()
+        where id = %s
+        returning {PROSPECT_COLUMNS}
+        """,
+        (Jsonb(emails), Jsonb(social_links), crawler_status, crawler_error, prospect_id),
     ).fetchone()
 
 

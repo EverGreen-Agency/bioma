@@ -11,6 +11,8 @@ from bioma_api.schemas.local_radar import (
     LocalRadarScanDetail,
     LocalRadarScanSummary,
     ProspectDecisionPayload,
+    ProspectEnrichBatchPayload,
+    ProspectEnrichBatchResult,
     ProspectMessagePayload,
     ProspectSendPayload,
     ProspectSendResult,
@@ -82,3 +84,20 @@ def send_whatsapp(
     user: CurrentUserResponse = Depends(current_user_from_request),
 ) -> ProspectSendResult:
     return service.send_whatsapp(prospect_id, payload, user)
+
+
+@router.post("/prospects/{prospect_id}/enrich", response_model=LocalRadarProspect)
+def enrich_prospect(
+    prospect_id: UUID,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> LocalRadarProspect:
+    return service.enrich_prospect(prospect_id, user)
+
+
+@router.post("/scans/{scan_id}/enrich-batch", response_model=ProspectEnrichBatchResult)
+def enrich_scan_batch(
+    scan_id: UUID,
+    payload: ProspectEnrichBatchPayload,
+    user: CurrentUserResponse = Depends(current_user_from_request),
+) -> ProspectEnrichBatchResult:
+    return service.enrich_scan_batch(scan_id, payload, user)

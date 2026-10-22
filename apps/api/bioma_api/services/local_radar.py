@@ -24,12 +24,15 @@ from bioma_api.schemas.local_radar import (
     LocalRadarScanDetail,
     LocalRadarScanSummary,
     ProspectDecisionPayload,
+    ProspectEnrichBatchPayload,
+    ProspectEnrichBatchResult,
     ProspectMessagePayload,
     ProspectSendPayload,
     ProspectSendResult,
 )
 from bioma_api.worker_bridge import (
     audit_local_prospect_safe,
+    enrich_prospect_website_safe,
     get_whatsapp_provider_safe,
     normalize_imported_prospects_safe,
     search_local_businesses_safe,
@@ -325,3 +328,87 @@ def _prospect(row: dict) -> LocalRadarProspect:
 
 def _detail(scan: dict, prospects: list[dict]) -> LocalRadarScanDetail:
     return LocalRadarScanDetail(**scan, prospects=[_prospect(row) for row in prospects])
+
+
+def enrich_prospect(prospect_id: UUID, user: CurrentUserResponse) -> LocalRadarProspect:
+    require_platform_admin(user)
+    with connect() as conn:
+        prospect = _require_prospect(conn, prospect_id)
+        website = prospect.get("website")
+        result = enrich_prospect_website_safe(website)
+        updated = repo.update_prospect_enrichment(
+            conn,
+            prospect_id,
+            emails=result["emails"],
+            social_links=result["social_links"],
+            crawler_status=result["crawler_status"],
+            crawler_error=result["crawler_error"],
+        )
+        client_hub_repo.write_audit(
+            conn,
+            user.id,
+            None,
+            "local_radar.prospect_enriched",
+            {
+                "prospect_id": str(prospect_id),
+                "name": prospect.get("name"),
+                "crawler_status": result["crawler_status"],
+                "emails_found": len(result["emails"]),
+                "socials_found": list(result["social_links"].keys()),
+            },
+        )
+    return _prospect(updated)
+
+
+def enrich_scan_batch(
+    scan_id: UUID, payload: ProspectEnrichBatchPayload, user: CurrentUserResponse
+) -> ProspectEnrichBatchResult:
+    require_platform_admin(user)
+    enriched_count = 0
+    failed_count = 0
+    updated_prospects: list[LocalRadarProspect] = []
+
+    with connect() as conn:
+        scan = repo.get_scan(conn, scan_id)
+        if not scan:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Scan não encontrado.")
+
+        for prospect_id in payload.prospect_ids:
+            prospect = repo.get_prospect(conn, prospect_id)
+            if not prospect or str(prospect["scan_id"]) != str(scan_id):
+                continue
+            website = prospect.get("website")
+            result = enrich_prospect_website_safe(website)
+            updated = repo.update_prospect_enrichment(
+                conn,
+                prospect_id,
+                emails=result["emails"],
+                social_links=result["social_links"],
+                crawler_status=result["crawler_status"],
+                crawler_error=result["crawler_error"],
+            )
+            if result["crawler_status"] == "completed":
+                enriched_count += 1
+            elif result["crawler_status"] == "failed":
+                failed_count += 1
+            if updated:
+                updated_prospects.append(_prospect(updated))
+
+        client_hub_repo.write_audit(
+            conn,
+            user.id,
+            None,
+            "local_radar.batch_enriched",
+            {
+                "scan_id": str(scan_id),
+                "total_requested": len(payload.prospect_ids),
+                "enriched_count": enriched_count,
+                "failed_count": failed_count,
+            },
+        )
+
+    return ProspectEnrichBatchResult(
+        enriched_count=enriched_count,
+        failed_count=failed_count,
+        prospects=updated_prospects,
+    )

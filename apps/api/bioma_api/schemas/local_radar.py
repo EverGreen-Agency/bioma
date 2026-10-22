@@ -58,6 +58,11 @@ class LocalRadarProspect(BaseModel):
     presence_score: int | None = None
     presence_gaps: list[str] = []
     changes: list[str] = []
+    emails: list[str] = []
+    social_links: dict[str, str] = {}
+    crawler_status: Literal["pending", "running", "completed", "failed", "no_website"] = "pending"
+    crawler_error: str | None = None
+    enriched_at: datetime | None = None
     audit: dict[str, Any] | None = None
     audit_mode: Literal["live", "preview"] | None = None
     outreach_message: str | None = None
@@ -90,3 +95,13 @@ class ProspectSendResult(BaseModel):
     prospect: LocalRadarProspect
     send_status: Literal["sent", "simulated", "failed"]
     detail: str | None = None
+
+
+class ProspectEnrichBatchPayload(BaseModel):
+    prospect_ids: list[UUID] = Field(min_length=1, max_length=100)
+
+
+class ProspectEnrichBatchResult(BaseModel):
+    enriched_count: int
+    failed_count: int
+    prospects: list[LocalRadarProspect]

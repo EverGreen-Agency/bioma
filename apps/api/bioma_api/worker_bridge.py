@@ -295,3 +295,11 @@ def generate_market_research_safe(request: dict[str, Any]) -> dict[str, Any]:
         return generate_market_research(request, get_settings())
     except Exception as exc:
         raise RuntimeError("Falha ao executar a pesquisa de mercado.") from exc
+
+
+def enrich_prospect_website_safe(website_url: str | None, timeout_seconds: float = 7.0) -> dict[str, Any]:
+    if not _ensure_worker_in_path():
+        raise RuntimeError("Worker do Bioma não encontrado no runtime da API.")
+    from bioma_worker.local_radar import enrich_prospect_website
+
+    return enrich_prospect_website(website_url, timeout_seconds)

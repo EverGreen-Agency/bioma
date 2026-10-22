@@ -322,3 +322,159 @@ def _preview_message(prospect: dict[str, Any]) -> str:
         f"{name} no Google Maps, notamos {observation}. Faz sentido uma conversa rápida "
         "sobre como fortalecer sua presença digital? Sem compromisso."
     )
+
+
+DISCARDED_EXTENSIONS = {
+    ".png", ".jpg", ".jpeg", ".gif", ".svg", ".webp", ".ico",
+    ".css", ".js", ".woff", ".woff2", ".ttf", ".eot", ".mp4", ".pdf",
+}
+
+DISCARDED_EMAIL_DOMAINS = {
+    "wixpress.com", "example.com", "domain.com", "sentry.io",
+    "schema.org", "gravatar.com", "wordpress.org", "cloudflare.com",
+    "w3.org", "googleapis.com", "github.com", "facebook.com", "instagram.com",
+}
+
+DISCARDED_SOCIAL_SLUGS = {
+    "p", "reel", "reels", "stories", "explore", "sharer", "share",
+    "privacy", "terms", "about", "contact", "home", "intent",
+}
+
+
+def enrich_prospect_website(website_url: str | None, timeout_seconds: float = 7.0) -> dict[str, Any]:
+    """Web crawler autônomo (estilo Google Maps Scraper Kit):
+    Navega no site do estabelecimento e minera e-mails corporativos e perfis
+    sociais (Instagram, Facebook, LinkedIn, WhatsApp link).
+    Aplica filtros estritos anti-lixo e resiliência a SSL e timeouts."""
+    import re
+    from urllib.parse import urljoin, urlparse
+
+    if not website_url or not website_url.strip():
+        return {
+            "emails": [],
+            "social_links": {},
+            "crawler_status": "no_website",
+            "crawler_error": None,
+        }
+
+    raw_url = website_url.strip()
+    if not raw_url.startswith(("http://", "https://")):
+        raw_url = "https://" + raw_url
+
+    parsed_base = urlparse(raw_url)
+    domain_netloc = parsed_base.netloc.lower()
+    clean_domain = domain_netloc.split(":")[0]
+    if clean_domain.startswith("www."):
+        clean_domain = clean_domain[4:]
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36"
+        ),
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7",
+    }
+
+    emails_found: set[str] = set()
+    socials_found: dict[str, str] = {}
+
+    def extract_from_html(html_text: str):
+        # 1. Extração e sanitização estrita de e-mails
+        email_matches = re.findall(r"[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+", html_text)
+        for email in email_matches:
+            email_lower = email.strip().lower().rstrip(".,;!?:")
+            parts = email_lower.split("@")
+            if len(parts) != 2:
+                continue
+            local_part, email_domain = parts
+            if any(email_lower.endswith(ext) for ext in DISCARDED_EXTENSIONS):
+                continue
+            if email_domain in DISCARDED_EMAIL_DOMAINS:
+                continue
+            if len(local_part) < 2 or len(email_domain) < 3 or "." not in email_domain:
+                continue
+            emails_found.add(email_lower)
+
+        # 2. Extração de perfis sociais
+        insta_matches = re.findall(r'https?://(?:www\.)?instagram\.com/([a-zA-Z0-9_.]+)/?', html_text, re.IGNORECASE)
+        for user in insta_matches:
+            u_clean = user.strip().lower().rstrip("/")
+            if u_clean and u_clean not in DISCARDED_SOCIAL_SLUGS and "instagram" not in socials_found:
+                socials_found["instagram"] = f"https://instagram.com/{u_clean}"
+
+        fb_matches = re.findall(r'https?://(?:www\.)?facebook\.com/([a-zA-Z0-9_.-]+)/?', html_text, re.IGNORECASE)
+        for fb in fb_matches:
+            f_clean = fb.strip().lower().rstrip("/")
+            if f_clean and f_clean not in DISCARDED_SOCIAL_SLUGS and "facebook" not in socials_found:
+                socials_found["facebook"] = f"https://facebook.com/{f_clean}"
+
+        li_matches = re.findall(r'https?://(?:www\.)?linkedin\.com/(?:company|in)/([a-zA-Z0-9_.-]+)/?', html_text, re.IGNORECASE)
+        for li in li_matches:
+            l_clean = li.strip().lower().rstrip("/")
+            if l_clean and l_clean not in DISCARDED_SOCIAL_SLUGS and "linkedin" not in socials_found:
+                socials_found["linkedin"] = f"https://linkedin.com/company/{l_clean}"
+
+        wa_matches = re.findall(r'https?://(?:api\.whatsapp\.com/send\?phone=|wa\.me/)(\d+)', html_text, re.IGNORECASE)
+        for wa in wa_matches:
+            if "whatsapp_link" not in socials_found and len(wa) >= 10:
+                socials_found["whatsapp_link"] = f"https://wa.me/{wa}"
+
+    try:
+        with httpx.Client(
+            timeout=timeout_seconds,
+            follow_redirects=True,
+            verify=False,
+            headers=headers,
+        ) as client:
+            resp = client.get(raw_url)
+            if resp.status_code < 400:
+                extract_from_html(resp.text)
+
+                # Busca de contingência em link de contato caso não encontre e-mails na home
+                if not emails_found:
+                    contact_match = re.search(
+                        r'href=["\']([^"\']*(?:contato|fale-conosco|fale_conosco|atendimento)[^"\']*)["\']',
+                        resp.text,
+                        re.IGNORECASE,
+                    )
+                    if contact_match:
+                        contact_href = contact_match.group(1)
+                        contact_url = urljoin(raw_url, contact_href)
+                        if urlparse(contact_url).netloc.lower() == parsed_base.netloc.lower():
+                            try:
+                                sub_resp = client.get(contact_url)
+                                if sub_resp.status_code < 400:
+                                    extract_from_html(sub_resp.text)
+                            except Exception:
+                                pass
+
+            sorted_emails = sorted(
+                list(emails_found),
+                key=lambda e: (
+                    0 if clean_domain and clean_domain in e else 1,
+                    0 if any(e.startswith(p) for p in ("contato@", "comercial@", "atendimento@", "vendas@")) else 1,
+                    len(e),
+                ),
+            )
+
+            return {
+                "emails": sorted_emails,
+                "social_links": socials_found,
+                "crawler_status": "completed",
+                "crawler_error": None,
+            }
+    except httpx.TimeoutException:
+        return {
+            "emails": [],
+            "social_links": {},
+            "crawler_status": "failed",
+            "crawler_error": "Tempo limite esgotado ao acessar o site (timeout)",
+        }
+    except Exception as exc:
+        return {
+            "emails": [],
+            "social_links": {},
+            "crawler_status": "failed",
+            "crawler_error": f"Falha de conexão: {str(exc)[:120]}",
+        }
