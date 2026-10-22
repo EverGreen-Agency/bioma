@@ -50,7 +50,7 @@ def update_knowledge_card_status(
     user: CurrentUserResponse,
 ) -> SalesKnowledgeCardResponse:
     with connect() as conn:
-        resolve_accessible_client(conn, workspace_id, user, module="hub", capability="manage")
+        resolve_accessible_client(conn, workspace_id, user, module="hub", capability="manage_work")
         updated = prospecting_repo.update_card_status(conn, card_id, payload.status)
         if not updated:
             raise HTTPException(
@@ -66,7 +66,7 @@ def create_prospecting_list(
     user: CurrentUserResponse,
 ) -> ProspectingListSummaryResponse:
     with connect() as conn:
-        workspace = resolve_accessible_client(conn, workspace_id, user, module="hub", capability="manage")
+        workspace = resolve_accessible_client(conn, workspace_id, user, module="hub", capability="manage_work")
         ws_row = conn.execute(
             "select tenant_organization_id from workspaces where id = %s",
             (workspace["workspace_id"],),
@@ -135,7 +135,7 @@ def start_prospecting_session(
     user: CurrentUserResponse,
 ) -> ProspectingSessionResponse:
     with connect() as conn:
-        workspace = resolve_accessible_client(conn, workspace_id, user, module="hub", capability="manage")
+        workspace = resolve_accessible_client(conn, workspace_id, user, module="hub", capability="manage_work")
         created = prospecting_repo.create_session(
             conn,
             workspace_id=workspace["workspace_id"],
@@ -186,7 +186,7 @@ def record_session_disposition(
     user: CurrentUserResponse,
 ) -> ProspectingCockpitContextResponse:
     with connect() as conn:
-        workspace = resolve_accessible_client(conn, workspace_id, user, module="hub", capability="manage")
+        workspace = resolve_accessible_client(conn, workspace_id, user, module="hub", capability="manage_work")
 
         handoff_dict = payload.handoff.model_dump() if payload.handoff else None
 
@@ -207,29 +207,33 @@ def record_session_disposition(
             contact_name = item_data.get("contact_name") if item_data else None
 
             # 1. Registra no CRM / Leads
-            conn.execute(
+            org_id = workspace.get("tenant_organization_id") or workspace.get("organization_id")
+            lead_row = conn.execute(
                 """
                 insert into leads (
                     organization_id, name, company, email, phone, stage, notes, source
                 ) values (%s, %s, %s, %s, %s, 'meeting', %s, 'prospecting_session')
+                returning id
                 """,
                 (
-                    workspace["tenant_organization_id"] if "tenant_organization_id" in workspace else workspace["workspace_id"],
+                    org_id,
                     contact_name or company_name,
                     company_name,
                     item_data.get("email") if item_data else None,
                     item_data.get("phone") if item_data else None,
                     f"Dor: {payload.handoff.problem}\nImpacto: {payload.handoff.impact}\nData: {payload.handoff.meeting_at}\nNotas: {payload.handoff.closer_notes or ''}",
                 ),
-            )
+            ).fetchone()
+            lead_id = lead_row["id"] if lead_row else None
 
             # 2. Registra na tabela de Oportunidades do Radar
-            conn.execute(
+            opp_row = conn.execute(
                 """
                 insert into opportunity_radar (
                     workspace_id, owner_user_id, source_platform, external_id, title, description,
                     fit_score, fit_analysis, status
                 ) values (%s, %s, 'sales_prospecting_os', %s, %s, %s, 90, %s, 'lead_converted')
+                returning id
                 """,
                 (
                     workspace["workspace_id"],
@@ -244,7 +248,64 @@ def record_session_disposition(
                         "scheduled_at": payload.handoff.meeting_at,
                     }),
                 ),
-            )
+            ).fetchone()
+            opp_id = opp_row["id"] if opp_row else None
+
+            # 3. Vincula contato principal da oportunidade se ambos foram gerados
+            if opp_id and lead_id:
+                conn.execute(
+                    """
+                    insert into opportunity_contacts (
+                        opportunity_id, lead_id, relationship_role, is_primary
+                    ) values (%s, %s, 'decision_maker', true)
+                    on conflict (opportunity_id, lead_id) do nothing
+                    """,
+                    (opp_id, lead_id),
+                )
+
+            # 4. Cria sessão no Copiloto de Vendas para o Closer com o briefing
+            copilot_session = conn.execute(
+                """
+                insert into sales_copilot_sessions (
+                    workspace_id, opportunity_id, title, session_type, language,
+                    objective, participant_context, created_by
+                ) values (%s, %s, %s, 'discovery', 'pt-BR', %s, %s, %s)
+                returning id
+                """,
+                (
+                    workspace["workspace_id"],
+                    opp_id,
+                    f"Diagnóstico: {company_name}",
+                    f"Dor Principal: {payload.handoff.problem}\nImpacto: {payload.handoff.impact}\nData Agendada: {payload.handoff.meeting_at}",
+                    f"Motion Sugerido: {payload.handoff.motion}\nContato: {contact_name or 'Decisor'}\nNotas do SDR: {payload.handoff.closer_notes or 'Sem observações adicionais.'}",
+                    user.id,
+                ),
+            ).fetchone()
+
+            if copilot_session:
+                briefing_content = (
+                    f"## Briefing de Passagem de Bastão (SDR -> Closer)\n\n"
+                    f"- **Empresa:** {company_name}\n"
+                    f"- **Contato:** {contact_name or 'Não informado'}\n"
+                    f"- **Motion Provável:** {payload.handoff.motion}\n"
+                    f"- **Dor Principal Identificada:** {payload.handoff.problem}\n"
+                    f"- **Impacto Financeiro / Operacional:** {payload.handoff.impact}\n"
+                    f"- **Data Agendada:** {payload.handoff.meeting_at}\n"
+                    f"- **Observações do SDR:** {payload.handoff.closer_notes or 'Nenhuma'}"
+                )
+                conn.execute(
+                    """
+                    insert into sales_copilot_events (
+                        session_id, event_type, content, recommendation, sequence, created_by
+                    ) values (%s, 'insight', %s, %s, 1, %s)
+                    """,
+                    (
+                        copilot_session["id"],
+                        briefing_content,
+                        "Conduzir discovery focado na validação da dor e mensuração do custo de inação.",
+                        user.id,
+                    ),
+                )
 
             client_hub_repo.write_audit(
                 conn,
@@ -255,6 +316,8 @@ def record_session_disposition(
                     "item_id": str(payload.item_id),
                     "company_name": company_name,
                     "handoff": handoff_dict,
+                    "opportunity_id": str(opp_id) if opp_id else None,
+                    "copilot_session_id": str(copilot_session["id"]) if copilot_session else None,
                 },
             )
 
@@ -267,7 +330,7 @@ def finish_session(
     user: CurrentUserResponse,
 ) -> ProspectingSessionResponse:
     with connect() as conn:
-        resolve_accessible_client(conn, workspace_id, user, module="hub", capability="manage")
+        resolve_accessible_client(conn, workspace_id, user, module="hub", capability="manage_work")
         finished = prospecting_repo.finish_session(conn, session_id)
         if not finished:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Sessão não encontrada.")

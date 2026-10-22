@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Any, Literal
 from uuid import UUID
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 # ==========================================
@@ -144,6 +144,18 @@ class RecordDispositionRequest(BaseModel):
     notes: str | None = None
     scheduled_follow_up_at: datetime | None = None
     handoff: HandoffPayload | None = None
+
+    @field_validator("scheduled_follow_up_at", mode="before")
+    @classmethod
+    def parse_follow_up_date(cls, v: Any) -> Any:
+        if not v:
+            return None
+        if isinstance(v, datetime):
+            return v
+        try:
+            return datetime.fromisoformat(str(v).replace("Z", "+00:00"))
+        except Exception:
+            return None
 
 
 class ProspectingSessionResponse(BaseModel):

@@ -181,3 +181,64 @@ def test_record_unanswered_disposition():
     assert result["session"]["connections_count"] == 0
     assert result["session"]["meetings_booked"] == 0
     assert result["item"]["status"] == "pending"
+
+
+def test_record_disposition_resilient_datetime_validator():
+    # 1. Valid ISO string
+    req1 = RecordDispositionRequest(
+        item_id=uuid4(),
+        disposition="follow_up",
+        scheduled_follow_up_at="2026-10-25T14:30:00Z",
+    )
+    assert req1.scheduled_follow_up_at is not None
+    assert req1.scheduled_follow_up_at.year == 2026
+
+    # 2. Free text / non-ISO date should not raise 422, returns None gracefully
+    req2 = RecordDispositionRequest(
+        item_id=uuid4(),
+        disposition="follow_up",
+        scheduled_follow_up_at="Amanhã 15h",
+    )
+    assert req2.scheduled_follow_up_at is None
+
+    # 3. None or empty string
+    req3 = RecordDispositionRequest(
+        item_id=uuid4(),
+        disposition="follow_up",
+        scheduled_follow_up_at=None,
+    )
+    assert req3.scheduled_follow_up_at is None
+
+
+def test_queue_rotation_order_in_repository():
+    # Verify that get_session SQL query orders pending leads by attempts_count and last_attempt_at
+    executed_queries = []
+
+    class CapturingCursor:
+        def __init__(self):
+            self._session_row = {"id": uuid4(), "list_id": uuid4()}
+            self._items = []
+
+        def execute(self, sql, params=None):
+            executed_queries.append(sql)
+
+        def fetchone(self):
+            return self._session_row
+
+        def fetchall(self):
+            return self._items
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_val, exc_tb):
+            pass
+
+    cur = CapturingCursor()
+    conn = MockConnection(cur)
+    repo = ProspectingRepository()
+    repo.get_session(conn, session_id=uuid4())
+
+    items_query = next((q for q in executed_queries if "from prospecting_list_items" in q), "")
+    assert "attempts_count asc" in items_query
+    assert "last_attempt_at asc nulls first" in items_query

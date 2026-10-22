@@ -60,6 +60,7 @@ export function ProspectingStudio({ workspaces }: ProspectingStudioProps) {
   // Call Notes & Disposition
   const [callNotes, setCallNotes] = useState("");
   const [followUpDate, setFollowUpDate] = useState("");
+  const [showFollowUpModal, setShowFollowUpModal] = useState(false);
   const [showHandoffModal, setShowHandoffModal] = useState(false);
   const [handoffProblem, setHandoffProblem] = useState("");
   const [handoffImpact, setHandoffImpact] = useState("");
@@ -141,28 +142,34 @@ export function ProspectingStudio({ workspaces }: ProspectingStudioProps) {
 
   const handleRecordDisposition = async (
     disposition: "unanswered" | "busy" | "wrong_number" | "not_interested" | "follow_up" | "meeting_scheduled",
-    handoffData?: any
+    handoffData?: any,
+    customFollowUpDate?: string
   ) => {
     if (!workspaceId || !activeSession || !cockpit?.current_item) return;
     try {
       setLoading(true);
       setError("");
+      const effectiveFollowUp = customFollowUpDate !== undefined ? customFollowUpDate : followUpDate;
       const updatedContext = await api.recordProspectingDisposition(workspaceId, activeSession.id, {
         item_id: cockpit.current_item.id,
         disposition,
         notes: callNotes.trim() || undefined,
-        scheduled_follow_up_at: disposition === "follow_up" && followUpDate ? followUpDate : undefined,
+        scheduled_follow_up_at: disposition === "follow_up" && effectiveFollowUp ? effectiveFollowUp : undefined,
         handoff: handoffData || undefined,
       });
       setCockpit(updatedContext);
       setActiveSession(updatedContext.session);
       setCallNotes("");
       setFollowUpDate("");
+      setShowFollowUpModal(false);
       setShowHandoffModal(false);
 
       if (disposition === "meeting_scheduled") {
         setSuccessMsg("🎉 Reunião agendada com sucesso! Briefing e oportunidade enviados ao Copiloto do Closer.");
         setTimeout(() => setSuccessMsg(""), 6000);
+      } else if (disposition === "follow_up") {
+        setSuccessMsg("📅 Retorno agendado com sucesso!");
+        setTimeout(() => setSuccessMsg(""), 4000);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Falha ao registrar disposição.");
@@ -543,25 +550,31 @@ export function ProspectingStudio({ workspaces }: ProspectingStudioProps) {
                               <Copy size={15} />
                             </button>
 
-                            <a
-                              href={`https://wa.me/${currentItem.phone.replace(/\D/g, "")}?text=${encodeURIComponent(getWhatsAppOpener(currentItem))}`}
-                              target="_blank"
-                              rel="noreferrer"
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                background: "#25D366",
-                                color: "#fff",
-                                padding: "8px 14px",
-                                borderRadius: "8px",
-                                fontSize: "0.88rem",
-                                fontWeight: 700,
-                                textDecoration: "none",
-                              }}
-                            >
-                              <MessageSquare size={16} /> WhatsApp Opener
-                            </a>
+                            {(() => {
+                              const digits = currentItem.phone.replace(/\D/g, "");
+                              const waNumber = digits.length <= 11 && !digits.startsWith("55") ? `55${digits}` : digits;
+                              return (
+                                <a
+                                  href={`https://wa.me/${waNumber}?text=${encodeURIComponent(getWhatsAppOpener(currentItem))}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  style={{
+                                    display: "inline-flex",
+                                    alignItems: "center",
+                                    gap: "6px",
+                                    background: "#25D366",
+                                    color: "#fff",
+                                    padding: "8px 14px",
+                                    borderRadius: "8px",
+                                    fontSize: "0.88rem",
+                                    fontWeight: 700,
+                                    textDecoration: "none",
+                                  }}
+                                >
+                                  <MessageSquare size={16} /> WhatsApp Opener
+                                </a>
+                              );
+                            })()}
                           </>
                         ) : (
                           <span style={{ color: "var(--text-dim)", fontSize: "0.85rem" }}>Telefone não localizado.</span>
@@ -638,11 +651,7 @@ export function ProspectingStudio({ workspaces }: ProspectingStudioProps) {
                           <button
                             disabled={loading}
                             onClick={() => {
-                              const promptDate = window.prompt("Data/Hora do Retorno (ex: Amanhã às 14h):", "Amanhã 14:00");
-                              if (promptDate !== null) {
-                                setFollowUpDate(promptDate);
-                                void handleRecordDisposition("follow_up");
-                              }
+                              setShowFollowUpModal(true);
                             }}
                             style={{ padding: "10px 6px", borderRadius: "8px", border: "1px solid rgba(59, 130, 246, 0.3)", background: "rgba(59, 130, 246, 0.08)", color: "#60a5fa", fontSize: "0.78rem", fontWeight: 700, cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}
                           >
@@ -1049,6 +1058,153 @@ export function ProspectingStudio({ workspaces }: ProspectingStudioProps) {
                 }
               >
                 Confirmar Reunião & Gerar Briefing
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL DE FOLLOW-UP RÁPIDO */}
+      {showFollowUpModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0, 0, 0, 0.75)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "20px",
+          }}
+        >
+          <div
+            className="surface"
+            style={{
+              width: "100%",
+              maxWidth: "480px",
+              padding: "24px",
+              borderRadius: "14px",
+              border: "1px solid var(--border)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+              <PhoneForwarded size={22} color="#60a5fa" />
+              <div>
+                <h3 style={{ margin: 0, fontSize: "1.15rem", fontWeight: 700 }}>Agendar Retorno (Follow-up)</h3>
+                <span style={{ fontSize: "0.8rem", color: "var(--text-dim)" }}>
+                  Defina quando o Bioma deve recolocar este prospect na fila prioritária.
+                </span>
+              </div>
+            </div>
+
+            {/* Presets Rápidos */}
+            <div>
+              <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-dim)", display: "block", marginBottom: 6 }}>
+                Atalhos Rápidos:
+              </label>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => {
+                    const d = new Date();
+                    d.setHours(17, 0, 0, 0);
+                    setFollowUpDate(d.toISOString().slice(0, 16));
+                  }}
+                  style={{ fontSize: "0.8rem", padding: "8px" }}
+                >
+                  Hoje às 17h
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 1);
+                    d.setHours(10, 0, 0, 0);
+                    setFollowUpDate(d.toISOString().slice(0, 16));
+                  }}
+                  style={{ fontSize: "0.8rem", padding: "8px" }}
+                >
+                  Amanhã às 10h
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 1);
+                    d.setHours(15, 0, 0, 0);
+                    setFollowUpDate(d.toISOString().slice(0, 16));
+                  }}
+                  style={{ fontSize: "0.8rem", padding: "8px" }}
+                >
+                  Amanhã às 15h
+                </button>
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={() => {
+                    const d = new Date();
+                    d.setDate(d.getDate() + 3);
+                    d.setHours(14, 0, 0, 0);
+                    setFollowUpDate(d.toISOString().slice(0, 16));
+                  }}
+                  style={{ fontSize: "0.8rem", padding: "8px" }}
+                >
+                  Em 3 dias (14h)
+                </button>
+              </div>
+            </div>
+
+            {/* Input Manual Datetime */}
+            <div>
+              <label style={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--text-dim)", display: "block", marginBottom: 6 }}>
+                Ou escolha data e horário específico:
+              </label>
+              <input
+                type="datetime-local"
+                value={followUpDate}
+                onChange={(e) => setFollowUpDate(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "10px",
+                  background: "var(--bg-inset)",
+                  border: "1px solid var(--border)",
+                  borderRadius: "8px",
+                  color: "var(--text)",
+                  fontSize: "0.88rem",
+                }}
+              />
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "8px" }}>
+              <button
+                type="button"
+                className="secondary-button"
+                onClick={() => {
+                  setShowFollowUpModal(false);
+                  setFollowUpDate("");
+                }}
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                className="primary-button"
+                disabled={loading}
+                onClick={() => {
+                  const isoDate = followUpDate ? new Date(followUpDate).toISOString() : undefined;
+                  void handleRecordDisposition("follow_up", undefined, isoDate);
+                }}
+                style={{ background: "#3b82f6", color: "#fff" }}
+              >
+                Confirmar Agendamento
               </button>
             </div>
           </div>

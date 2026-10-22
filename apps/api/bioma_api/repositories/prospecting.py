@@ -493,7 +493,7 @@ class ProspectingRepository:
                 """
                 select * from prospecting_list_items
                 where list_id = %s
-                order by case when status = 'pending' then 1 else 2 end, rating desc nulls last, created_at asc
+                order by case when status = 'pending' then 1 else 2 end, attempts_count asc, last_attempt_at asc nulls first, rating desc nulls last, created_at asc
                 """,
                 (list_id,),
             )
@@ -533,7 +533,7 @@ class ProspectingRepository:
                     """
                     select * from prospecting_list_items
                     where list_id = %s
-                    order by case when status = 'pending' then 1 else 2 end, created_at asc
+                    order by case when status = 'pending' then 1 else 2 end, attempts_count asc, last_attempt_at asc nulls first, created_at asc
                     """,
                     (res["list_id"],),
                 )
