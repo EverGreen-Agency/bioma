@@ -4771,6 +4771,22 @@ export const api = {
   resolveSkillGap: (gapId: string) =>
     request<OpportunitySkillGap>(`/backoffice/proposals/gaps/${gapId}/resolve`, { method: "POST" }),
   getProposalAnalytics: () => request<ProposalAnalytics>("/backoffice/proposals/analytics"),
+  evaluateOffer: (payload: OfferEvaluatePayload) =>
+    request<OfferEvaluationPreviewResponse>("/offer-lab/evaluate", {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  listOfferValidations: (workspaceId: string) =>
+    request<OfferValidationResponse[]>(`/workspaces/${workspaceId}/offer-validations`),
+  createOfferValidation: (workspaceId: string, payload: OfferEvaluatePayload) =>
+    request<OfferValidationResponse>(`/workspaces/${workspaceId}/offer-validations`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  deleteOfferValidation: (workspaceId: string, validationId: string) =>
+    request<void>(`/workspaces/${workspaceId}/offer-validations/${validationId}`, {
+      method: "DELETE",
+    }),
 };
 
 export type OpportunityPlatformConfig = {
@@ -5342,4 +5358,89 @@ export type ProposalAnalytics = {
     net_profit_cents: number;
     roi_percentage: number;
   }>;
+};
+
+export type ValueEquation = {
+  dream_outcome: number;
+  perceived_likelihood: number;
+  time_delay: number;
+  effort_and_sacrifice: number;
+  notes?: Record<string, string>;
+};
+
+export type ProblemSolutionItem = {
+  obstacle: string;
+  timing: "before_buying" | "during_delivery" | "after_purchase";
+  solution: string;
+  delivery_vehicle: "done_for_you" | "software" | "1_on_1" | "group" | "checklist";
+  cost_to_deliver: "low" | "medium" | "high";
+  perceived_value: "low" | "medium" | "high" | "extreme";
+};
+
+export type OfferBonus = {
+  title: string;
+  description: string;
+  perceived_value_cents: number;
+  delivery_cost: string;
+};
+
+export type RiskReversalGuarantee = {
+  type: "unconditional" | "conditional" | "anti_guarantee" | "performance_based";
+  title: string;
+  terms: string;
+  conditions: string[];
+};
+
+export type OfferStack = {
+  core_offer_name: string;
+  core_offer_description: string;
+  magic_name: string;
+  bonuses: OfferBonus[];
+  guarantee: RiskReversalGuarantee;
+  scarcity_urgency: string;
+};
+
+export type BoardVerdict = {
+  hormozi_offers_score: number;
+  hormozi_verdict: string;
+  thiel_monopoly_score: number;
+  thiel_verdict: string;
+  jobs_product_score: number;
+  jobs_verdict: string;
+  dealbreakers: string[];
+  overall_recommendation: "proceed" | "refine_offer" | "abort";
+};
+
+export type OfferEvaluatePayload = {
+  title: string;
+  product_or_service: string;
+  target_audience: string;
+  current_price_cents: number;
+  value_equation: ValueEquation;
+  problems_and_solutions: ProblemSolutionItem[];
+  offer_stack?: OfferStack | null;
+};
+
+export type OfferEvaluationPreviewResponse = {
+  value_score: number;
+  offer_stack: OfferStack;
+  board_verdict: BoardVerdict;
+};
+
+export type OfferValidationResponse = {
+  id: string;
+  workspace_id: string;
+  title: string;
+  product_or_service: string;
+  target_audience: string;
+  current_price_cents: number;
+  status: string;
+  value_equation: ValueEquation;
+  value_score: number;
+  problems_and_solutions: ProblemSolutionItem[];
+  offer_stack: OfferStack;
+  board_verdict: BoardVerdict;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
 };

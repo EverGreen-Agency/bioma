@@ -110,6 +110,13 @@ export const agencyWorkspaceNavItems: Array<{
     module: "hub",
     icon: MapPin,
   },
+  {
+    id: "offer-lab",
+    label: "Lab de Ofertas (Founder)",
+    path: "validador-oferta",
+    module: "hub",
+    icon: Target,
+  },
 ];
 
 // Feature-gating por organização (decisão 2026-07-14): cada view exige um
