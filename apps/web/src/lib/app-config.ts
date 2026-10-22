@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, Bot, BriefcaseBusiness, ClipboardList, FileSearch, FileText, FolderOpen, GitBranch, Headphones, KeyRound, LayoutDashboard, Link2, MapPin, MessageSquare, Package, Radar, ShieldCheck, Sparkles, Target, Trophy, UserCheck, Users, WalletCards, type LucideIcon } from "lucide-react";
+import { BarChart3, BookOpen, Bot, BriefcaseBusiness, ClipboardList, FileSearch, FileText, FolderOpen, GitBranch, Globe, Headphones, KeyRound, LayoutDashboard, Link2, MapPin, MessageSquare, Package, Radar, ShieldCheck, Sparkles, Target, Trophy, UserCheck, Users, WalletCards, type LucideIcon } from "lucide-react";
 
 import type { ArtifactPayload, ClientModule, ClientPayload, ClientStatus, CurrentUser, DeliverablePayload, DeliverableStatus } from "./api";
 
@@ -116,6 +116,13 @@ export const agencyWorkspaceNavItems: Array<{
     path: "validador-oferta",
     module: "hub",
     icon: Target,
+  },
+  {
+    id: "seo-geo",
+    label: "Auditor SEO & GEO",
+    path: "seo-geo",
+    module: "hub",
+    icon: Globe,
   },
 ];
 

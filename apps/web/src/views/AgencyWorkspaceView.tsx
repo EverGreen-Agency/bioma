@@ -18,6 +18,7 @@ const ProofView = lazy(() => import("./ProofView").then((module) => ({ default: 
 const LocalRadarStudio = lazy(() => import("../components/LocalRadarStudio").then((module) => ({ default: module.LocalRadarStudio })));
 const WhatsAppManager = lazy(() => import("../components/WhatsAppManager").then((module) => ({ default: module.WhatsAppManager })));
 const OfferLabStudio = lazy(() => import("../components/offer-lab/OfferLabStudio").then((module) => ({ default: module.OfferLabStudio })));
+const SeoGeoStudio = lazy(() => import("../components/seo-geo/SeoGeoStudio").then((module) => ({ default: module.SeoGeoStudio })));
 
 type AgencyWorkspaceOutletContext = {
   workspace: AgencyWorkspaceContext;
@@ -221,6 +222,15 @@ export function AgencyOfferLabRoute() {
   return (
     <Suspense fallback={<ModuleLoading />}>
       <OfferLabStudio workspaceId={workspace.workspaceId} />
+    </Suspense>
+  );
+}
+
+export function AgencySeoGeoRoute() {
+  const { workspace } = useAgencyWorkspace();
+  return (
+    <Suspense fallback={<ModuleLoading />}>
+      <SeoGeoStudio workspaceId={workspace.workspaceId} />
     </Suspense>
   );
 }

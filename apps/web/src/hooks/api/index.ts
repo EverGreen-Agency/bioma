@@ -10,3 +10,4 @@ export * from "./copilot-agent";
 export * from "./surfaces";
 export * from "./studio";
 export * from "./offer-lab";
+export * from "./seo-geo";

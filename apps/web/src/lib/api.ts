@@ -4807,6 +4807,24 @@ export const api = {
     request<void>(`/workspaces/${workspaceId}/offer-validations/${validationId}`, {
       method: "DELETE",
     }),
+  previewSeoGeoAudit: (url: string) =>
+    request<SeoGeoAuditResponse>("/seo-geo/preview", {
+      method: "POST",
+      body: JSON.stringify({ url }),
+    }),
+  listWorkspaceSeoGeoAudits: (workspaceId: string) =>
+    request<SeoGeoAuditSummary[]>(`/workspaces/${workspaceId}/seo-geo/audits`),
+  createWorkspaceSeoGeoAudit: (workspaceId: string, url: string) =>
+    request<SeoGeoAuditResponse>(`/workspaces/${workspaceId}/seo-geo/audits`, {
+      method: "POST",
+      body: JSON.stringify({ url }),
+    }),
+  getWorkspaceSeoGeoAudit: (workspaceId: string, auditId: string) =>
+    request<SeoGeoAuditResponse>(`/workspaces/${workspaceId}/seo-geo/audits/${auditId}`),
+  deleteWorkspaceSeoGeoAudit: (workspaceId: string, auditId: string) =>
+    request<{ status: string; deleted: boolean }>(`/workspaces/${workspaceId}/seo-geo/audits/${auditId}`, {
+      method: "DELETE",
+    }),
 };
 
 export type OpportunityPlatformConfig = {
@@ -5463,4 +5481,64 @@ export type OfferValidationResponse = {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type AuditCheckItem = {
+  id: string;
+  category: string;
+  label: string;
+  status: "passed" | "warning" | "failed";
+  detail: string;
+  recommendation: string;
+};
+
+export type TechnicalAudit = {
+  title: string | null;
+  title_length: number;
+  description: string | null;
+  description_length: number;
+  canonical: string | null;
+  h1_tags: string[];
+  h2_tags: string[];
+  images_total: number;
+  images_missing_alt: number;
+  open_graph: Record<string, string>;
+  checks: AuditCheckItem[];
+};
+
+export type GeoAudit = {
+  llms_txt_present: boolean;
+  llms_txt_url: string | null;
+  schemas_detected: string[];
+  raw_jsonld_schemas: Array<Record<string, unknown>>;
+  eeat_signals: Record<string, boolean>;
+  faq_count: number;
+  ai_search_readiness: "high" | "moderate" | "low";
+  checks: AuditCheckItem[];
+};
+
+export type SeoGeoAuditResponse = {
+  id?: string | null;
+  workspace_id?: string | null;
+  target_url: string;
+  page_title: string | null;
+  seo_score: number;
+  geo_score: number;
+  waf_detected: boolean;
+  technical_audit: TechnicalAudit;
+  geo_audit: GeoAudit;
+  generated_llms_txt: string;
+  generated_schema_jsonld: Record<string, unknown>;
+  created_at?: string | null;
+};
+
+export type SeoGeoAuditSummary = {
+  id: string;
+  workspace_id: string;
+  target_url: string;
+  page_title: string | null;
+  seo_score: number;
+  geo_score: number;
+  waf_detected: boolean;
+  created_at: string;
 };
