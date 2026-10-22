@@ -129,7 +129,6 @@ def list_workspace_validations(workspace_id: UUID, user: CurrentUserResponse) ->
             user,
             module="hub",
             capability="view",
-            require_kind="client",
         )
         rows = offer_lab_repo.list_validations(conn, workspace["workspace_id"])
         return [_map_response(row) for row in rows]
@@ -147,7 +146,6 @@ def get_workspace_validation(
             user,
             module="hub",
             capability="view",
-            require_kind="client",
         )
         row = offer_lab_repo.get_validation(conn, validation_id, workspace["workspace_id"])
         if not row:
@@ -167,7 +165,6 @@ def create_workspace_validation(
             user,
             module="hub",
             capability="manage_work",
-            require_kind="client",
         )
 
         evaluation = evaluate_offer_preview(payload)
@@ -175,10 +172,12 @@ def create_workspace_validation(
         stack = evaluation["offer_stack"]
         verdict = evaluation["board_verdict"]
 
+        tenant_org_id = workspace.get("tenant_organization_id") or workspace.get("organization_id")
+
         row = offer_lab_repo.create_validation(
             conn=conn,
             workspace_id=workspace["workspace_id"],
-            tenant_organization_id=workspace["organization_id"],
+            tenant_organization_id=tenant_org_id,
             user_id=user.id,
             title=payload.title,
             product_or_service=payload.product_or_service,
@@ -221,7 +220,6 @@ def delete_workspace_validation(
             user,
             module="hub",
             capability="manage_work",
-            require_kind="client",
         )
         deleted = offer_lab_repo.delete_validation(conn, validation_id, workspace["workspace_id"])
         if not deleted:
