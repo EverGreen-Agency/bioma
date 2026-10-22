@@ -52,6 +52,7 @@ const AgencyProofRoute = lazy(() => import("./views/AgencyWorkspaceView").then((
 const AgencyLocalRadarRoute = lazy(() => import("./views/AgencyWorkspaceView").then((module) => ({ default: module.AgencyLocalRadarRoute })));
 const AgencyOfferLabRoute = lazy(() => import("./views/AgencyWorkspaceView").then((module) => ({ default: module.AgencyOfferLabRoute })));
 const AgencySeoGeoRoute = lazy(() => import("./views/AgencyWorkspaceView").then((module) => ({ default: module.AgencySeoGeoRoute })));
+const AgencyProspectingRoute = lazy(() => import("./views/AgencyWorkspaceView").then((module) => ({ default: module.AgencyProspectingRoute })));
 
 
 // Views administrativas EG
@@ -374,6 +375,7 @@ export function App() {
             <Route path="radar-local" element={guardSurface("operacao.radar-local", <AgencyLocalRadarRoute />)} />
             <Route path="validador-oferta" element={guardSurface("operacao.validador-oferta", <AgencyOfferLabRoute />)} />
             <Route path="seo-geo" element={guardSurface("operacao.seo-geo", <AgencySeoGeoRoute />)} />
+            <Route path="prospeccao" element={guardSurface("operacao.prospeccao", <AgencyProspectingRoute />)} />
             <Route path="prova" element={guardSurface("operacao.prova", <AgencyProofRoute />)} />
             {/* As integrações da EG moram em Configurações → Empresa →
                 Integrações, junto das credenciais do ambiente. Esta rota fica

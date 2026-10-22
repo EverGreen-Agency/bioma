@@ -19,6 +19,7 @@ const LocalRadarStudio = lazy(() => import("../components/LocalRadarStudio").the
 const WhatsAppManager = lazy(() => import("../components/WhatsAppManager").then((module) => ({ default: module.WhatsAppManager })));
 const OfferLabStudio = lazy(() => import("../components/offer-lab/OfferLabStudio").then((module) => ({ default: module.OfferLabStudio })));
 const SeoGeoStudio = lazy(() => import("../components/seo-geo/SeoGeoStudio").then((module) => ({ default: module.SeoGeoStudio })));
+const ProspectingStudio = lazy(() => import("./prospecting/ProspectingStudio").then((module) => ({ default: module.ProspectingStudio })));
 
 type AgencyWorkspaceOutletContext = {
   workspace: AgencyWorkspaceContext;
@@ -234,3 +235,13 @@ export function AgencySeoGeoRoute() {
     </Suspense>
   );
 }
+
+export function AgencyProspectingRoute() {
+  const { data: workspacesData = [] } = useWorkspaces();
+  return (
+    <Suspense fallback={<ModuleLoading />}>
+      <ProspectingStudio workspaces={workspacesData} />
+    </Suspense>
+  );
+}
+

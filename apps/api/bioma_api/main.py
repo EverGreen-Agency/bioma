@@ -60,6 +60,7 @@ from bioma_api.routers import (
     seo,
     offer_lab,
     seo_geo,
+    prospecting,
 )
 
 
@@ -156,6 +157,7 @@ app.include_router(offer_lab.workspace_router)
 app.include_router(offer_lab.client_router)
 app.include_router(seo_geo.router)
 app.include_router(seo_geo.workspace_router)
+app.include_router(prospecting.router)
 
 
 @app.get("/")

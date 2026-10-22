@@ -4825,6 +4825,45 @@ export const api = {
     request<{ status: string; deleted: boolean }>(`/workspaces/${workspaceId}/seo-geo/audits/${auditId}`, {
       method: "DELETE",
     }),
+  listProspectingCards: (workspaceId: string, params?: { query?: string; motion?: string; card_type?: string; status?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.query) q.set("query", params.query);
+    if (params?.motion) q.set("motion", params.motion);
+    if (params?.card_type) q.set("card_type", params.card_type);
+    if (params?.status) q.set("status", params.status);
+    const qs = q.toString();
+    return request<SalesKnowledgeCard[]>(`/workspaces/${workspaceId}/prospecting/knowledge/cards${qs ? `?${qs}` : ""}`);
+  },
+  updateProspectingCardStatus: (workspaceId: string, cardId: string, status: "HYPOTHESIS" | "TESTING" | "VALIDATED" | "DEPRECATED") =>
+    request<SalesKnowledgeCard>(`/workspaces/${workspaceId}/prospecting/knowledge/cards/${cardId}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
+    }),
+  createProspectingList: (workspaceId: string, payload: CreateProspectingListPayload) =>
+    request<ProspectingListSummary>(`/workspaces/${workspaceId}/prospecting/lists`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  listProspectingLists: (workspaceId: string) =>
+    request<ProspectingListSummary[]>(`/workspaces/${workspaceId}/prospecting/lists`),
+  getProspectingList: (workspaceId: string, listId: string) =>
+    request<ProspectingListDetail>(`/workspaces/${workspaceId}/prospecting/lists/${listId}`),
+  startProspectingSession: (workspaceId: string, payload: { list_id?: string | null; motion: string; target_calls?: number }) =>
+    request<ProspectingSession>(`/workspaces/${workspaceId}/prospecting/sessions`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  getProspectingCockpit: (workspaceId: string, sessionId: string) =>
+    request<ProspectingCockpitContext>(`/workspaces/${workspaceId}/prospecting/sessions/${sessionId}/cockpit`),
+  recordProspectingDisposition: (workspaceId: string, sessionId: string, payload: RecordDispositionPayload) =>
+    request<ProspectingCockpitContext>(`/workspaces/${workspaceId}/prospecting/sessions/${sessionId}/disposition`, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }),
+  finishProspectingSession: (workspaceId: string, sessionId: string) =>
+    request<ProspectingSession>(`/workspaces/${workspaceId}/prospecting/sessions/${sessionId}/finish`, {
+      method: "POST",
+    }),
 };
 
 export type OpportunityPlatformConfig = {
@@ -5542,3 +5581,149 @@ export type SeoGeoAuditSummary = {
   waf_detected: boolean;
   created_at: string;
 };
+
+export type SalesKnowledgeCard = {
+  id: string;
+  workspace_id?: string | null;
+  code: string;
+  slug: string;
+  title: string;
+  card_type: string;
+  motion: string;
+  stage: string;
+  status: "HYPOTHESIS" | "TESTING" | "VALIDATED" | "DEPRECATED";
+  confidence: number;
+  channels: string[];
+  audience: string[];
+  aliases: string[];
+  trigger?: string | null;
+  interpretation?: string | null;
+  objective?: string | null;
+  ask_first?: string | null;
+  call_talk_track?: string | null;
+  whatsapp_talk_track?: string | null;
+  email_talk_track?: string | null;
+  branches: Array<{ condition: string; action: string }>;
+  avoid: string[];
+  next_steps: string[];
+  version: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ProspectingItemPayload = {
+  company_name: string;
+  contact_name?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  website?: string | null;
+  instagram?: string | null;
+  linkedin?: string | null;
+  address?: string | null;
+  rating?: number | null;
+  reviews_count?: number;
+  presence_score?: number;
+  category?: string | null;
+  external_place_id?: string | null;
+};
+
+export type CreateProspectingListPayload = {
+  title: string;
+  source?: string;
+  segment?: string | null;
+  target_region?: string | null;
+  filters?: Record<string, unknown>;
+  items: ProspectingItemPayload[];
+};
+
+export type ProspectingListItem = {
+  id: string;
+  list_id: string;
+  company_name: string;
+  contact_name: string | null;
+  phone: string | null;
+  email: string | null;
+  website: string | null;
+  instagram: string | null;
+  linkedin: string | null;
+  address: string | null;
+  rating: number | null;
+  reviews_count: number;
+  presence_score: number;
+  category: string | null;
+  external_place_id: string | null;
+  crm_lead_id: string | null;
+  ownership_warning: {
+    has_conflict: boolean;
+    source: string;
+    warning_label: string;
+    company?: string;
+    stage?: string;
+    last_updated?: string | null;
+  } | null;
+  attempts_count: number;
+  last_disposition: string | null;
+  last_attempt_at: string | null;
+  status: "pending" | "in_progress" | "completed" | "disqualified" | "archived";
+  notes: string | null;
+  created_at: string;
+};
+
+export type ProspectingListSummary = {
+  id: string;
+  workspace_id: string;
+  title: string;
+  source: string;
+  segment: string | null;
+  target_region: string | null;
+  total_leads: number;
+  pending_leads?: number;
+  completed_leads?: number;
+  created_at: string;
+};
+
+export type ProspectingListDetail = ProspectingListSummary & {
+  filters: Record<string, unknown>;
+  items: ProspectingListItem[];
+};
+
+export type ProspectingSession = {
+  id: string;
+  workspace_id: string;
+  list_id: string | null;
+  user_id: string;
+  motion: string;
+  target_calls: number;
+  completed_calls: number;
+  connections_count: number;
+  conversations_count: number;
+  meetings_booked: number;
+  follow_ups_count: number;
+  duration_seconds: number;
+  status: "active" | "paused" | "completed";
+  started_at: string;
+  ended_at: string | null;
+  items: ProspectingListItem[];
+};
+
+export type RecordDispositionPayload = {
+  item_id: string;
+  disposition: "unanswered" | "busy" | "wrong_number" | "not_interested" | "follow_up" | "meeting_scheduled";
+  notes?: string | null;
+  scheduled_follow_up_at?: string | null;
+  handoff?: {
+    problem: string;
+    impact: string;
+    motion: string;
+    meeting_at: string;
+    closer_notes?: string | null;
+  } | null;
+};
+
+export type ProspectingCockpitContext = {
+  session: ProspectingSession;
+  current_item: ProspectingListItem | null;
+  queue_remaining: number;
+  cards: SalesKnowledgeCard[];
+};
+

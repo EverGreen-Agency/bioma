@@ -1,9 +1,11 @@
 import { useState, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Check,
   CheckCircle2,
   Copy,
   ExternalLink,
+  Flame,
   Globe,
   Instagram,
   LayoutList,
@@ -32,8 +34,9 @@ import {
   useLocalRadarScans,
   useSendLocalRadarProspect,
   useUpdateLocalRadarMessage,
+  useWorkspaces,
 } from "../hooks/useBiomaApi";
-import type { LocalRadarImportRow, LocalRadarProspect, WhatsAppProviderType } from "../lib/api";
+import { api, type LocalRadarImportRow, type LocalRadarProspect, type WhatsAppProviderType } from "../lib/api";
 
 const HEADER_ALIASES: Record<keyof LocalRadarImportRow, string[]> = {
   name: ["name", "nome", "title", "business", "empresa", "negocio", "negócio"],
@@ -268,6 +271,46 @@ export function LocalRadarStudio() {
     setSelectedIds(next);
   }
 
+  const navigate = useNavigate();
+  const { data: workspaces = [] } = useWorkspaces(true);
+  const activeWorkspace = workspaces.find((w) => w.kind === "agency_internal") || workspaces[0];
+
+  async function handleCreateProspectingList() {
+    if (!activeWorkspace || selectedIds.size === 0 || !scanDetail) return;
+    const selectedProspects = scanDetail.prospects.filter((p) => selectedIds.has(p.id));
+    const listTitle = `${scanDetail.niche} - ${scanDetail.city} (${new Date().toLocaleDateString("pt-BR")})`;
+
+    try {
+      await api.createProspectingList(activeWorkspace.id, {
+        title: listTitle,
+        source: "local_radar",
+        segment: scanDetail.niche,
+        target_region: scanDetail.city,
+        items: selectedProspects.map((p) => ({
+          company_name: p.name,
+          contact_name: null,
+          phone: p.phone,
+          email: p.emails?.[0] || null,
+          website: p.website,
+          instagram: p.social_links?.instagram || null,
+          linkedin: p.social_links?.linkedin || null,
+          address: p.address,
+          rating: p.rating,
+          reviews_count: p.rating_count || 0,
+          presence_score: p.presence_score || 0,
+          category: p.place_types?.[0] || null,
+          external_place_id: p.place_id,
+        })),
+      });
+      setFeedback(`🔥 Lista "${listTitle}" criada com ${selectedProspects.length} leads! Redirecionando para o Cockpit...`);
+      setTimeout(() => {
+        navigate("/operacao/prospeccao");
+      }, 1200);
+    } catch (err) {
+      setFeedback(`Erro ao criar lista: ${err instanceof Error ? err.message : "Falha na requisição"}`);
+    }
+  }
+
   function handleEnrichSelected() {
     if (!activeScanId || selectedIds.size === 0) return;
     enrichBatch.mutate(
@@ -472,6 +515,15 @@ export function LocalRadarStudio() {
                   style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6 }}
                 >
                   <Zap size={13} /> {enrichBatch.isPending ? "Minerando sites..." : `⚡ Enriquecer Selecionados (${selectedIds.size})`}
+                </button>
+                <button
+                  type="button"
+                  className="secondary"
+                  disabled={selectedIds.size === 0}
+                  onClick={handleCreateProspectingList}
+                  style={{ fontSize: 12, display: "inline-flex", alignItems: "center", gap: 6, borderColor: "var(--brand-accent)", color: "var(--brand-accent)" }}
+                >
+                  <Flame size={13} /> 🔥 Criar Fila de Prospecção ({selectedIds.size})
                 </button>
               </div>
             </div>

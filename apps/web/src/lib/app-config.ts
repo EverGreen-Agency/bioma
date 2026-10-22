@@ -1,4 +1,4 @@
-import { BarChart3, BookOpen, Bot, BriefcaseBusiness, ClipboardList, FileSearch, FileText, FolderOpen, GitBranch, Globe, Headphones, KeyRound, LayoutDashboard, Link2, MapPin, MessageSquare, Package, Radar, ShieldCheck, Sparkles, Target, Trophy, UserCheck, Users, WalletCards, type LucideIcon } from "lucide-react";
+import { BarChart3, BookOpen, Bot, BriefcaseBusiness, ClipboardList, FileSearch, FileText, Flame, FolderOpen, GitBranch, Globe, Headphones, KeyRound, LayoutDashboard, Link2, MapPin, MessageSquare, Package, Radar, ShieldCheck, Sparkles, Target, Trophy, UserCheck, Users, WalletCards, type LucideIcon } from "lucide-react";
 
 import type { ArtifactPayload, ClientModule, ClientPayload, ClientStatus, CurrentUser, DeliverablePayload, DeliverableStatus } from "./api";
 
@@ -123,6 +123,13 @@ export const agencyWorkspaceNavItems: Array<{
     path: "seo-geo",
     module: "hub",
     icon: Globe,
+  },
+  {
+    id: "prospecting",
+    label: "Sales & Prospecção",
+    path: "prospeccao",
+    module: "hub",
+    icon: Flame,
   },
 ];
 
