@@ -58,6 +58,7 @@ from bioma_api.routers import (
     editorial_calendar,
     social_connect,
     seo,
+    offer_lab,
 )
 
 
@@ -149,6 +150,9 @@ app.include_router(wins.router)
 app.include_router(work_graph.router)
 app.include_router(document_imports.router)
 app.include_router(mcp_http.router)
+app.include_router(offer_lab.router)
+app.include_router(offer_lab.workspace_router)
+app.include_router(offer_lab.client_router)
 
 
 @app.get("/")
