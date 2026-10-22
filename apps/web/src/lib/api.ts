@@ -1245,6 +1245,11 @@ export type LocalRadarProspect = {
   presence_score: number | null;
   presence_gaps: string[];
   changes: string[];
+  emails?: string[];
+  social_links?: Record<string, string>;
+  crawler_status?: "pending" | "running" | "completed" | "failed" | "no_website";
+  crawler_error?: string | null;
+  enriched_at?: string | null;
   audit: {
     diagnosis?: string;
     opportunities?: Array<{ issue: string; recommended_service: string; rationale: string }>;
@@ -1261,6 +1266,12 @@ export type LocalRadarProspect = {
   sent_at: string | null;
   created_at: string;
   updated_at: string;
+};
+
+export type LocalRadarBatchEnrichResult = {
+  enriched_count: number;
+  failed_count: number;
+  prospects: LocalRadarProspect[];
 };
 
 export type ImprovementRequestStatus = "pending" | "converted" | "rejected";
@@ -3610,6 +3621,15 @@ export const api = {
     request<LocalRadarSendResult>(`/backoffice/local-radar/prospects/${prospectId}/send`, {
       method: "POST",
       body: JSON.stringify({ provider_type: providerType }),
+    }),
+  enrichLocalRadarProspect: (prospectId: string) =>
+    request<LocalRadarProspect>(`/backoffice/local-radar/prospects/${prospectId}/enrich`, {
+      method: "POST",
+    }),
+  enrichLocalRadarBatch: (scanId: string, prospectIds: string[]) =>
+    request<LocalRadarBatchEnrichResult>(`/backoffice/local-radar/scans/${scanId}/enrich-batch`, {
+      method: "POST",
+      body: JSON.stringify({ prospect_ids: prospectIds }),
     }),
   createClient: (payload: ClientPayload) =>
     request<ClientPortal>("/clients", {

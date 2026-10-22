@@ -106,6 +106,27 @@ export function useSendLocalRadarProspect() {
   });
 }
 
+export function useEnrichLocalRadarProspect() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (prospectId: string) => api.enrichLocalRadarProspect(prospectId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["local-radar"] });
+    },
+  });
+}
+
+export function useEnrichLocalRadarBatch() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ scanId, prospectIds }: { scanId: string; prospectIds: string[] }) =>
+      api.enrichLocalRadarBatch(scanId, prospectIds),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["local-radar"] });
+    },
+  });
+}
+
 export function useIntegrationsStatus() {
   return useQuery({
     queryKey: ["integrations", "status"],
