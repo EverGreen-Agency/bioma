@@ -15,6 +15,7 @@ const PORTALS = [
 /** Cabeçalho comum aos portais da Univet, com a navegação entre eles. */
 export function UnivetPortalChrome({ subtitle, children, actions }: { subtitle: string; children: React.ReactNode; actions?: React.ReactNode }) {
   const current = window.location.pathname.replace(/\/$/, "");
+  const normalizedCurrent = current.startsWith("/portal") ? current : `/portal${current}`;
   // Todos os 3 portais acessíveis na navegação superior
   const portals = PORTALS;
 
@@ -45,7 +46,7 @@ export function UnivetPortalChrome({ subtitle, children, actions }: { subtitle: 
         <div className="uvHeaderActions">
           <nav className="uvSegmented" aria-label="Portais da Univet">
             {portals.map((portal) => (
-              <a key={portal.path} className="uvSegmentedBtn" href={portal.path} aria-current={current === portal.path ? "page" : undefined}>
+              <a key={portal.path} className="uvSegmentedBtn" href={portal.path} aria-current={normalizedCurrent === portal.path ? "page" : undefined}>
                 {portal.label}
               </a>
             ))}

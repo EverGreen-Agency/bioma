@@ -105,7 +105,16 @@ def public_dashboard(slug: str, days: int) -> dict:
         org = _organization(conn, slug)
         config = kommo_repo.get_config_public(conn, org["id"])
         snapshot = kommo_repo.get_crm_snapshot(conn, org["id"])
-    return kommo_crm._dashboard_response(snapshot, bool(config), config["subdomain"] if config else None, days)
+    response = kommo_crm._dashboard_response(snapshot, bool(config), config["subdomain"] if config else None, days)
+    if slug == "univet" and response.get("dashboard"):
+        try:
+            from bioma_api.services import nomus_service
+            leads = snapshot.get("leads", []) if snapshot else []
+            nomus_data = nomus_service.compute_nomus_analytics(days, leads)
+            response["dashboard"]["nomus"] = nomus_data
+        except Exception as exc:
+            logger.warning("Falha ao injetar métricas do Nomus no dashboard da Univet: %s", exc)
+    return response
 
 
 def _engine_info() -> dict:
@@ -123,6 +132,16 @@ def eg_status(slug: str) -> dict:
         dedup = kommo_repo.latest_dedup_run(conn, org["id"])
         summary = kommo_repo.classification_summary(conn, org["id"])
         webhook = kommo_repo.get_webhook(conn, org["id"])
+
+    nomus_status = None
+    if slug == "univet":
+        try:
+            from bioma_api.services import nomus_service
+            nomus_status = nomus_service.get_nomus_status()
+        except Exception as exc:
+            logger.warning("Falha ao obter status do Nomus ERP: %s", exc)
+            nomus_status = {"configured": True, "active": False, "error": str(exc)}
+
     return {
         "organization": org["name"],
         "kommo": {
@@ -131,6 +150,7 @@ def eg_status(slug: str) -> dict:
             "leads_count": snapshot["leads_count"] if snapshot else None,
             "fetched_at": snapshot["fetched_at"] if snapshot else None,
         },
+        "nomus": nomus_status,
         "dedup": dict(dedup) if dedup else None,
         "classification": {**dict(summary), **_engine_info()},
         "webhook": (

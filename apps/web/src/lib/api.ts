@@ -712,6 +712,29 @@ export type KommoRepSummary = {
   ufs: { label: string; count: number }[];
 };
 
+export type NomusRepSales = {
+  label: string;
+  faturamento: number;
+  pedidos: number;
+  share: number;
+};
+
+export type NomusTopProduct = {
+  label: string;
+  quantidade: number;
+  valor_estimado: number;
+};
+
+export type NomusAnalyticsSummary = {
+  configured: boolean;
+  faturamento_total: number;
+  pedidos_count: number;
+  ticket_medio: number;
+  representantes_count: number;
+  reps: NomusRepSales[];
+  top_products: NomusTopProduct[];
+};
+
 export type KommoDashboard = {
   period_days: number;
   totals: {
@@ -731,6 +754,7 @@ export type KommoDashboard = {
   };
   stale_after_days: number;
   reps: KommoRepSummary[];
+  nomus?: NomusAnalyticsSummary | null;
   pipelines: {
     id: number;
     name: string;

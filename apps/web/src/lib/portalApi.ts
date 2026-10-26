@@ -61,6 +61,15 @@ async function portalRequest<T>(path: string, init: { method?: string; body?: un
 export type EgStatus = {
   organization: string;
   kommo: { configured: boolean; subdomain: string | null; leads_count: number | null; fetched_at: string | null };
+  nomus?: {
+    configured: boolean;
+    active?: boolean;
+    representatives_count?: number;
+    vendedores_count?: number;
+    orders_count?: number;
+    fetched_at?: number | null;
+    error?: string;
+  } | null;
   dedup: {
     id: string;
     contacts_scanned: number;

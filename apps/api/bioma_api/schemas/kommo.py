@@ -79,6 +79,29 @@ class KommoFieldQuality(BaseModel):
     total: int
 
 
+class NomusRepSales(BaseModel):
+    label: str
+    faturamento: float
+    pedidos: int
+    share: float
+
+
+class NomusTopProduct(BaseModel):
+    label: str
+    quantidade: int
+    valor_estimado: float
+
+
+class NomusAnalyticsSummary(BaseModel):
+    configured: bool = True
+    faturamento_total: float = 0.0
+    pedidos_count: int = 0
+    ticket_medio: float = 0.0
+    representantes_count: int = 0
+    reps: list[NomusRepSales] = []
+    top_products: list[NomusTopProduct] = []
+
+
 class KommoDashboard(BaseModel):
     period_days: int
     totals: KommoDashboardTotals
@@ -90,6 +113,7 @@ class KommoDashboard(BaseModel):
     campaigns: list[KommoRankedItem]
     stale_after_days: int = 7
     reps: list[KommoRepSummary] = []
+    nomus: NomusAnalyticsSummary | None = None
 
 
 class KommoDashboardResponse(BaseModel):

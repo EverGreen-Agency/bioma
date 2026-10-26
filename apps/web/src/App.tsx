@@ -101,8 +101,8 @@ export function App() {
   ) {
     // Três portais sem login: apresentação (mock), dados reais (agregados) e operação EG (com chave).
     const portalPath = location.pathname.replace(/\/$/, "");
-    if (portalPath === "/portal/univet/eg") return <UnivetEgPortal />;
-    if (portalPath === "/portal/univet/v2") return <UnivetRealPortal />;
+    if (portalPath === "/portal/univet/eg" || portalPath === "/univet/eg") return <UnivetEgPortal />;
+    if (portalPath === "/portal/univet/v2" || portalPath === "/univet/v2") return <UnivetRealPortal />;
     return <UnivetExecutivePortal />;
   }
 

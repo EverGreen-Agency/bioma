@@ -77,10 +77,15 @@ function RankedList({ items, emptyText, color }: { items: KommoRankedItem[]; emp
   );
 }
 
-function Sources({ subdomain }: { subdomain: string | null }) {
+function Sources({ subdomain, nomusConfigured }: { subdomain: string | null; nomusConfigured?: boolean }) {
   const sources = [
     { name: "Kommo CRM", on: true, detail: subdomain ? `${subdomain}.kommo.com` : "Conectado", feeds: "Leads, funil, origem, segmento e perdas" },
-    { name: "Nomus ERP", on: false, detail: "Não conectado", feeds: "Faturamento, pedidos, ticket e produtos vendidos" },
+    {
+      name: "Nomus ERP",
+      on: Boolean(nomusConfigured),
+      detail: nomusConfigured ? "Conectado via REST" : "Não conectado",
+      feeds: "Faturamento, pedidos, ticket e produtos vendidos",
+    },
     { name: "Google Ads e Meta Ads", on: false, detail: "Não ligados a este painel", feeds: "Investimento, CPL, CAC e ROAS" },
   ];
   return (
@@ -316,6 +321,7 @@ function GeographyCard({ data }: { data: KommoDashboard }) {
 export function KommoDashboardBody({ data, subdomain }: { data: KommoDashboard; subdomain: string | null }) {
   const [hoverBucket, setHoverBucket] = useState<number | null>(null);
   const { totals } = data;
+  const nomus = data.nomus;
   const delta = totals.leads_previous ? (totals.leads - totals.leads_previous) / totals.leads_previous : null;
   const dimension = (key: string) => data.dimensions.find((d) => d.key === key);
   const lossField = dimension("motivo_perda");
@@ -328,7 +334,7 @@ export function KommoDashboardBody({ data, subdomain }: { data: KommoDashboard; 
 
   return (
     <>
-      <Sources subdomain={subdomain} />
+      <Sources subdomain={subdomain} nomusConfigured={Boolean(nomus?.configured)} />
 
       <div className="uvKpiRow">
         <Tile label="Leads criados" value={fmtInt(totals.leads)} delta={delta} caption={data.period_days === 0 ? `${fmtInt(totals.leads_all_time)} na conta` : "vs. período anterior"} />
@@ -343,10 +349,35 @@ export function KommoDashboardBody({ data, subdomain }: { data: KommoDashboard; 
                 : "nenhum parado no momento"
           }
         />
-        <Tile label="Vendas ganhas" value={fmtInt(totals.won)} caption={totals.won > 0 ? fmtBRL(totals.won_value) : "nenhum negócio marcado como ganho"} />
+        <Tile label="Vendas ganhas (CRM)" value={fmtInt(totals.won)} caption={totals.won > 0 ? fmtBRL(totals.won_value) : "nenhum negócio marcado como ganho"} />
         <Tile label="Vendas perdidas" value={fmtInt(totals.lost)} caption={totals.leads > 0 ? `${fmtPct(totals.lost / totals.leads)} dos leads do período` : "sem leads no período"} />
         <Tile label="Com visita agendada" value={fmtInt(totals.with_visit)} caption="campo de data de visita preenchido" />
       </div>
+
+      {nomus && nomus.configured && (
+        <div className="uvKpiRow" style={{ marginTop: 12 }}>
+          <Tile
+            label="Faturamento Real (Nomus ERP)"
+            value={fmtBRL(nomus.faturamento_total)}
+            caption={`${fmtInt(nomus.pedidos_count)} pedidos faturados emitidos`}
+          />
+          <Tile
+            label="Ticket Médio Faturado"
+            value={fmtBRL(nomus.ticket_medio)}
+            caption="Média real por pedido no Nomus"
+          />
+          <Tile
+            label="Consultores Ativos (ERP)"
+            value={fmtInt(nomus.representantes_count)}
+            caption="Vendedores e representantes com faturamento"
+          />
+          <Tile
+            label="Conversão Global ERP"
+            value={totals.leads > 0 ? fmtPct(nomus.pedidos_count / totals.leads, 1) : "n/d"}
+            caption="Pedidos Nomus / Leads Kommo"
+          />
+        </div>
+      )}
 
       {noLeads && (
         <div className="uvNotice">
@@ -419,6 +450,68 @@ export function KommoDashboardBody({ data, subdomain }: { data: KommoDashboard; 
       </div>
 
       <GeographyCard data={data} />
+
+      {nomus && nomus.reps && nomus.reps.length > 0 && (
+        <section className="uvCard" style={{ marginTop: 16 }}>
+          <CardTitle
+            title="Vendas por Consultor & Representante (Nomus ERP)"
+            subtitle="Faturamento e pedidos oficiais emitidos na Univet"
+          />
+          <div className="uvTableWrap">
+            <table className="uvTable">
+              <thead>
+                <tr>
+                  <th>Consultor / Representante</th>
+                  <th className="uvNum">Pedidos</th>
+                  <th className="uvNum">Faturamento Faturado</th>
+                  <th className="uvNum">Participação</th>
+                </tr>
+              </thead>
+              <tbody>
+                {nomus.reps.map((rep) => (
+                  <tr key={rep.label}>
+                    <td><strong>{rep.label}</strong></td>
+                    <td className="uvNum">{fmtInt(rep.pedidos)}</td>
+                    <td className="uvNum"><strong>{fmtBRL(rep.faturamento)}</strong></td>
+                    <td className="uvNum">{fmtPct(rep.share, 1)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
+
+      {nomus && nomus.top_products && nomus.top_products.length > 0 && (
+        <section className="uvCard" style={{ marginTop: 16 }}>
+          <CardTitle
+            title="Mix de Faturamento & Produtos (Nomus ERP)"
+            subtitle="Itens e produtos mais faturados no sistema de gestão"
+          />
+          <ul className="uvBarList uvBarListStatic">
+            {nomus.top_products.slice(0, 8).map((item) => {
+              const maxUnits = nomus.top_products[0]?.quantidade || 1;
+              return (
+                <li key={item.label} className="uvBarListRow">
+                  <span className="uvBarListName">{item.label}</span>
+                  <span className="uvBarListTrack">
+                    <span
+                      className="uvInlineBar"
+                      style={{
+                        width: `${Math.max((item.quantidade / maxUnits) * 100, 3)}%`,
+                        background: "var(--uv-series-2)",
+                      }}
+                    />
+                  </span>
+                  <span className="uvBarListValue">
+                    {fmtInt(item.quantidade)} un. {item.valor_estimado > 0 ? `· ${fmtBRL(item.valor_estimado)}` : ""}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      )}
 
       <div className="uvRow uvRow-7-5">
         <section className="uvCard">

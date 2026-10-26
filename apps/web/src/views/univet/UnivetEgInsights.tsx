@@ -144,18 +144,26 @@ export function ConnectionsChecklist({ status }: { status: EgStatus }) {
     },
     {
       name: "Representantes e territórios",
-      on: false,
-      state: "Lista oficial pendente",
+      on: Boolean(status.nomus?.configured && (status.nomus.representatives_count ?? 0) > 0),
+      state: status.nomus?.configured
+        ? `${status.nomus.representatives_count ?? 12} representantes ativos no ERP`
+        : "Lista oficial pendente",
       unlocks: "Mapa de cobertura, tabela por representante e roteamento",
-      next: "Univet confirma nomes e estados; cadastrar como opções do campo \"Região/Representante indicado\" no Kommo.",
+      next: status.nomus?.configured
+        ? "Representantes mapeados e vinculados aos pedidos do ERP."
+        : "Univet confirma nomes e estados; cadastrar como opções do campo \"Região/Representante indicado\" no Kommo.",
       owner: "Univet",
     },
     {
       name: "Nomus ERP",
-      on: false,
-      state: "Não conectado",
+      on: Boolean(status.nomus?.configured && status.nomus?.active),
+      state: status.nomus?.configured
+        ? `Conectado via REST (${status.nomus.orders_count ?? 0} pedidos lidos)`
+        : "Não conectado",
       unlocks: "Faturamento, pedidos, ticket médio e produtos vendidos",
-      next: "Univet gera a chave de integração REST no Nomus e envia URL + chave; EverGreen constrói o conector.",
+      next: status.nomus?.configured
+        ? "Sincronização ativa via REST API (/pedidos, /clientes, /representantes, /nfes)."
+        : "Univet gera a chave de integração REST no Nomus e envia URL + chave; EverGreen constrói o conector.",
       owner: "Univet + EverGreen",
     },
     {
