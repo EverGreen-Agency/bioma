@@ -145,3 +145,33 @@ def portal_eg_classification_apply_batch(slug: str, payload: PortalBatchInput) -
     """Aprova e envia as decisões de leads sugeridos em lote para o Kommo."""
     return kommo_portal.apply_classification_batch(slug, payload.limit)
 
+
+@router.post("/eg/classification/leads/{lead_id}/clear", dependencies=[Depends(admin_key)])
+def portal_eg_classification_clear_lead(slug: str, lead_id: int) -> dict:
+    """Limpa os campos personalizados gerenciados em um lead no Kommo CRM e reseta seu registro local."""
+    return kommo_portal.clear_lead_fields(slug, lead_id)
+
+
+@router.post("/eg/classification/clear-batch", dependencies=[Depends(admin_key)])
+def portal_eg_classification_clear_batch(slug: str, payload: PortalBatchInput) -> dict:
+    """Limpa em lote os campos do Kommo de todos os leads que tiveram campos gravados."""
+    return kommo_portal.clear_classification_batch(slug, payload.limit)
+
+
+class PortalAdsConfigInput(BaseModel):
+    google_ads_id: str | None = None
+    meta_ads_id: str | None = None
+
+
+@router.get("/eg/ads-config", dependencies=[Depends(admin_key)])
+def portal_eg_get_ads_config(slug: str) -> dict:
+    """Obtém as contas cadastradas de Google Ads e Meta Ads."""
+    return kommo_portal.get_ads_config(slug)
+
+
+@router.post("/eg/ads-config", dependencies=[Depends(admin_key)])
+def portal_eg_save_ads_config(slug: str, payload: PortalAdsConfigInput) -> dict:
+    """Cadastra ou atualiza o Google Ads Customer ID e o Meta Ads Account ID."""
+    return kommo_portal.save_ads_config(slug, payload.google_ads_id, payload.meta_ads_id)
+
+

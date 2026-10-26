@@ -294,6 +294,34 @@ def list_pending_suggested_lead_ids(conn, organization_id: UUID, limit: int) -> 
     return [r["lead_id"] for r in rows]
 
 
+def list_written_lead_ids(conn, organization_id: UUID, limit: int) -> list[int]:
+    rows = conn.execute(
+        """
+        select lead_id
+        from kommo_lead_classifications
+        where organization_id = %s
+          and (status = 'gravado' or fields_written > 0)
+        order by classified_at desc
+        limit %s
+        """,
+        (organization_id, limit),
+    ).fetchall()
+    return [r["lead_id"] for r in rows]
+
+
+def update_lead_classification_cleared(conn, organization_id: UUID, lead_id: int) -> None:
+    conn.execute(
+        """
+        update kommo_lead_classifications
+        set status = 'limpo',
+            fields_written = 0,
+            classified_at = now()
+        where organization_id = %s and lead_id = %s
+        """,
+        (organization_id, lead_id),
+    )
+
+
 def classification_summary(conn, organization_id: UUID):
     return conn.execute(
         """

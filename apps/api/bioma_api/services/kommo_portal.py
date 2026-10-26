@@ -105,7 +105,16 @@ def public_dashboard(slug: str, days: int) -> dict:
         org = _organization(conn, slug)
         config = kommo_repo.get_config_public(conn, org["id"])
         snapshot = kommo_repo.get_crm_snapshot(conn, org["id"])
-    return kommo_crm._dashboard_response(snapshot, bool(config), config["subdomain"] if config else None, days)
+    response = kommo_crm._dashboard_response(snapshot, bool(config), config["subdomain"] if config else None, days)
+    if slug == "univet" and response.get("dashboard"):
+        try:
+            from bioma_api.services import nomus_service
+            leads = snapshot.get("leads", []) if snapshot else []
+            nomus_data = nomus_service.compute_nomus_analytics(days, leads)
+            response["dashboard"]["nomus"] = nomus_data
+        except Exception as exc:
+            logger.warning("Falha ao injetar métricas do Nomus no dashboard da Univet: %s", exc)
+    return response
 
 
 def _engine_info() -> dict:
@@ -123,6 +132,16 @@ def eg_status(slug: str) -> dict:
         dedup = kommo_repo.latest_dedup_run(conn, org["id"])
         summary = kommo_repo.classification_summary(conn, org["id"])
         webhook = kommo_repo.get_webhook(conn, org["id"])
+
+    nomus_status = None
+    if slug == "univet":
+        try:
+            from bioma_api.services import nomus_service
+            nomus_status = nomus_service.get_nomus_status()
+        except Exception as exc:
+            logger.warning("Falha ao obter status do Nomus ERP: %s", exc)
+            nomus_status = {"configured": True, "active": False, "error": str(exc)}
+
     return {
         "organization": org["name"],
         "kommo": {
@@ -131,6 +150,8 @@ def eg_status(slug: str) -> dict:
             "leads_count": snapshot["leads_count"] if snapshot else None,
             "fetched_at": snapshot["fetched_at"] if snapshot else None,
         },
+        "nomus": nomus_status,
+        "ads": get_ads_config(slug),
         "dedup": dict(dedup) if dedup else None,
         "classification": {**dict(summary), **_engine_info()},
         "webhook": (
@@ -704,16 +725,58 @@ def apply_classification_batch(slug: str, limit: int = 15) -> dict:
         "fields_written": total_written,
         "remaining": remaining,
     }
-    if batch:
+
+
+def clear_lead_fields(slug: str, lead_id: int) -> dict:
+    """Limpa os campos personalizados preenchidos pela IA/classificador em um lead no Kommo e reseta no banco."""
+    with connect() as conn:
+        org = _organization(conn, slug)
+        api = _api(conn, org["id"])
+    try:
+        specs = _cached_field_specs(api, org["id"])
+        # No Kommo API v4, para limpar/apagar o valor de um campo customizado, envia-se values: []
+        clear_payload = [{"field_id": spec.field_id, "values": []} for spec in specs]
+        if clear_payload:
+            api.request("PATCH", f"/api/v4/leads/{lead_id}", json={"custom_fields_values": clear_payload})
         with connect() as conn:
-            _audit(conn, org["id"], "kommo.leads_classified", {"leads": len(batch), "fields_written": written})
-    return {
-        "processed": len(batch),
-        "classified": classified,
-        "fields_written": written,
-        "remaining": len(queue) - len(batch),
-        "total": len(snapshot["leads"]),
-    }
+            kommo_repo.update_lead_classification_cleared(conn, org["id"], lead_id)
+            _audit(conn, org["id"], "kommo.lead_classification_cleared", {"lead_id": lead_id, "fields_cleared": len(clear_payload)})
+        return {"status": "limpo", "lead_id": lead_id, "fields_cleared": len(clear_payload)}
+    except httpx.HTTPError as exc:
+        raise kommo_crm._kommo_error(exc) from exc
+    finally:
+        api.close()
+
+
+def clear_classification_batch(slug: str, limit: int = 50) -> dict:
+    """Limpa em lote os campos do Kommo para todos os leads que tiveram campos gravados."""
+    with connect() as conn:
+        org = _organization(conn, slug)
+        lead_ids = kommo_repo.list_written_lead_ids(conn, org["id"], limit)
+        if not lead_ids:
+            return {"processed": 0, "fields_cleared": 0, "remaining": 0}
+        api = _api(conn, org["id"])
+
+    cleared = 0
+    total_fields = 0
+    try:
+        specs = _cached_field_specs(api, org["id"])
+        clear_payload = [{"field_id": spec.field_id, "values": []} for spec in specs]
+        for lead_id in lead_ids:
+            if clear_payload:
+                api.request("PATCH", f"/api/v4/leads/{lead_id}", json={"custom_fields_values": clear_payload})
+            with connect() as conn:
+                kommo_repo.update_lead_classification_cleared(conn, org["id"], lead_id)
+            cleared += 1
+            total_fields += len(clear_payload)
+        with connect() as conn:
+            remaining = len(kommo_repo.list_written_lead_ids(conn, org["id"], 500))
+            _audit(conn, org["id"], "kommo.batch_classification_cleared", {"processed": cleared, "remaining": remaining})
+        return {"processed": cleared, "fields_cleared": total_fields, "remaining": remaining}
+    except httpx.HTTPError as exc:
+        raise kommo_crm._kommo_error(exc) from exc
+    finally:
+        api.close()
 
 
 def classification_results(slug: str, page: int, page_size: int) -> dict:
@@ -901,3 +964,104 @@ def webhook_process(organization_id: UUID, lead_ids: set[int]) -> None:
         pass  # o lead continua na fila do histórico; nada a devolver para o Kommo
     finally:
         api.close()
+
+
+# --- Configuração de Mídia Paga (Google Ads & Meta Ads) -----------------------
+
+_ADS_FALLBACK_CACHE: dict[str, dict[str, Any]] = {}
+
+
+def get_ads_config(slug: str) -> dict[str, Any]:
+    """Recupera contas de anúncios associadas à organização do slug."""
+    try:
+        with connect() as conn:
+            org = _organization(conn, slug)
+            rows = conn.execute(
+                """
+                select provider, external_account_id, status, display_name
+                from performance_connections
+                where organization_id = %s and provider in ('google_ads', 'meta_ads')
+                """,
+                (org["id"],),
+            ).fetchall()
+            config = {
+                "google_ads_id": None,
+                "meta_ads_id": None,
+                "google_ads_status": "disconnected",
+                "meta_ads_status": "disconnected",
+            }
+            for row in rows:
+                if row["provider"] == "google_ads":
+                    config["google_ads_id"] = row["external_account_id"]
+                    config["google_ads_status"] = row["status"]
+                elif row["provider"] == "meta_ads":
+                    config["meta_ads_id"] = row["external_account_id"]
+                    config["meta_ads_status"] = row["status"]
+            _ADS_FALLBACK_CACHE[slug] = config
+            return config
+    except Exception as exc:
+        logger.warning("Falha ao consultar performance_connections para %s: %s", slug, exc)
+        return _ADS_FALLBACK_CACHE.get(
+            slug,
+            {
+                "google_ads_id": None,
+                "meta_ads_id": None,
+                "google_ads_status": "disconnected",
+                "meta_ads_status": "disconnected",
+            },
+        )
+
+
+def save_ads_config(slug: str, google_ads_id: str | None, meta_ads_id: str | None) -> dict[str, Any]:
+    """Salva contas de anúncio diretamente a partir da Operação EG."""
+    current = get_ads_config(slug)
+    new_google = google_ads_id.strip() if google_ads_id is not None else current["google_ads_id"]
+    new_meta = meta_ads_id.strip() if meta_ads_id is not None else current["meta_ads_id"]
+
+    try:
+        with connect() as conn:
+            org = _organization(conn, slug)
+            ws_row = conn.execute(
+                "select id from workspaces where subject_organization_id = %s and status = 'active' limit 1",
+                (org["id"],),
+            ).fetchone()
+            workspace_id = ws_row["id"] if ws_row else org["id"]
+
+            if new_google:
+                conn.execute(
+                    """
+                    insert into performance_connections (
+                        workspace_id, organization_id, provider, external_account_id, display_name, status
+                    )
+                    values (%s, %s, 'google_ads', %s, 'Google Ads Univet', 'active')
+                    on conflict (workspace_id, provider, external_account_id)
+                    do update set status = 'active', updated_at = now()
+                    """,
+                    (workspace_id, org["id"], new_google),
+                )
+
+            if new_meta:
+                conn.execute(
+                    """
+                    insert into performance_connections (
+                        workspace_id, organization_id, provider, external_account_id, display_name, status
+                    )
+                    values (%s, %s, 'meta_ads', %s, 'Meta Ads Univet', 'active')
+                    on conflict (workspace_id, provider, external_account_id)
+                    do update set status = 'active', updated_at = now()
+                    """,
+                    (workspace_id, org["id"], new_meta),
+                )
+    except Exception as exc:
+        logger.warning("Falha ao salvar no banco performance_connections: %s", exc)
+
+    # Atualiza cache local
+    updated_config = {
+        "google_ads_id": new_google or None,
+        "meta_ads_id": new_meta or None,
+        "google_ads_status": "active" if new_google else "disconnected",
+        "meta_ads_status": "active" if new_meta else "disconnected",
+    }
+    _ADS_FALLBACK_CACHE[slug] = updated_config
+    return {"status": "ok", "config": updated_config}
+

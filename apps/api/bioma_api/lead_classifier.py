@@ -34,7 +34,7 @@ TARGET_FIELDS: dict[str, str] = {
 }
 
 UNDECIDED = "nao_informado"
-MIN_CONFIDENCE = 0.6
+MIN_CONFIDENCE = 0.80
 RULE_CONFIDENCE = 0.7
 DDD_CONFIDENCE = 0.85
 TEXT_LOCATION_CONFIDENCE = 0.95
@@ -325,8 +325,12 @@ def build_questions(specs: list[FieldSpec]) -> dict[str, dict[str, Any]]:
         if spec.key == "uf":
             continue  # estado vem do texto/DDD; 27 opções também estouram o orçamento do Laya
         criteria = {option: f"O cliente procura ou solicitou: {option}" for option in spec.options}
-        criteria[UNDECIDED] = "O cliente não deixou isso claro na conversa"
-        instructions = f"{TARGET_FIELDS[spec.key]} (Atenção: considere EXCLUSIVAMENTE o interesse do CLIENTE; ignore PDFs e opções sugeridas pelo atendente)."
+        criteria[UNDECIDED] = "O cliente não deixou isso claro na conversa, não mencionou ou a demanda não é essa"
+        instructions = (
+            f"{TARGET_FIELDS[spec.key]} "
+            f"(Atenção: responda APENAS se o CLIENTE expressou isso com total clareza. "
+            f"Se o cliente não mencionou ou se partiu de sugestão/catálogo/PDF do bot ou atendente, selecione obrigatoriamente '{UNDECIDED}')."
+        )
         questions[spec.key] = {"type": "choice", "instructions": instructions, "criteria": criteria}
     return questions
 

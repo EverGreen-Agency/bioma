@@ -13,6 +13,7 @@ import {
   RefreshCw,
   ScanSearch,
   Square,
+  Trash2,
   UploadCloud,
 } from "lucide-react";
 import { fmtInt, fmtPct } from "../../data/univet/univetPortalData";
@@ -84,7 +85,7 @@ export function UnivetEgPortal() {
     retry: false,
   });
 
-  const [busy, setBusy] = useState<null | "connect" | "sync" | "scan" | "webhook" | "dedup" | "classify" | "apply_lead" | "apply_batch" | "reset">(null);
+  const [busy, setBusy] = useState<null | "connect" | "sync" | "scan" | "webhook" | "dedup" | "classify" | "apply_lead" | "apply_batch" | "reset" | "clear_lead" | "clear_batch">(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const stopRef = useRef(false);
@@ -233,6 +234,35 @@ export function UnivetEgPortal() {
       const res = await portalApi.classificationReset(SLUG, key);
       return `Histórico de execuções limpo: ${fmtInt(res.deleted)} logs removidos do feed.`;
     });
+
+  const handleClearLead = (leadId: number) => {
+    if (!window.confirm(`Tem certeza que deseja apagar os campos gravados no Kommo para o Lead #${leadId}? Os campos voltarão a ficar vazios no CRM.`)) {
+      return;
+    }
+    return run("clear_lead", async () => {
+      const res = await portalApi.clearLeadClassification(SLUG, key, leadId);
+      void queryClient.invalidateQueries({ queryKey: ["eg-classification", SLUG] });
+      return `Campos limpos com sucesso! Lead #${leadId} teve ${res.fields_cleared} campos zerados no Kommo.`;
+    });
+  };
+
+  const handleClearBatch = () => {
+    if (!window.confirm("ATENÇÃO: Deseja realmente limpar e apagar no Kommo CRM todos os campos gravados até agora? Essa ação zerará os campos customizados dos leads classificados no CRM.")) {
+      return;
+    }
+    return run("clear_batch", async () => {
+      let totalCleared = 0;
+      let totalFields = 0;
+      let last: { processed: number; fields_cleared: number; remaining: number } | null = null;
+      do {
+        last = await portalApi.clearClassificationBatch(SLUG, key, 20);
+        totalCleared += last.processed;
+        totalFields += last.fields_cleared;
+        void queryClient.invalidateQueries({ queryKey: ["eg-classification", SLUG] });
+      } while (last.remaining > 0 && last.processed > 0 && !stopRef.current);
+      return `Limpeza no Kommo concluída: ${fmtInt(totalCleared)} leads limpos (${fmtInt(totalFields)} campos zerados no CRM).`;
+    });
+  };
 
 
 
@@ -406,6 +436,10 @@ export function UnivetEgPortal() {
                 </div>
               </section>
 
+              {/* Conexões do Painel, Mídia Paga e Saúde da Captação */}
+              <ConnectionsChecklist status={data} slug={SLUG} portalKey={key} onUpdate={refresh} />
+              <CaptureHealth slug={SLUG} />
+
               {/* Deduplicação */}
               <section className="uvCard">
                 <div className="uvCardHeader">
@@ -560,42 +594,88 @@ export function UnivetEgPortal() {
                       Lista cronológica descendente: a cada webhook de mensagem nova ou execução em lote, os leads classificados descem nesta lista.
                     </p>
                   </div>
-                  <div className="uvControlGroup">
-                    {busy === "classify" ? (
-                      <button type="button" className="uvBtnSecondary" onClick={() => (stopRef.current = true)}>
-                        <Square size={13} /> Parar
-                      </button>
-                    ) : (
-                      <>
-                        <button type="button" className="uvBtnPrimary" disabled={busy !== null || !data.kommo.fetched_at} onClick={() => handleClassify(false)}>
-                          <Play size={13} /> Classificar 5 leads
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, width: "100%" }}>
+                    {/* Banner de Garantia Human-in-the-Loop */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 12px", background: "rgba(39, 174, 130, 0.08)", border: "1px solid rgba(39, 174, 130, 0.25)", borderRadius: 8 }}>
+                      <CheckCircle2 size={15} style={{ color: "var(--uv-accent-ink)", flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, color: "var(--uv-text)", lineHeight: 1.4 }}>
+                        <strong style={{ color: "var(--uv-accent-ink)" }}>Human-in-the-Loop Ativo:</strong> A IA roda em modo diagnóstico e gera apenas <em>sugestões pendentes</em>. Nenhuma informação é gravada no CRM sem aprovação humana. Objeção de preço não fecha nem perde oportunidades.
+                      </span>
+                    </div>
+
+                    <div className="uvControlGroup" style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "center" }}>
+                      {busy === "classify" ? (
+                        <button type="button" className="uvBtnSecondary" onClick={() => (stopRef.current = true)}>
+                          <Square size={13} /> Parar Análise
                         </button>
-                        <button type="button" className="uvBtnSecondary" disabled={busy !== null || !data.kommo.fetched_at} onClick={() => handleClassify(true)}>
-                          <Play size={13} /> Classificar todos os leads
-                        </button>
+                      ) : (
+                        <div style={{ display: "flex", gap: 6, alignItems: "center", background: "var(--uv-surface-2)", padding: "4px 8px", borderRadius: 8, border: "1px solid var(--uv-line)" }}>
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "var(--uv-text-3)", textTransform: "uppercase", paddingRight: 4 }}>
+                            1. Diagnóstico IA:
+                          </span>
+                          <button
+                            type="button"
+                            className="uvBtnPrimary"
+                            disabled={busy !== null || !data.kommo.fetched_at}
+                            onClick={() => handleClassify(false)}
+                            title="Analisa 5 leads como amostra para testar o diagnóstico da IA rapidamente sem esperar a base toda"
+                          >
+                            <Play size={13} /> Testar Amostra (5 leads)
+                          </button>
+                          <button
+                            type="button"
+                            className="uvBtnSecondary"
+                            disabled={busy !== null || !data.kommo.fetched_at}
+                            onClick={() => handleClassify(true)}
+                            title="Lê as conversas de toda a base gerando sugestões pendentes de aprovação"
+                          >
+                            <Play size={13} /> Analisar Toda a Fila
+                          </button>
+                        </div>
+                      )}
+
+                      <div style={{ display: "flex", gap: 6, alignItems: "center", background: "rgba(39, 174, 130, 0.06)", padding: "4px 8px", borderRadius: 8, border: "1px solid rgba(39, 174, 130, 0.2)" }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "var(--uv-accent-ink)", textTransform: "uppercase", paddingRight: 4 }}>
+                          2. Gravação no CRM:
+                        </span>
                         <button
                           type="button"
                           className="uvBtnPrimary"
                           style={{ background: "#27ae82", color: "#0b1a15" }}
                           disabled={busy !== null || !data.kommo.fetched_at || ((results.data?.summary.suggested ?? 0) === 0 && !results.data?.results.some((r) => r.status === "sugerido" || (r.status === "classificado" && r.fields_written === 0)))}
                           onClick={handleApplyBatch}
-                          title="Envia ao Kommo todas as classificações sugeridas pendentes de aprovação"
+                          title="Aprova e grava no Kommo CRM todos os leads com sugestões pendentes"
                         >
-                          <UploadCloud size={13} /> {busy === "apply_batch" ? "Enviando lote..." : "Enviar sugestões ao Kommo"}
+                          <UploadCloud size={13} /> {busy === "apply_batch" ? "Gravando no CRM..." : `Aprovar e Gravar Sugestões (${results.data?.summary.suggested ?? results.data?.results.filter((r) => r.status === "sugerido" || (r.status === "classificado" && r.fields_written === 0)).length ?? 0})`}
                         </button>
-                      </>
-                    )}
-                    {(classification?.total ?? 0) > 0 && (
-                      <button
-                        type="button"
-                        className="uvBtnGhost"
-                        disabled={busy !== null}
-                        onClick={handleResetHistory}
-                        title="Apaga os logs de execução e falhas anteriores do feed local. Não altera dados no Kommo."
-                      >
-                        {busy === "reset" ? "Limpando..." : "Limpar histórico de execuções"}
-                      </button>
-                    )}
+                      </div>
+
+                      <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+                        {(classification?.total ?? 0) > 0 && (
+                          <button
+                            type="button"
+                            className="uvBtnGhost"
+                            disabled={busy !== null}
+                            onClick={handleResetHistory}
+                            title="Apaga os logs de execução e falhas anteriores do feed local. Não altera dados no Kommo."
+                          >
+                            {busy === "reset" ? "Limpando..." : "Limpar histórico"}
+                          </button>
+                        )}
+                        {(classification?.fields_written ?? 0) > 0 && (
+                          <button
+                            type="button"
+                            className="uvBtnGhost"
+                            style={{ color: "var(--uv-critical)", borderColor: "rgba(239, 68, 68, 0.3)" }}
+                            disabled={busy !== null}
+                            onClick={handleClearBatch}
+                            title="Limpa e apaga no Kommo CRM todos os campos gravados pela IA/classificador"
+                          >
+                            <Trash2 size={13} /> {busy === "clear_batch" ? "Desfazendo..." : "Desfazer gravações no CRM"}
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                 </div>
@@ -692,15 +772,27 @@ export function UnivetEgPortal() {
                                 {activeLead.fields_written} campos sincronizados com a conta da Univet.
                               </p>
                             </div>
-                            <button
-                              type="button"
-                              className="uvBtnGhost"
-                              disabled={busy !== null}
-                              onClick={() => handleApplyLead(activeLead.lead_id)}
-                              title="Reenvia as decisões para o Kommo caso queira sincronizar novamente"
-                            >
-                              <RefreshCw size={12} /> {busy === "apply_lead" ? "Enviando..." : "Reenviar ao Kommo"}
-                            </button>
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                              <button
+                                type="button"
+                                className="uvBtnGhost"
+                                disabled={busy !== null}
+                                onClick={() => handleApplyLead(activeLead.lead_id)}
+                                title="Reenvia as decisões para o Kommo caso queira sincronizar novamente"
+                              >
+                                <RefreshCw size={12} /> {busy === "apply_lead" ? "Enviando..." : "Reenviar ao Kommo"}
+                              </button>
+                              <button
+                                type="button"
+                                className="uvBtnGhost"
+                                style={{ color: "var(--uv-critical)", borderColor: "rgba(239, 68, 68, 0.3)" }}
+                                disabled={busy !== null}
+                                onClick={() => handleClearLead(activeLead.lead_id)}
+                                title="Limpa e apaga os campos deste lead no Kommo CRM (volta para vazio)"
+                              >
+                                <Trash2 size={12} /> {busy === "clear_lead" ? "Limpando..." : "Limpar no Kommo"}
+                              </button>
+                            </div>
                           </div>
                         ) : activeLead.status === "aguardando_cliente" ? (
                           <div className="uvInspectorActionBanner" style={{ background: "rgba(251, 191, 36, 0.08)", borderColor: "rgba(251, 191, 36, 0.3)" }}>

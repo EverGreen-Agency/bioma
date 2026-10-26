@@ -61,6 +61,21 @@ async function portalRequest<T>(path: string, init: { method?: string; body?: un
 export type EgStatus = {
   organization: string;
   kommo: { configured: boolean; subdomain: string | null; leads_count: number | null; fetched_at: string | null };
+  nomus?: {
+    configured: boolean;
+    active?: boolean;
+    representatives_count?: number;
+    vendedores_count?: number;
+    orders_count?: number;
+    fetched_at?: number | null;
+    error?: string;
+  } | null;
+  ads?: {
+    google_ads_id: string | null;
+    meta_ads_id: string | null;
+    google_ads_status: string;
+    meta_ads_status: string;
+  } | null;
   dedup: {
     id: string;
     contacts_scanned: number;
@@ -221,6 +236,18 @@ export const portalApi = {
       { method: "POST", key, body: { limit } },
     ),
 
+  clearLeadClassification: (slug: string, key: string, leadId: number) =>
+    portalRequest<{ status: string; lead_id: number; fields_cleared: number }>(
+      `/portal-api/${slug}/eg/classification/leads/${leadId}/clear`,
+      { method: "POST", key },
+    ),
+
+  clearClassificationBatch: (slug: string, key: string, limit: number) =>
+    portalRequest<{ processed: number; fields_cleared: number; remaining: number }>(
+      `/portal-api/${slug}/eg/classification/clear-batch`,
+      { method: "POST", key, body: { limit } },
+    ),
+
   classifyTest: (slug: string, key: string, text: string, phone?: string) =>
     portalRequest<EgClassifyTestResult>(`/portal-api/${slug}/eg/classification/test`, {
       method: "POST",
@@ -230,4 +257,16 @@ export const portalApi = {
 
   enableWebhook: (slug: string, key: string) =>
     portalRequest<{ active: boolean; events: string[] }>(`/portal-api/${slug}/eg/webhook`, { method: "POST", key }),
+
+  getAdsConfig: (slug: string, key: string) =>
+    portalRequest<{ google_ads_id: string | null; meta_ads_id: string | null; google_ads_status: string; meta_ads_status: string }>(
+      `/portal-api/${slug}/eg/ads-config`,
+      { key }
+    ),
+
+  saveAdsConfig: (slug: string, key: string, payload: { google_ads_id?: string; meta_ads_id?: string }) =>
+    portalRequest<{ status: string; config: { google_ads_id: string | null; meta_ads_id: string | null; google_ads_status: string; meta_ads_status: string } }>(
+      `/portal-api/${slug}/eg/ads-config`,
+      { method: "POST", key, body: payload }
+    ),
 };
