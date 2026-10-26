@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.6.0](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.5.0...bioma-web-v1.6.0) (2026-10-26)
+
+
+### Features
+
+* **univet:** integrar nomus erp rest e triangular faturamento no portal ([594f2cb](https://github.com/EverGreen-Agency/bioma/commit/594f2cbbae0897e37ff3cf77b31ac6fb26580809))
+* **univet:** painel de midia direta no portal eg, ux em duas etapas e territorios nomus ([aa7672f](https://github.com/EverGreen-Agency/bioma/commit/aa7672f78e48ee9afe445065aa129a7e208936a0))
+
+
+### Bug Fixes
+
+* **univet:** paginacao e unsorted no crm, classificacao conservadora e limpeza ([77789f6](https://github.com/EverGreen-Agency/bioma/commit/77789f60923dd7884168345b84d6f4768c20dd9f))
+* **univet:** tipagem do estado busy no portal eg ([345de96](https://github.com/EverGreen-Agency/bioma/commit/345de966bc88fcaada3c517e976ac245c7c4788a))
+
 ## [1.5.0](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.4.0...bioma-web-v1.5.0) (2026-10-19)
 
 
