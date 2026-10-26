@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { KommoDashboardBody, PeriodSegmented, formatDateTime } from "../../components/KommoRealDashboard";
-import { portalApi } from "../../lib/portalApi";
+import { capturePortalKey, portalApi } from "../../lib/portalApi";
 import "./univet-portal.css";
 
 const SLUG = "univet";
@@ -14,10 +14,11 @@ const PORTALS = [
 
 /** Cabeçalho comum aos portais da Univet, com a navegação entre eles. */
 export function UnivetPortalChrome({ subtitle, children, actions }: { subtitle: string; children: React.ReactNode; actions?: React.ReactNode }) {
+  const [hasKey] = useState(() => Boolean(capturePortalKey()));
   const current = window.location.pathname.replace(/\/$/, "");
   const normalizedCurrent = current.startsWith("/portal") ? current : `/portal${current}`;
-  // Todos os 3 portais acessíveis na navegação superior
-  const portals = PORTALS;
+  // Operação EG só aparece para quem acessa com chave de agência EverGreen
+  const portals = hasKey ? PORTALS : PORTALS.filter((p) => p.path !== "/portal/univet/eg");
 
   // Destrava e garante scroll nativo livre da página inteira
   useEffect(() => {

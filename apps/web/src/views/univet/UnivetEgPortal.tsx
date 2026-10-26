@@ -13,10 +13,11 @@ import {
   RefreshCw,
   ScanSearch,
   Square,
+  CheckSquare,
   Trash2,
   UploadCloud,
 } from "lucide-react";
-import { fmtInt, fmtPct } from "../../data/univet/univetPortalData";
+import { fmtBRL, fmtInt, fmtPct } from "../../data/univet/univetPortalData";
 import { formatDateTime } from "../../components/KommoRealDashboard";
 import {
   capturePortalKey,
@@ -85,11 +86,18 @@ export function UnivetEgPortal() {
     retry: false,
   });
 
+  const dashboardQuery = useQuery({
+    queryKey: ["portal-dashboard", SLUG, 0],
+    queryFn: () => portalApi.dashboard(SLUG, 0),
+    refetchInterval: 30_000,
+  });
+  const nomusData = dashboardQuery.data?.dashboard?.nomus;
+  const kommoTotals = dashboardQuery.data?.dashboard?.totals;
+
   const [busy, setBusy] = useState<null | "connect" | "sync" | "scan" | "webhook" | "dedup" | "classify" | "apply_lead" | "apply_batch" | "reset" | "clear_lead" | "clear_batch">(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const stopRef = useRef(false);
-
 
   const [subdomain, setSubdomain] = useState("");
   const [token, setToken] = useState("");
@@ -104,6 +112,7 @@ export function UnivetEgPortal() {
   const [classifyProgress, setClassifyProgress] = useState<EgClassifyProgress | null>(null);
   const [liveStream, setLiveStream] = useState(true);
   const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null);
+  const [selectedLeadIds, setSelectedLeadIds] = useState<Set<number>>(new Set());
 
   const data = status.data;
   const runId = data?.dedup?.id ?? null;
@@ -194,7 +203,7 @@ export function UnivetEgPortal() {
         : `Concluído: ${fmtInt(last.unified)} grupos unificados.`;
     });
 
-  const handleClassify = (all = false) =>
+  const handleClassify = () =>
     run("classify", async () => {
       let last: EgClassifyProgress | null = null;
       let count = 0;
@@ -204,8 +213,26 @@ export function UnivetEgPortal() {
         count += last.classified;
         setClassifyProgress(last);
         void queryClient.invalidateQueries({ queryKey: ["eg-classification", SLUG] });
-      } while (all && last.remaining > 0 && last.processed > 0 && !stopRef.current);
-      return `${stopRef.current ? "Interrompido" : "Concluído"}: ${fmtInt(count)} leads analisados com sugestões geradas. ${fmtInt(last?.remaining ?? 0)} restantes na fila.`;
+      } while (last.remaining > 0 && last.processed > 0 && !stopRef.current);
+      return `${stopRef.current ? "Interrompido" : "Diagnóstico concluído"}: ${fmtInt(count)} leads analisados com sugestões geradas. ${fmtInt(last?.remaining ?? 0)} restantes na fila.`;
+    });
+
+  const handleApplySelected = () =>
+    run("apply_batch", async () => {
+      const ids = Array.from(selectedLeadIds);
+      if (ids.length === 0) return;
+      let totalFields = 0;
+      for (const id of ids) {
+        try {
+          const res = await portalApi.applyClassificationLead(SLUG, key, id);
+          totalFields += res.fields_written;
+        } catch {
+          // ignora falhas individuais para continuar lote
+        }
+      }
+      setSelectedLeadIds(new Set());
+      void queryClient.invalidateQueries({ queryKey: ["eg-classification", SLUG] });
+      return `Gravado com sucesso! ${fmtInt(ids.length)} leads selecionados foram salvos no Kommo (${fmtInt(totalFields)} campos preenchidos).`;
     });
 
   const handleApplyLead = (leadId: number) =>
@@ -272,12 +299,30 @@ export function UnivetEgPortal() {
   const progress = dedup.data?.progress;
   const dedupPageCount = dedup.data ? Math.max(1, Math.ceil(dedup.data.total_clusters / dedup.data.page_size)) : 1;
 
+  if (!key) {
+    return (
+      <UnivetPortalChrome subtitle="Acesso Restrito">
+        <section className="uvHero" style={{ textAlign: "center", padding: "60px 20px" }}>
+          <h2 className="uvHeroHeadline">Área Restrita à Operação EverGreen</h2>
+          <p className="uvHeroSubtitle" style={{ maxWidth: 540, margin: "12px auto 24px" }}>
+            Esta área contém ferramentas internas de leitura e escrita no CRM do cliente e exige autorização direta da agência.
+          </p>
+          <div>
+            <a href="/portal/univet/v2" className="uvBtnPrimary" style={{ display: "inline-flex", textDecoration: "none" }}>
+              Acessar Painel de Dados Reais
+            </a>
+          </div>
+        </section>
+      </UnivetPortalChrome>
+    );
+  }
+
   return (
     <UnivetPortalChrome subtitle="Operação EG · Kommo">
       <section className="uvHero">
-        <h2 className="uvHeroHeadline">Higienização e classificação do CRM</h2>
+        <h2 className="uvHeroHeadline">Operação EG · Higienização e CRM</h2>
         <p className="uvHeroSubtitle">
-          Daqui o Bioma lê e altera o Kommo da Univet: unifica contatos duplicados e preenche os campos dos leads a partir da conversa.
+          Ambiente de operação técnica da EverGreen: conexões de mídia, conciliação de vendas com Nomus ERP, deduplicação e Laya AI.
         </p>
       </section>
 
@@ -304,41 +349,6 @@ export function UnivetEgPortal() {
               <p><CheckCircle2 size={14} /> {notice}</p>
             </div>
           )}
-
-          <div className="uvSources" aria-label="Estado das conexões">
-            <div className={`uvSource ${data.kommo.configured ? "uvSourceOn" : ""}`}>
-              <span className="uvSourceState">
-                {data.kommo.configured ? <CheckCircle2 size={14} /> : <CircleDashed size={14} />}
-                {data.kommo.configured ? `${data.kommo.subdomain}.kommo.com` : "Não conectado"}
-              </span>
-              <strong>Kommo CRM</strong>
-              <span>
-                {data.kommo.fetched_at
-                  ? `${fmtInt(leadsTotal)} leads lidos em ${formatDateTime(data.kommo.fetched_at)}`
-                  : "Leads ainda não sincronizados"}
-              </span>
-            </div>
-            <div className={`uvSource ${data.webhook.active ? "uvSourceOn" : ""}`}>
-              <span className="uvSourceState">
-                {data.webhook.active ? <CheckCircle2 size={14} /> : <CircleDashed size={14} />}
-                {data.webhook.active ? "Captura ativa" : "Captura desligada"}
-              </span>
-              <strong>Mensagens e leads novos</strong>
-              <span>
-                {data.webhook.active
-                  ? `${fmtInt(data.webhook.events_received ?? 0)} avisos recebidos${data.webhook.last_event_at ? `, último em ${formatDateTime(data.webhook.last_event_at)}` : ""}`
-                  : "Sem captura, a classificação só roda sob demanda"}
-              </span>
-            </div>
-            <div className={`uvSource ${classification?.engine === "modelo" ? "uvSourceOn" : ""}`}>
-              <span className="uvSourceState">
-                {classification?.engine === "modelo" ? <CheckCircle2 size={14} /> : <CircleDashed size={14} />}
-                {classification?.engine === "modelo" ? "Modelo de decisão ativo" : "Sem chave do modelo"}
-              </span>
-              <strong>Motor de classificação</strong>
-              <span>{classification?.label}</span>
-            </div>
-          </div>
 
           <div className="uvControlGroup">
             <button type="button" className="uvBtnPrimary" disabled={busy !== null || !data.kommo.configured} onClick={handleSync}>
@@ -439,6 +449,71 @@ export function UnivetEgPortal() {
               {/* Conexões do Painel, Mídia Paga e Saúde da Captação */}
               <ConnectionsChecklist status={data} slug={SLUG} portalKey={key} onUpdate={refresh} />
               <CaptureHealth slug={SLUG} />
+
+              {/* Triangulação Kommo CRM x Nomus ERP */}
+              <section className="uvCard">
+                <div className="uvCardHeader">
+                  <div>
+                    <h3 className="uvCardTitle">Triangulação & Auditoria de Vendas (Kommo CRM ⟷ Nomus ERP)</h3>
+                    <p className="uvCardSubtitle">
+                      Conciliação direta entre os pedidos faturados no Nomus ERP e as oportunidades cadastradas no Kommo CRM.
+                    </p>
+                  </div>
+                </div>
+                <div className="uvKpiRow">
+                  <Tile
+                    label="Faturamento Real Faturado"
+                    value={fmtBRL(nomusData?.faturamento_total ?? 0)}
+                    caption={`${fmtInt(nomusData?.pedidos_count ?? 0)} pedidos emitidos no Nomus ERP`}
+                  />
+                  <Tile
+                    label="Ticket Médio Real"
+                    value={fmtBRL(nomusData?.ticket_medio ?? 0)}
+                    caption="média oficial por pedido faturado"
+                  />
+                  <Tile
+                    label="Leads no Kommo CRM"
+                    value={fmtInt(kommoTotals?.leads_all_time ?? leadsTotal)}
+                    caption={`${fmtInt(kommoTotals?.won ?? 0)} negócios marcados ganhos no CRM`}
+                  />
+                  <Tile
+                    label="Consultores Ativos"
+                    value={fmtInt(nomusData?.representantes_count ?? 12)}
+                    caption="com vendas e praças territoriais mapeadas"
+                  />
+                </div>
+
+                {nomusData?.reps && nomusData.reps.length > 0 && (
+                  <div className="uvTableWrap" style={{ marginTop: 16 }}>
+                    <table className="uvTable">
+                      <thead>
+                        <tr>
+                          <th>Consultor / Representante</th>
+                          <th>Praça / Território Oficial</th>
+                          <th className="uvNum">Pedidos</th>
+                          <th className="uvNum">Faturamento</th>
+                          <th className="uvNum">Participação</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {nomusData.reps.slice(0, 8).map((rep) => (
+                          <tr key={rep.label}>
+                            <td><strong>{rep.label}</strong></td>
+                            <td>
+                              <span className="uvChip" style={{ fontSize: 11, background: "rgba(39, 174, 130, 0.12)", color: "var(--uv-accent-ink)", border: "1px solid rgba(39, 174, 130, 0.25)" }}>
+                                {rep.territorio || "Território Nacional / Matriz"}
+                              </span>
+                            </td>
+                            <td className="uvNum">{fmtInt(rep.pedidos)}</td>
+                            <td className="uvNum"><strong>{fmtBRL(rep.faturamento)}</strong></td>
+                            <td className="uvNum">{fmtPct(rep.share, 1)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </section>
 
               {/* Deduplicação */}
               <section className="uvCard">
@@ -617,19 +692,10 @@ export function UnivetEgPortal() {
                             type="button"
                             className="uvBtnPrimary"
                             disabled={busy !== null || !data.kommo.fetched_at}
-                            onClick={() => handleClassify(false)}
-                            title="Analisa 5 leads como amostra para testar o diagnóstico da IA rapidamente sem esperar a base toda"
+                            onClick={handleClassify}
+                            title="Lê as conversas dos leads no Kommo e gera sugestões diagnósticas pendentes"
                           >
-                            <Play size={13} /> Testar Amostra (5 leads)
-                          </button>
-                          <button
-                            type="button"
-                            className="uvBtnSecondary"
-                            disabled={busy !== null || !data.kommo.fetched_at}
-                            onClick={() => handleClassify(true)}
-                            title="Lê as conversas de toda a base gerando sugestões pendentes de aprovação"
-                          >
-                            <Play size={13} /> Analisar Toda a Fila
+                            <Play size={13} /> Analisar Conversas com IA
                           </button>
                         </div>
                       )}
@@ -638,15 +704,27 @@ export function UnivetEgPortal() {
                         <span style={{ fontSize: 11, fontWeight: 700, color: "var(--uv-accent-ink)", textTransform: "uppercase", paddingRight: 4 }}>
                           2. Gravação no CRM:
                         </span>
+                        {selectedLeadIds.size > 0 && (
+                          <button
+                            type="button"
+                            className="uvBtnPrimary"
+                            style={{ background: "#27ae82", color: "#0b1a15" }}
+                            disabled={busy !== null}
+                            onClick={handleApplySelected}
+                            title="Aprova e grava no Kommo apenas os leads marcados nos checkboxes"
+                          >
+                            <CheckSquare size={13} /> {busy === "apply_batch" ? "Gravando selecionados..." : `Aprovar Selecionados (${selectedLeadIds.size})`}
+                          </button>
+                        )}
                         <button
                           type="button"
-                          className="uvBtnPrimary"
-                          style={{ background: "#27ae82", color: "#0b1a15" }}
+                          className={selectedLeadIds.size > 0 ? "uvBtnSecondary" : "uvBtnPrimary"}
+                          style={selectedLeadIds.size === 0 ? { background: "#27ae82", color: "#0b1a15" } : undefined}
                           disabled={busy !== null || !data.kommo.fetched_at || ((results.data?.summary.suggested ?? 0) === 0 && !results.data?.results.some((r) => r.status === "sugerido" || (r.status === "classificado" && r.fields_written === 0)))}
                           onClick={handleApplyBatch}
                           title="Aprova e grava no Kommo CRM todos os leads com sugestões pendentes"
                         >
-                          <UploadCloud size={13} /> {busy === "apply_batch" ? "Gravando no CRM..." : `Aprovar e Gravar Sugestões (${results.data?.summary.suggested ?? results.data?.results.filter((r) => r.status === "sugerido" || (r.status === "classificado" && r.fields_written === 0)).length ?? 0})`}
+                          <UploadCloud size={13} /> {busy === "apply_batch" ? "Gravando lote no CRM..." : `Aprovar Todos (${results.data?.summary.suggested ?? results.data?.results.filter((r) => r.status === "sugerido" || (r.status === "classificado" && r.fields_written === 0)).length ?? 0})`}
                         </button>
                       </div>
 
@@ -848,25 +926,73 @@ export function UnivetEgPortal() {
                     )}
 
                     {results.data && results.data.results.length > 0 ? (
-                      <div className="uvFeedList">
-                        {results.data.results.map((row) => (
-                          <div
-                            key={row.lead_id}
-                            className={`uvFeedItem ${row.status === "gravado" || row.status === "classificado" ? "good" : row.status === "sugerido" ? "sugerido" : row.status === "erro" ? "error" : "warn"} ${activeLead?.lead_id === row.lead_id ? "selected" : ""}`}
-                            style={{ cursor: "pointer" }}
-                            onClick={() => setSelectedLeadId(row.lead_id)}
+                      <>
+                        <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 10, flexWrap: "wrap", padding: "6px 12px", background: "var(--uv-surface-2)", borderRadius: 8, border: "1px solid var(--uv-line)" }}>
+                          <span style={{ fontSize: 12, color: "var(--uv-text-2)" }}>
+                            Seleção de leads:
+                          </span>
+                          <button
+                            type="button"
+                            className="uvBtnGhost"
+                            style={{ fontSize: 11, padding: "3px 8px" }}
+                            onClick={() => {
+                              const pendingIds = results.data?.results
+                                .filter((r) => r.status === "sugerido" || (r.status === "classificado" && r.fields_written === 0))
+                                .map((r) => r.lead_id) ?? [];
+                              setSelectedLeadIds(new Set(pendingIds));
+                            }}
                           >
-                            <div className="uvFeedItemHeader">
-                              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                                <a
-                                  className="uvLink"
-                                  style={{ fontWeight: 700, fontSize: 14 }}
-                                  href={`${kommoUrl}/leads/detail/${row.lead_id}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                >
-                                  Lead #{row.lead_id} <ExternalLink size={11} />
-                                </a>
+                            <CheckSquare size={12} /> Selecionar Pendentes da Página
+                          </button>
+                          {selectedLeadIds.size > 0 && (
+                            <button
+                              type="button"
+                              className="uvBtnGhost"
+                              style={{ fontSize: 11, padding: "3px 8px", color: "var(--uv-accent-ink)" }}
+                              onClick={() => setSelectedLeadIds(new Set())}
+                            >
+                              Desmarcar Todos ({selectedLeadIds.size} selecionados)
+                            </button>
+                          )}
+                        </div>
+
+                        <div className="uvFeedList">
+                          {results.data.results.map((row) => (
+                            <div
+                              key={row.lead_id}
+                              className={`uvFeedItem ${row.status === "gravado" || row.status === "classificado" ? "good" : row.status === "sugerido" ? "sugerido" : row.status === "erro" ? "error" : "warn"} ${activeLead?.lead_id === row.lead_id ? "selected" : ""}`}
+                              style={{ cursor: "pointer" }}
+                              onClick={() => setSelectedLeadId(row.lead_id)}
+                            >
+                              <div className="uvFeedItemHeader">
+                                <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                                  {(row.status === "sugerido" || (row.status === "classificado" && row.fields_written === 0)) && (
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedLeadIds.has(row.lead_id)}
+                                      onChange={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedLeadIds((prev) => {
+                                          const next = new Set(prev);
+                                          if (e.target.checked) next.add(row.lead_id);
+                                          else next.delete(row.lead_id);
+                                          return next;
+                                        });
+                                      }}
+                                      onClick={(e) => e.stopPropagation()}
+                                      style={{ cursor: "pointer", width: 16, height: 16, accentColor: "var(--uv-accent)" }}
+                                      title="Selecionar este lead para gravação no CRM"
+                                    />
+                                  )}
+                                  <a
+                                    className="uvLink"
+                                    style={{ fontWeight: 700, fontSize: 14 }}
+                                    href={`${kommoUrl}/leads/detail/${row.lead_id}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    Lead #{row.lead_id} <ExternalLink size={11} />
+                                  </a>
                                 {(row.status === "sugerido" || (row.status === "classificado" && row.fields_written === 0)) && (
                                   <button
                                     type="button"
@@ -930,8 +1056,9 @@ export function UnivetEgPortal() {
                           </div>
                         ))}
                       </div>
+                    </>
                     ) : (
-                      <p className="uvEmpty">Nenhum lead classificado ainda. Clique em "Classificar 5 leads" acima ou aguarde mensagens pelo webhook.</p>
+                      <p className="uvEmpty">Nenhum lead classificado ainda. Clique em "Classificar leads com IA" acima ou aguarde mensagens pelo webhook.</p>
                     )}
 
                     {results.data && results.data.results.length > 0 && (
