@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.0](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.6.0...bioma-web-v1.7.0) (2026-10-26)
+
+
+### Features
+
+* **univet:** privacidade da operacao eg, selecao granular de leads e… ([9cead37](https://github.com/EverGreen-Agency/bioma/commit/9cead376f4593c8b0838366f28e870aeacf6e4ba))
+
 ## [1.6.0](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.5.0...bioma-web-v1.6.0) (2026-10-26)
 
 
