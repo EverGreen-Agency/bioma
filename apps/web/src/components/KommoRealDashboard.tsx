@@ -462,6 +462,7 @@ export function KommoDashboardBody({ data, subdomain }: { data: KommoDashboard; 
               <thead>
                 <tr>
                   <th>Consultor / Representante</th>
+                  <th>Praça / Território Oficial</th>
                   <th className="uvNum">Pedidos</th>
                   <th className="uvNum">Faturamento Faturado</th>
                   <th className="uvNum">Participação</th>
@@ -471,6 +472,11 @@ export function KommoDashboardBody({ data, subdomain }: { data: KommoDashboard; 
                 {nomus.reps.map((rep) => (
                   <tr key={rep.label}>
                     <td><strong>{rep.label}</strong></td>
+                    <td>
+                      <span className="uvChip" style={{ fontSize: 11, background: "rgba(39, 174, 130, 0.12)", color: "var(--uv-accent-ink)", border: "1px solid rgba(39, 174, 130, 0.25)" }}>
+                        {rep.territorio || "Território Nacional / Matriz"}
+                      </span>
+                    </td>
                     <td className="uvNum">{fmtInt(rep.pedidos)}</td>
                     <td className="uvNum"><strong>{fmtBRL(rep.faturamento)}</strong></td>
                     <td className="uvNum">{fmtPct(rep.share, 1)}</td>

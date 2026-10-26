@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AlertTriangle, CheckCircle2, CircleDashed } from "lucide-react";
 import { fmtInt, fmtPct } from "../../data/univet/univetPortalData";
@@ -93,7 +94,7 @@ export function CaptureHealth({ slug }: { slug: string }) {
         />
       </div>
 
-      <div className="uvSideTitle" style={{ marginTop: 18 }}>Campos obrigatórios na entrada · meta de {fmtPct(FIELD_TARGET, 0)}</div>
+      <div className="uvSideTitle" style={{ marginTop: 18 }}>Campos cadastrais recomendados · acompanhamento de preenchimento</div>
       {fields.map((field) => {
         const rate = field.total > 0 ? field.filled / field.total : 0;
         const ok = field.total > 0 && rate >= FIELD_TARGET;
@@ -116,7 +117,43 @@ export function CaptureHealth({ slug }: { slug: string }) {
 
 type Readiness = { name: string; on: boolean; state: string; unlocks: string; next: string; owner: "Univet" | "EverGreen" | "Univet + EverGreen" };
 
-export function ConnectionsChecklist({ status }: { status: EgStatus }) {
+export function ConnectionsChecklist({
+  status,
+  slug = "univet",
+  portalKey = "",
+  onUpdate,
+}: {
+  status: EgStatus;
+  slug?: string;
+  portalKey?: string;
+  onUpdate?: () => void;
+}) {
+  const [googleId, setGoogleId] = useState(status.ads?.google_ads_id ?? "");
+  const [metaId, setMetaId] = useState(status.ads?.meta_ads_id ?? "");
+  const [saving, setSaving] = useState(false);
+  const [saveMsg, setSaveMsg] = useState<string | null>(null);
+
+  const googleConnected = Boolean(status.ads?.google_ads_id || googleId.trim());
+  const metaConnected = Boolean(status.ads?.meta_ads_id || metaId.trim());
+
+  async function handleSaveAds(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setSaveMsg(null);
+    try {
+      await portalApi.saveAdsConfig(slug, portalKey, {
+        google_ads_id: googleId.trim(),
+        meta_ads_id: metaId.trim(),
+      });
+      setSaveMsg("Contas de anúncio salvas com sucesso!");
+      onUpdate?.();
+    } catch (err) {
+      setSaveMsg(err instanceof Error ? err.message : "Erro ao salvar contas de anúncio.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
   const items: Readiness[] = [
     {
       name: "Kommo CRM",
@@ -168,18 +205,22 @@ export function ConnectionsChecklist({ status }: { status: EgStatus }) {
     },
     {
       name: "Google Ads",
-      on: false,
-      state: "Não ligado a este painel",
+      on: googleConnected,
+      state: googleConnected ? `Conectado (Conta: ${status.ads?.google_ads_id || googleId})` : "Não configurado",
       unlocks: "Investimento, CPL, CAC, ROAS e campanhas",
-      next: "Univet libera acesso de leitura ao Customer ID para o MCC da EverGreen; cadastrar o ID no Bioma.",
+      next: googleConnected
+        ? "Conta vinculada. EverGreen pode auditar via MCC."
+        : "Informe o Customer ID (ex: 123-456-7890) no formulário abaixo.",
       owner: "Univet + EverGreen",
     },
     {
       name: "Meta Ads e Instagram",
-      on: false,
-      state: "Não ligado a este painel",
+      on: metaConnected,
+      state: metaConnected ? `Conectado (Conta: ${status.ads?.meta_ads_id || metaId})` : "Não configurado",
       unlocks: "Investimento e criativos do Meta, alcance orgânico do Instagram",
-      next: "Univet adiciona a EverGreen como parceira no Business Manager (conta de anúncios e Instagram).",
+      next: metaConnected
+        ? "Conta vinculada. EverGreen pode auditar via Business Manager."
+        : "Informe o Account ID (ex: act_1234567890) no formulário abaixo.",
       owner: "Univet + EverGreen",
     },
     {
@@ -197,9 +238,9 @@ export function ConnectionsChecklist({ status }: { status: EgStatus }) {
     <section className="uvCard">
       <div className="uvCardHeader">
         <div>
-          <h3 className="uvCardTitle">Conexões do painel</h3>
+          <h3 className="uvCardTitle">Conexões do painel e Mídia Paga</h3>
           <p className="uvCardSubtitle">
-            {done} de {items.length} prontas. Cada conexão destrava um bloco da apresentação na v2.
+            {done} de {items.length} prontas. Cada conexão destrava um bloco da apresentação e do BI.
           </p>
         </div>
       </div>
@@ -219,6 +260,59 @@ export function ConnectionsChecklist({ status }: { status: EgStatus }) {
           </li>
         ))}
       </ul>
+
+      {/* Formulário Direto de Cadastro de Google Ads e Meta Ads */}
+      <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--uv-line)" }}>
+        <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+          Configurar IDs de Google Ads e Meta Ads da Univet
+        </h4>
+        <p style={{ fontSize: 12, color: "var(--uv-text-2)", marginBottom: 12 }}>
+          Insira aqui diretamente as contas de anúncio para vincular ao BI e destravar o cálculo de CPL, CAC e ROAS.
+        </p>
+        <form onSubmit={handleSaveAds} style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div style={{ flex: "1 1 200px" }}>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--uv-text-3)", marginBottom: 4 }}>
+              Google Ads Customer ID
+            </label>
+            <input
+              type="text"
+              className="uvInput"
+              style={{ width: "100%", padding: "7px 10px", fontSize: 13, background: "var(--uv-surface-2)", border: "1px solid var(--uv-line-strong)", borderRadius: 6, color: "var(--uv-text)" }}
+              placeholder="Ex: 123-456-7890"
+              value={googleId}
+              onChange={(e) => setGoogleId(e.target.value)}
+            />
+          </div>
+          <div style={{ flex: "1 1 200px" }}>
+            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--uv-text-3)", marginBottom: 4 }}>
+              Meta Ads Account ID
+            </label>
+            <input
+              type="text"
+              className="uvInput"
+              style={{ width: "100%", padding: "7px 10px", fontSize: 13, background: "var(--uv-surface-2)", border: "1px solid var(--uv-line-strong)", borderRadius: 6, color: "var(--uv-text)" }}
+              placeholder="Ex: act_1234567890"
+              value={metaId}
+              onChange={(e) => setMetaId(e.target.value)}
+            />
+          </div>
+          <div>
+            <button
+              type="submit"
+              className="uvBtnPrimary"
+              disabled={saving}
+              style={{ padding: "8px 16px", fontSize: 13 }}
+            >
+              {saving ? "Salvando..." : "Salvar IDs de Anúncio"}
+            </button>
+          </div>
+        </form>
+        {saveMsg && (
+          <p style={{ marginTop: 8, fontSize: 12, color: saveMsg.includes("sucesso") ? "var(--uv-good)" : "var(--uv-critical)" }}>
+            {saveMsg}
+          </p>
+        )}
+      </div>
     </section>
   );
 }

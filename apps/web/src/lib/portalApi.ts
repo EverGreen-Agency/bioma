@@ -70,6 +70,12 @@ export type EgStatus = {
     fetched_at?: number | null;
     error?: string;
   } | null;
+  ads?: {
+    google_ads_id: string | null;
+    meta_ads_id: string | null;
+    google_ads_status: string;
+    meta_ads_status: string;
+  } | null;
   dedup: {
     id: string;
     contacts_scanned: number;
@@ -251,4 +257,16 @@ export const portalApi = {
 
   enableWebhook: (slug: string, key: string) =>
     portalRequest<{ active: boolean; events: string[] }>(`/portal-api/${slug}/eg/webhook`, { method: "POST", key }),
+
+  getAdsConfig: (slug: string, key: string) =>
+    portalRequest<{ google_ads_id: string | null; meta_ads_id: string | null; google_ads_status: string; meta_ads_status: string }>(
+      `/portal-api/${slug}/eg/ads-config`,
+      { key }
+    ),
+
+  saveAdsConfig: (slug: string, key: string, payload: { google_ads_id?: string; meta_ads_id?: string }) =>
+    portalRequest<{ status: string; config: { google_ads_id: string | null; meta_ads_id: string | null; google_ads_status: string; meta_ads_status: string } }>(
+      `/portal-api/${slug}/eg/ads-config`,
+      { method: "POST", key, body: payload }
+    ),
 };

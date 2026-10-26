@@ -151,6 +151,7 @@ def eg_status(slug: str) -> dict:
             "fetched_at": snapshot["fetched_at"] if snapshot else None,
         },
         "nomus": nomus_status,
+        "ads": get_ads_config(slug),
         "dedup": dict(dedup) if dedup else None,
         "classification": {**dict(summary), **_engine_info()},
         "webhook": (
@@ -963,3 +964,104 @@ def webhook_process(organization_id: UUID, lead_ids: set[int]) -> None:
         pass  # o lead continua na fila do histórico; nada a devolver para o Kommo
     finally:
         api.close()
+
+
+# --- Configuração de Mídia Paga (Google Ads & Meta Ads) -----------------------
+
+_ADS_FALLBACK_CACHE: dict[str, dict[str, Any]] = {}
+
+
+def get_ads_config(slug: str) -> dict[str, Any]:
+    """Recupera contas de anúncios associadas à organização do slug."""
+    try:
+        with connect() as conn:
+            org = _organization(conn, slug)
+            rows = conn.execute(
+                """
+                select provider, external_account_id, status, display_name
+                from performance_connections
+                where organization_id = %s and provider in ('google_ads', 'meta_ads')
+                """,
+                (org["id"],),
+            ).fetchall()
+            config = {
+                "google_ads_id": None,
+                "meta_ads_id": None,
+                "google_ads_status": "disconnected",
+                "meta_ads_status": "disconnected",
+            }
+            for row in rows:
+                if row["provider"] == "google_ads":
+                    config["google_ads_id"] = row["external_account_id"]
+                    config["google_ads_status"] = row["status"]
+                elif row["provider"] == "meta_ads":
+                    config["meta_ads_id"] = row["external_account_id"]
+                    config["meta_ads_status"] = row["status"]
+            _ADS_FALLBACK_CACHE[slug] = config
+            return config
+    except Exception as exc:
+        logger.warning("Falha ao consultar performance_connections para %s: %s", slug, exc)
+        return _ADS_FALLBACK_CACHE.get(
+            slug,
+            {
+                "google_ads_id": None,
+                "meta_ads_id": None,
+                "google_ads_status": "disconnected",
+                "meta_ads_status": "disconnected",
+            },
+        )
+
+
+def save_ads_config(slug: str, google_ads_id: str | None, meta_ads_id: str | None) -> dict[str, Any]:
+    """Salva contas de anúncio diretamente a partir da Operação EG."""
+    current = get_ads_config(slug)
+    new_google = google_ads_id.strip() if google_ads_id is not None else current["google_ads_id"]
+    new_meta = meta_ads_id.strip() if meta_ads_id is not None else current["meta_ads_id"]
+
+    try:
+        with connect() as conn:
+            org = _organization(conn, slug)
+            ws_row = conn.execute(
+                "select id from workspaces where subject_organization_id = %s and status = 'active' limit 1",
+                (org["id"],),
+            ).fetchone()
+            workspace_id = ws_row["id"] if ws_row else org["id"]
+
+            if new_google:
+                conn.execute(
+                    """
+                    insert into performance_connections (
+                        workspace_id, organization_id, provider, external_account_id, display_name, status
+                    )
+                    values (%s, %s, 'google_ads', %s, 'Google Ads Univet', 'active')
+                    on conflict (workspace_id, provider, external_account_id)
+                    do update set status = 'active', updated_at = now()
+                    """,
+                    (workspace_id, org["id"], new_google),
+                )
+
+            if new_meta:
+                conn.execute(
+                    """
+                    insert into performance_connections (
+                        workspace_id, organization_id, provider, external_account_id, display_name, status
+                    )
+                    values (%s, %s, 'meta_ads', %s, 'Meta Ads Univet', 'active')
+                    on conflict (workspace_id, provider, external_account_id)
+                    do update set status = 'active', updated_at = now()
+                    """,
+                    (workspace_id, org["id"], new_meta),
+                )
+    except Exception as exc:
+        logger.warning("Falha ao salvar no banco performance_connections: %s", exc)
+
+    # Atualiza cache local
+    updated_config = {
+        "google_ads_id": new_google or None,
+        "meta_ads_id": new_meta or None,
+        "google_ads_status": "active" if new_google else "disconnected",
+        "meta_ads_status": "active" if new_meta else "disconnected",
+    }
+    _ADS_FALLBACK_CACHE[slug] = updated_config
+    return {"status": "ok", "config": updated_config}
+

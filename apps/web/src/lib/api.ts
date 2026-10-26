@@ -714,6 +714,7 @@ export type KommoRepSummary = {
 
 export type NomusRepSales = {
   label: string;
+  territorio?: string;
   faturamento: number;
   pedidos: number;
   share: number;

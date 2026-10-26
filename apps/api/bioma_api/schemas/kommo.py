@@ -81,6 +81,7 @@ class KommoFieldQuality(BaseModel):
 
 class NomusRepSales(BaseModel):
     label: str
+    territorio: str | None = None
     faturamento: float
     pedidos: int
     share: float

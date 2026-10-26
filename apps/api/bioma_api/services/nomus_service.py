@@ -92,6 +92,32 @@ def get_nomus_status() -> dict[str, Any]:
     }
 
 
+_REPRESENTANTE_TERRITORIOS: dict[str, str] = {
+    "bruno": "São Paulo - SP (Univet)",
+    "mayara": "São Paulo - SP (Univet)",
+    "dvdent": "São Paulo - SP (Edicarlos e Vitor)",
+    "edicarlos": "São Paulo - SP (DVDENT)",
+    "vitor": "São Paulo - SP (DVDENT)",
+    "faria": "Rio de Janeiro – RJ (W de Faria)",
+    "federal": "Brasília – DF / Goiânia – GO (Federal Doctor)",
+    "master": "Cuiabá – MT (Doctor Master)",
+    "dk": "Belo Horizonte – MG (Kau - Dk)",
+    "kau": "Belo Horizonte – MG (Kau - Dk)",
+    "somar": "Recife – PE (Somar Recife)",
+    "vigor": "Fortaleza – CE / Mossoró – RN (Vigor Odonto)",
+    "odontosul": "RS / SC (Odontosul)",
+    "doctor sul": "Criciúma – SC (Doctor Sul / Odontosul)",
+}
+
+
+def _infer_territory(name: str) -> str:
+    norm = name.lower()
+    for key, territory in _REPRESENTANTE_TERRITORIOS.items():
+        if key in norm:
+            return territory
+    return "Território Nacional / Matriz"
+
+
 def compute_nomus_analytics(days: int = 0, leads: list[dict[str, Any]] | None = None) -> dict[str, Any]:
     """Calcula faturamento, pedidos e triangulação com o Kommo CRM."""
     data = get_cached_nomus_data()
@@ -138,6 +164,7 @@ def compute_nomus_analytics(days: int = 0, leads: list[dict[str, Any]] | None = 
     reps_summary = [
         {
             "label": rep_name,
+            "territorio": _infer_territory(rep_name),
             "faturamento": rep_faturamento[rep_name],
             "pedidos": rep_pedidos[rep_name],
             "share": (rep_faturamento[rep_name] / faturamento_total) if faturamento_total > 0 else 0.0,
