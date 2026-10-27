@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.8.0](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.7.2...bioma-web-v1.8.0) (2026-10-27)
+
+
+### Features
+
+* **univet:** auditoria de jornada erp-crm, tranca de ads e bloco de representantes ([421adf1](https://github.com/EverGreen-Agency/bioma/commit/421adf13b2a624a0e7c51db190382da33588b970))
+* **univet:** unificacao da apresentacao executiva com dados reais do nomus erp e kommo crm ([88e3ee1](https://github.com/EverGreen-Agency/bioma/commit/88e3ee105bf52b9daa76ef5db64a5738bd97cc93))
+
 ## [1.7.2](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.7.1...bioma-web-v1.7.2) (2026-10-27)
 
 
