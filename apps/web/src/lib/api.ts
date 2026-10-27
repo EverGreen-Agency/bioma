@@ -751,6 +751,7 @@ export type NomusTriangulationStats = {
 
 export type NomusAnalyticsSummary = {
   configured: boolean;
+  active?: boolean;
   faturamento_total: number;
   pedidos_count: number;
   ticket_medio: number;
@@ -759,6 +760,8 @@ export type NomusAnalyticsSummary = {
   top_products: NomusTopProduct[];
   triangulation?: NomusTriangulationStats | null;
   audited_orders?: NomusAuditedOrder[];
+  orders_by_uf?: Record<string, { orders: number; revenue: number }>;
+  orders_by_vendor?: Record<string, { orders: number; revenue: number }>;
 };
 
 export type KommoDashboard = {
