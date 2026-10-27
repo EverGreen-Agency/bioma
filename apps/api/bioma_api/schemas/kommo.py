@@ -93,6 +93,29 @@ class NomusTopProduct(BaseModel):
     valor_estimado: float
 
 
+class NomusAuditedOrder(BaseModel):
+    codigo_pedido: str
+    data_emissao: str
+    valor: float
+    cliente_nome: str
+    cliente_uf: str
+    vendedor_nome: str
+    territorio: str
+    lead_id: int | None = None
+    origem_canal: str = "Venda Direta / Representante"
+    status_triangulacao: str = "conciliado"  # "conciliado" | "direto_erp"
+    produtos: list[str] = []
+
+
+class NomusTriangulationStats(BaseModel):
+    conciliated_orders_count: int = 0
+    conciliated_revenue: float = 0.0
+    direct_orders_count: int = 0
+    direct_revenue: float = 0.0
+    conciliated_pct: float = 0.0
+    marketing_attributed_revenue: float = 0.0
+
+
 class NomusAnalyticsSummary(BaseModel):
     configured: bool = True
     faturamento_total: float = 0.0
@@ -101,6 +124,8 @@ class NomusAnalyticsSummary(BaseModel):
     representantes_count: int = 0
     reps: list[NomusRepSales] = []
     top_products: list[NomusTopProduct] = []
+    triangulation: NomusTriangulationStats | None = None
+    audited_orders: list[NomusAuditedOrder] = []
 
 
 class KommoDashboard(BaseModel):

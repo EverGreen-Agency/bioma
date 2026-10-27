@@ -1,8 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, ArrowDownRight, ArrowUpRight, Download, Instagram, MapPin, Minus, Play, Sparkles, TrendingUp, X } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, CheckCircle2, Download, Instagram, MapPin, Minus, Play, Sparkles, TrendingUp, X } from 'lucide-react';
 import {
   computeSnapshot,
   computeSocial,
+  mergeSnapshotWithRealData,
   fmtBRL,
   fmtCompactBRL,
   fmtInt,
@@ -21,6 +23,8 @@ import {
   type StateRow,
   type Verdict,
 } from '../../data/univet/univetPortalData';
+import { portalApi } from '../../lib/portalApi';
+import { UnivetPortalChrome } from './UnivetRealPortal';
 import { BrazilMap, ScatterPlot, Sparkline, StackedColumns, TERRITORY_COLORS } from './UnivetCharts';
 import './univet-portal.css';
 
@@ -244,7 +248,18 @@ export function UnivetExecutivePortal() {
     };
   }, []);
 
-  const data = useMemo(() => computeSnapshot({ period, segment, uf }), [period, segment, uf]);
+  const periodDays = PERIODS.find((p) => p.id === period)?.days ?? 90;
+  const { data: portalResponse } = useQuery({
+    queryKey: ['portal-dashboard', 'univet', periodDays],
+    queryFn: () => portalApi.dashboard('univet', periodDays),
+    staleTime: 60_000,
+  });
+
+  const baseData = useMemo(() => computeSnapshot({ period, segment, uf }), [period, segment, uf]);
+  const data = useMemo(
+    () => mergeSnapshotWithRealData(baseData, portalResponse?.dashboard, portalResponse?.dashboard?.nomus),
+    [baseData, portalResponse],
+  );
   const social = useMemo(() => computeSocial(period), [period]);
   const { kpis } = data;
   const periodLabel = PERIODS.find((p) => p.id === period)?.label ?? '';
@@ -304,35 +319,49 @@ export function UnivetExecutivePortal() {
   const funnelTop = data.funnel[0].count || 1;
   const hasOrders = (kpis.orders.value ?? 0) > 0;
 
+  const headerActions = (
+    <>
+      {uf && (
+        <button type="button" className="uvFilterChip" onClick={() => setUf(null)} aria-label={`Remover filtro de estado ${uf}`}>
+          <MapPin size={13} />
+          {uf}
+          <X size={13} />
+        </button>
+      )}
+      <Segmented options={SEGMENTS} value={segment} onChange={setSegment} label="Segmento" />
+      <Segmented options={PERIODS} value={period} onChange={setPeriod} label="Período" />
+      <button type="button" className="uvBtnSecondary" onClick={() => window.print()} title="Exportar o painel em PDF">
+        <Download size={14} />
+        <span>PDF</span>
+      </button>
+    </>
+  );
+
+  const dashboardReal = portalResponse?.dashboard;
+  const nomusReal = dashboardReal?.nomus;
+
   return (
-    <div className="uvPortalWrapper">
-      <header className="uvPortalHeader">
-        <div className="uvBrand">
-          <div className="uvMonogram" aria-hidden="true">U</div>
-          <div>
-            <h1 className="uvBrandTitle">Univet Loupes</h1>
-            <span className="uvBrandSubtitle">Painel executivo · Brasil</span>
-          </div>
+    <UnivetPortalChrome subtitle="Painel executivo · Brasil" actions={headerActions}>
+      {nomusReal?.configured && (nomusReal.faturamento_total ?? 0) > 0 && (
+        <div
+          className="uvNotice uvNoticeSuccess"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            marginBottom: 20,
+            background: 'rgba(34, 197, 94, 0.08)',
+            border: '1px solid rgba(34, 197, 94, 0.25)',
+            padding: '12px 18px',
+            borderRadius: 8,
+          }}
+        >
+          <CheckCircle2 size={18} color="var(--uv-accent)" />
+          <span style={{ fontSize: '0.88rem' }}>
+            <strong>Dados Reais Conectados:</strong> Faturamento e pedidos emitidos do <strong>Nomus ERP</strong> ({fmtBRL(nomusReal.faturamento_total)} em {nomusReal.pedidos_count} pedidos faturados) cruzados em tempo real com leads do <strong>Kommo CRM</strong> ({dashboardReal?.totals?.leads ?? 0} leads).
+          </span>
         </div>
-
-        <div className="uvHeaderActions">
-          {uf && (
-            <button type="button" className="uvFilterChip" onClick={() => setUf(null)} aria-label={`Remover filtro de estado ${uf}`}>
-              <MapPin size={13} />
-              {uf}
-              <X size={13} />
-            </button>
-          )}
-          <Segmented options={SEGMENTS} value={segment} onChange={setSegment} label="Segmento" />
-          <Segmented options={PERIODS} value={period} onChange={setPeriod} label="Período" />
-          <button type="button" className="uvBtnSecondary" onClick={() => window.print()} title="Exportar o painel em PDF">
-            <Download size={14} />
-            <span>PDF</span>
-          </button>
-        </div>
-      </header>
-
-      <main className="uvPortalMain">
+      )}
         <section className="uvHero">
           <h2 className="uvHeroHeadline">Da campanha ao pedido faturado</h2>
           <p className="uvHeroSubtitle">
@@ -863,14 +892,6 @@ export function UnivetExecutivePortal() {
             </ul>
           </section>
         </div>
-      </main>
-
-      <footer className="uvPortalFooter">
-        <div>
-          <strong>Univet Loupes Brasil</strong> · Dados demonstrativos
-        </div>
-        <div>EverGreen Consultoria e Tecnologia · 2026</div>
-      </footer>
-    </div>
+    </UnivetPortalChrome>
   );
 }

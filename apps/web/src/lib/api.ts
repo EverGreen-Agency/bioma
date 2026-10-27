@@ -726,14 +726,42 @@ export type NomusTopProduct = {
   valor_estimado: number;
 };
 
+export type NomusAuditedOrder = {
+  codigo_pedido: string;
+  data_emissao: string;
+  valor: number;
+  cliente_nome: string;
+  cliente_uf: string;
+  vendedor_nome: string;
+  territorio: string;
+  lead_id?: number | null;
+  origem_canal: string;
+  status_triangulacao: "conciliado" | "direto_erp";
+  produtos: string[];
+};
+
+export type NomusTriangulationStats = {
+  conciliated_orders_count: number;
+  conciliated_revenue: number;
+  direct_orders_count: number;
+  direct_revenue: number;
+  conciliated_pct: number;
+  marketing_attributed_revenue: number;
+};
+
 export type NomusAnalyticsSummary = {
   configured: boolean;
+  active?: boolean;
   faturamento_total: number;
   pedidos_count: number;
   ticket_medio: number;
   representantes_count: number;
   reps: NomusRepSales[];
   top_products: NomusTopProduct[];
+  triangulation?: NomusTriangulationStats | null;
+  audited_orders?: NomusAuditedOrder[];
+  orders_by_uf?: Record<string, { orders: number; revenue: number }>;
+  orders_by_vendor?: Record<string, { orders: number; revenue: number }>;
 };
 
 export type KommoDashboard = {

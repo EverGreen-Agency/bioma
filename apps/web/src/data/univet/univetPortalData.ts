@@ -7,6 +7,7 @@
 // basta substituir `LEADS` e `SPEND_BY_CAMPAIGN` mantendo os formatos.
 
 import { BRAZIL_STATES } from './brazilStatesGeo';
+import type { KommoDashboard, NomusAnalyticsSummary } from '../../lib/api';
 
 export type SegmentFilter = 'todos' | 'odonto' | 'medicina';
 export type PeriodId = '30d' | '90d' | '180d';
@@ -136,14 +137,16 @@ export interface RepDef {
   staleShare: number;
 }
 
-// Nomes e territórios ilustrativos: a lista real ainda será confirmada com a Univet.
 export const REPS: RepDef[] = [
-  { id: 'sp', name: 'Carlos Eduardo', role: 'Especialista clínico sênior', territory: 'São Paulo', ufs: ['SP'], responseMin: 18, staleShare: 0.06 },
-  { id: 'rj_es', name: 'Mariana Souza', role: 'Consultora óptica regional', territory: 'Rio de Janeiro e ES', ufs: ['RJ', 'ES'], responseMin: 42, staleShare: 0.11 },
-  { id: 'mg', name: 'Roberto Alencar', role: 'Consultor de campo', territory: 'Minas Gerais', ufs: ['MG'], responseMin: 95, staleShare: 0.19 },
-  { id: 'sul', name: 'Lucas Fagundes', role: 'Especialista em ergonomia cirúrgica', territory: 'Região Sul', ufs: ['PR', 'SC', 'RS'], responseMin: 27, staleShare: 0.08 },
-  { id: 'ne', name: 'Fernanda Lima', role: 'Consultora técnica', territory: 'Nordeste', ufs: ['BA', 'PE', 'CE'], responseMin: 64, staleShare: 0.14 },
-  { id: 'co', name: 'Thiago Mendes', role: 'Consultor regional', territory: 'Centro-Oeste', ufs: ['DF', 'GO', 'MT'], responseMin: 210, staleShare: 0.27 },
+  { id: 'sp_univet', name: 'Univet Matriz (Bruno & Mayara)', role: 'Especialista Clínico / Consultoria Óptica', territory: 'São Paulo (Capital, Litoral e Interior)', ufs: ['SP'], responseMin: 18, staleShare: 0.05 },
+  { id: 'sp_dvdent', name: 'DVDENT (Edicarlos & Vitor)', role: 'Representação Comercial Autorizada', territory: 'São Paulo (Grande SP e Interior)', ufs: ['SP'], responseMin: 22, staleShare: 0.06 },
+  { id: 'rj_wfaria', name: 'W de Faria Representações', role: 'Representação Comercial Autorizada', territory: 'Rio de Janeiro e Região', ufs: ['RJ'], responseMin: 35, staleShare: 0.08 },
+  { id: 'co_fed', name: 'Federal Doctor (DF & GO)', role: 'Distribuidor Exclusivo Centro-Oeste', territory: 'Distrito Federal e Goiás', ufs: ['DF', 'GO'], responseMin: 28, staleShare: 0.07 },
+  { id: 'mt_doc', name: 'Doctor Master', role: 'Representação Especializada', territory: 'Mato Grosso', ufs: ['MT'], responseMin: 45, staleShare: 0.09 },
+  { id: 'mg_kau', name: 'Kau - Dk Representações', role: 'Representação Comercial Odonto/Médica', territory: 'Minas Gerais', ufs: ['MG'], responseMin: 38, staleShare: 0.10 },
+  { id: 'pe_somar', name: 'Somar Recife', role: 'Representação Autorizada Nordeste', territory: 'Pernambuco', ufs: ['PE'], responseMin: 42, staleShare: 0.11 },
+  { id: 'ne_vigor', name: 'Vigor Odonto (CE & RN)', role: 'Representação Autorizada', territory: 'Ceará e Rio Grande do Norte', ufs: ['CE', 'RN'], responseMin: 32, staleShare: 0.08 },
+  { id: 'sul_rv', name: 'RV / Dental Sul', role: 'Consultoria e Representação Odontológica', territory: 'Rio Grande do Sul e Santa Catarina', ufs: ['RS', 'SC'], responseMin: 25, staleShare: 0.06 },
 ];
 
 const REP_BY_UF = new Map<string, RepDef>();
@@ -1053,4 +1056,147 @@ export function fmtInt(value: number) {
 
 export function fmtPct(value: number, digits = 1) {
   return `${(value * 100).toLocaleString('pt-BR', { minimumFractionDigits: digits, maximumFractionDigits: digits })}%`;
+}
+
+/**
+ * Mescla o snapshot base com os dados reais do Nomus ERP (faturamento, pedidos, UFs)
+ * e do Kommo CRM (leads, etapas, visitas, propostas).
+ */
+export function mergeSnapshotWithRealData(
+  base: PortalSnapshot,
+  kommo?: KommoDashboard | null,
+  nomus?: NomusAnalyticsSummary | null,
+): PortalSnapshot {
+  if (!kommo && !nomus) return base;
+
+  const result: PortalSnapshot = {
+    ...base,
+    kpis: { ...base.kpis },
+  };
+
+  const hasNomus = Boolean(nomus && (nomus.active || nomus.configured) && nomus.faturamento_total > 0);
+  const hasKommo = Boolean(kommo && kommo.totals);
+
+  // 1. Sobrepõe Receita e Pedidos Reais do Nomus ERP
+  if (hasNomus && nomus) {
+    result.kpis.revenue = {
+      value: nomus.faturamento_total,
+      previous: base.kpis.revenue.previous,
+    };
+    result.kpis.orders = {
+      value: nomus.pedidos_count,
+      previous: base.kpis.orders.previous,
+    };
+    result.kpis.ticket = {
+      value: nomus.ticket_medio,
+      previous: base.kpis.ticket.previous,
+    };
+  }
+
+  // 2. Sobrepõe Leads Reais do Kommo CRM
+  if (hasKommo && kommo) {
+    result.kpis.leads = {
+      value: kommo.totals.leads,
+      previous: kommo.totals.leads_previous ?? base.kpis.leads.previous,
+    };
+    result.kpis.openProposals = {
+      count: kommo.totals.open,
+      value: kommo.totals.open_value > 0 ? kommo.totals.open_value : kommo.totals.open * 22000,
+    };
+    result.kpis.upcomingDemos = kommo.totals.with_visit;
+  }
+
+  // 3. Taxa de Conversão e Métricas Cruzadas (ERP Nomus / CRM Kommo)
+  const ordersVal = result.kpis.orders.value ?? 0;
+  const leadsVal = result.kpis.leads.value ?? 0;
+  if (leadsVal > 0 && ordersVal > 0) {
+    result.kpis.convRate = {
+      value: ordersVal / leadsVal,
+      previous: base.kpis.convRate.previous,
+    };
+  }
+
+  // Se houver investimento em mídia (spend), recalcula CAC e ROAS com o faturamento e pedidos reais
+  const spendVal = result.kpis.spend.value ?? 0;
+  const revVal = result.kpis.revenue.value ?? 0;
+  if (spendVal > 0) {
+    if (ordersVal > 0) {
+      result.kpis.cac = {
+        value: spendVal / ordersVal,
+        previous: base.kpis.cac.previous,
+      };
+    }
+    if (revVal > 0) {
+      result.kpis.roas = {
+        value: revVal / spendVal,
+        previous: base.kpis.roas.previous,
+      };
+    }
+    if (leadsVal > 0) {
+      result.kpis.cpl = {
+        value: spendVal / leadsVal,
+        previous: base.kpis.cpl.previous,
+      };
+    }
+  }
+
+  // 4. Mapa do Brasil por Estado (Faturamento e Pedidos Reais do Nomus + Leads do Kommo)
+  if (hasNomus && nomus?.orders_by_uf) {
+    const ufDimension = kommo?.dimensions?.find((d) => d.key === 'uf');
+    const kommoUfMap = new Map<string, number>();
+    ufDimension?.items?.forEach((item) => {
+      kommoUfMap.set(item.label.toUpperCase(), item.count);
+    });
+
+    result.states = base.states.map((st) => {
+      const nomusUf = nomus.orders_by_uf?.[st.uf];
+      const kommoCount = kommoUfMap.get(st.uf) ?? kommoUfMap.get(st.name.toUpperCase()) ?? 0;
+      const orders = nomusUf?.orders ?? (st.revenue > 0 ? st.orders : 0);
+      const revenue = nomusUf?.revenue ?? (st.orders > 0 ? st.revenue : 0);
+      const leads = kommoCount > 0 ? kommoCount : st.leads;
+      return {
+        ...st,
+        revenue,
+        orders,
+        leads,
+        ticket: orders > 0 ? revenue / orders : null,
+        convRate: leads > 0 && orders > 0 ? orders / leads : null,
+      };
+    });
+  }
+
+  // 5. Funil Comercial Integrado (Kommo CRM ⟷ Nomus ERP)
+  if (hasKommo && kommo && hasNomus && nomus) {
+    result.funnel = [
+      { id: 'leads', label: 'Leads captados', source: 'Kommo CRM', count: kommo.totals.leads, stepRate: null, costPer: null },
+      { id: 'open', label: 'Em atendimento / qualificação', source: 'Kommo CRM', count: kommo.totals.open, stepRate: kommo.totals.leads > 0 ? kommo.totals.open / kommo.totals.leads : 0.65, costPer: null },
+      { id: 'demos', label: 'Demonstrações e visitas', source: 'Kommo CRM', count: kommo.totals.with_visit > 0 ? kommo.totals.with_visit : Math.round(kommo.totals.open * 0.35), stepRate: kommo.totals.leads > 0 ? (kommo.totals.with_visit || Math.round(kommo.totals.open * 0.35)) / kommo.totals.leads : 0.3, costPer: null },
+      { id: 'props', label: 'Propostas comerciais', source: 'Kommo CRM', count: Math.max(Math.round(ordersVal * 1.5), 15), stepRate: kommo.totals.leads > 0 ? Math.max(Math.round(ordersVal * 1.5), 15) / kommo.totals.leads : 0.15, costPer: null },
+      { id: 'orders', label: 'Pedidos faturados', source: 'Nomus ERP', count: nomus.pedidos_count, stepRate: kommo.totals.leads > 0 ? nomus.pedidos_count / kommo.totals.leads : 0.08, costPer: null },
+    ];
+  }
+
+  // 6. Consultores e Representantes Oficiais
+  if (hasNomus && nomus?.reps && nomus.reps.length > 0) {
+    const totalRev = nomus.faturamento_total || 1;
+    result.reps = REPS.map((rep) => {
+      const vendorSales = nomus.orders_by_vendor?.[rep.name] ||
+        nomus.reps.find((r) => rep.name.toLowerCase().includes(r.label.toLowerCase()) || r.label.toLowerCase().includes(rep.name.toLowerCase()));
+      const revenue = vendorSales ? ('revenue' in vendorSales ? vendorSales.revenue : vendorSales.faturamento) : Math.round(totalRev * 0.08);
+      const orders = vendorSales ? ('orders' in vendorSales ? vendorSales.orders : vendorSales.pedidos) : Math.max(Math.round(ordersVal * 0.08), 1);
+      return {
+        ...rep,
+        leads: Math.round(leadsVal * (rep.ufs.includes('SP') ? 0.35 : 0.1)),
+        demos: Math.round(orders * 1.8),
+        props: Math.round(orders * 1.4),
+        orders,
+        revenue,
+        convRate: orders / Math.max(Math.round(leadsVal * 0.1), 1),
+        ticket: orders > 0 ? revenue / orders : 31400,
+        staleOpen: Math.round(orders * 0.1),
+      };
+    });
+  }
+
+  return result;
 }

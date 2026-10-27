@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { AlertTriangle, CheckCircle2, CircleDashed } from "lucide-react";
+import { AlertTriangle, CheckCircle2, CircleDashed, Edit3, Lock, Unlock } from "lucide-react";
 import { fmtInt, fmtPct } from "../../data/univet/univetPortalData";
 import { formatDateTime } from "../../components/KommoRealDashboard";
 import { portalApi, type EgStatus } from "../../lib/portalApi";
@@ -128,8 +128,22 @@ export function ConnectionsChecklist({
   portalKey?: string;
   onUpdate?: () => void;
 }) {
-  const [googleId, setGoogleId] = useState(status.ads?.google_ads_id ?? "");
-  const [metaId, setMetaId] = useState(status.ads?.meta_ads_id ?? "");
+  const ADS_STORAGE_KEY = `bioma_ads_${slug}`;
+  const savedLocal = (() => {
+    try {
+      const raw = localStorage.getItem(ADS_STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  })();
+
+  const initialGoogle = status.ads?.google_ads_id || savedLocal?.googleId || "";
+  const initialMeta = status.ads?.meta_ads_id || savedLocal?.metaId || "";
+
+  const [googleId, setGoogleId] = useState(initialGoogle);
+  const [metaId, setMetaId] = useState(initialMeta);
+  const [isLocked, setIsLocked] = useState(Boolean(initialGoogle || initialMeta));
   const [saving, setSaving] = useState(false);
   const [saveMsg, setSaveMsg] = useState<string | null>(null);
 
@@ -145,7 +159,11 @@ export function ConnectionsChecklist({
         google_ads_id: googleId.trim(),
         meta_ads_id: metaId.trim(),
       });
-      setSaveMsg("Contas de anúncio salvas com sucesso!");
+      try {
+        localStorage.setItem(ADS_STORAGE_KEY, JSON.stringify({ googleId: googleId.trim(), metaId: metaId.trim() }));
+      } catch {}
+      setIsLocked(true);
+      setSaveMsg("Contas de anúncio vinculadas e salvas com sucesso!");
       onUpdate?.();
     } catch (err) {
       setSaveMsg(err instanceof Error ? err.message : "Erro ao salvar contas de anúncio.");
@@ -263,54 +281,145 @@ export function ConnectionsChecklist({
 
       {/* Formulário Direto de Cadastro de Google Ads e Meta Ads */}
       <div style={{ marginTop: 20, paddingTop: 16, borderTop: "1px solid var(--uv-line)" }}>
-        <h4 style={{ fontSize: 13, fontWeight: 700, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-          Configurar IDs de Google Ads e Meta Ads da Univet
-        </h4>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8, flexWrap: "wrap", gap: 8 }}>
+          <h4 style={{ fontSize: 13, fontWeight: 700, margin: 0, display: "flex", alignItems: "center", gap: 6 }}>
+            {isLocked ? <Lock size={14} style={{ color: "var(--uv-good)" }} /> : <Unlock size={14} style={{ color: "var(--uv-accent-ink)" }} />}
+            Configurar IDs de Google Ads e Meta Ads da Univet
+          </h4>
+          {isLocked ? (
+            <button
+              type="button"
+              className="uvBtnGhost"
+              style={{ fontSize: 12, padding: "3px 10px", display: "inline-flex", alignItems: "center", gap: 5 }}
+              onClick={() => {
+                setIsLocked(false);
+                setSaveMsg(null);
+              }}
+            >
+              <Edit3 size={12} /> Alterar IDs
+            </button>
+          ) : (initialGoogle || initialMeta) ? (
+            <button
+              type="button"
+              className="uvBtnGhost"
+              style={{ fontSize: 12, padding: "3px 10px" }}
+              onClick={() => {
+                setGoogleId(initialGoogle);
+                setMetaId(initialMeta);
+                setIsLocked(true);
+                setSaveMsg(null);
+              }}
+            >
+              Cancelar
+            </button>
+          ) : null}
+        </div>
+
         <p style={{ fontSize: 12, color: "var(--uv-text-2)", marginBottom: 12 }}>
-          Insira aqui diretamente as contas de anúncio para vincular ao BI e destravar o cálculo de CPL, CAC e ROAS.
+          {isLocked
+            ? "Contas vinculadas e ativas. Os IDs abaixo estão travados e sincronizados com os dados de atribuição do painel."
+            : "Insira aqui as contas de anúncio da Univet para vincular ao BI e destravar o cálculo de CPL, CAC e ROAS."}
         </p>
+
         <form onSubmit={handleSaveAds} style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
           <div style={{ flex: "1 1 200px" }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--uv-text-3)", marginBottom: 4 }}>
-              Google Ads Customer ID
+            <label style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 600, color: "var(--uv-text-3)", marginBottom: 4 }}>
+              <span>Google Ads Customer ID</span>
+              {googleConnected && <span style={{ color: "var(--uv-good)", fontSize: 10 }}>● Conectado</span>}
             </label>
             <input
               type="text"
+              disabled={isLocked || saving}
               className="uvInput"
-              style={{ width: "100%", padding: "7px 10px", fontSize: 13, background: "var(--uv-surface-2)", border: "1px solid var(--uv-line-strong)", borderRadius: 6, color: "var(--uv-text)" }}
+              style={{
+                width: "100%",
+                padding: "7px 10px",
+                fontSize: 13,
+                background: isLocked ? "rgba(255,255,255,0.03)" : "var(--uv-surface-2)",
+                border: isLocked ? "1px solid rgba(39, 174, 130, 0.3)" : "1px solid var(--uv-line-strong)",
+                borderRadius: 6,
+                color: isLocked ? "var(--uv-good)" : "var(--uv-text)",
+                cursor: isLocked ? "not-allowed" : "text",
+                fontFamily: "monospace",
+              }}
               placeholder="Ex: 123-456-7890"
               value={googleId}
               onChange={(e) => setGoogleId(e.target.value)}
             />
           </div>
           <div style={{ flex: "1 1 200px" }}>
-            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--uv-text-3)", marginBottom: 4 }}>
-              Meta Ads Account ID
+            <label style={{ display: "flex", justifyContent: "space-between", fontSize: 11, fontWeight: 600, color: "var(--uv-text-3)", marginBottom: 4 }}>
+              <span>Meta Ads Account ID</span>
+              {metaConnected && <span style={{ color: "var(--uv-good)", fontSize: 10 }}>● Conectado</span>}
             </label>
             <input
               type="text"
+              disabled={isLocked || saving}
               className="uvInput"
-              style={{ width: "100%", padding: "7px 10px", fontSize: 13, background: "var(--uv-surface-2)", border: "1px solid var(--uv-line-strong)", borderRadius: 6, color: "var(--uv-text)" }}
+              style={{
+                width: "100%",
+                padding: "7px 10px",
+                fontSize: 13,
+                background: isLocked ? "rgba(255,255,255,0.03)" : "var(--uv-surface-2)",
+                border: isLocked ? "1px solid rgba(39, 174, 130, 0.3)" : "1px solid var(--uv-line-strong)",
+                borderRadius: 6,
+                color: isLocked ? "var(--uv-good)" : "var(--uv-text)",
+                cursor: isLocked ? "not-allowed" : "text",
+                fontFamily: "monospace",
+              }}
               placeholder="Ex: act_1234567890"
               value={metaId}
               onChange={(e) => setMetaId(e.target.value)}
             />
           </div>
           <div>
-            <button
-              type="submit"
-              className="uvBtnPrimary"
-              disabled={saving}
-              style={{ padding: "8px 16px", fontSize: 13 }}
-            >
-              {saving ? "Salvando..." : "Salvar IDs de Anúncio"}
-            </button>
+            {!isLocked ? (
+              <button
+                type="submit"
+                className="uvBtnPrimary"
+                disabled={saving || (!googleId.trim() && !metaId.trim())}
+                style={{ padding: "8px 16px", fontSize: 13 }}
+              >
+                {saving ? "Salvando..." : "Salvar e Bloquear IDs"}
+              </button>
+            ) : (
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "7px 14px",
+                  borderRadius: 6,
+                  background: "rgba(39, 174, 130, 0.12)",
+                  border: "1px solid rgba(39, 174, 130, 0.3)",
+                  color: "var(--uv-good)",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                <CheckCircle2 size={13} /> Contas Conectadas e Ativas
+              </div>
+            )}
           </div>
         </form>
+
         {saveMsg && (
-          <p style={{ marginTop: 8, fontSize: 12, color: saveMsg.includes("sucesso") ? "var(--uv-good)" : "var(--uv-critical)" }}>
-            {saveMsg}
-          </p>
+          <div
+            style={{
+              marginTop: 10,
+              padding: "6px 12px",
+              borderRadius: 6,
+              background: saveMsg.includes("sucesso") ? "rgba(39, 174, 130, 0.1)" : "rgba(239, 68, 68, 0.1)",
+              border: `1px solid ${saveMsg.includes("sucesso") ? "rgba(39, 174, 130, 0.3)" : "rgba(239, 68, 68, 0.3)"}`,
+              fontSize: 12,
+              color: saveMsg.includes("sucesso") ? "var(--uv-good)" : "var(--uv-critical)",
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+          >
+            <CheckCircle2 size={13} /> {saveMsg}
+          </div>
         )}
       </div>
     </section>
