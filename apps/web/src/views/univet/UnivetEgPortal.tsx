@@ -420,9 +420,6 @@ export function UnivetEgPortal() {
             </form>
           )}
 
-          {data.kommo.configured && <CaptureHealth slug={SLUG} />}
-          <ConnectionsChecklist status={data} />
-
           {data.kommo.configured && (
             <>
               {/* Inteligência Operacional · Entidades & Cotas */}
