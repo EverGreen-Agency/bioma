@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.7.0...bioma-web-v1.7.1) (2026-10-27)
+
+
+### Bug Fixes
+
+* **univet:** liberar acesso automatico a operacao eg para usuarios au… ([976845c](https://github.com/EverGreen-Agency/bioma/commit/976845c3aad187348179e730005cb8dd6e90b48b))
+
 ## [1.7.0](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.6.0...bioma-web-v1.7.0) (2026-10-26)
 
 
