@@ -21,11 +21,14 @@ import { fmtBRL, fmtInt, fmtPct } from "../../data/univet/univetPortalData";
 import { formatDateTime } from "../../components/KommoRealDashboard";
 import {
   capturePortalKey,
+  isEgAuthorized,
   portalApi,
+  savePortalKey,
   type EgApplyProgress,
   type EgClassificationField,
   type EgClassifyProgress,
 } from "../../lib/portalApi";
+import { useCurrentUser } from "../../hooks/api/auth";
 import { UnivetPortalChrome } from "./UnivetRealPortal";
 import { CaptureHealth, ConnectionsChecklist } from "./UnivetEgInsights";
 import "./univet-portal.css";
@@ -79,7 +82,10 @@ function Tile({ label, value, caption }: { label: string; value: string; caption
 
 export function UnivetEgPortal() {
   const queryClient = useQueryClient();
-  const [key] = useState(() => capturePortalKey());
+  const { data: currentUser, isLoading: loadingUser } = useCurrentUser();
+  const [key, setKey] = useState(() => capturePortalKey());
+  const [keyInput, setKeyInput] = useState("");
+  const isAuthorized = Boolean(currentUser?.id || isEgAuthorized() || key);
   const status = useQuery({
     queryKey: ["eg-status", SLUG, key],
     queryFn: () => portalApi.status(SLUG, key),
@@ -299,17 +305,42 @@ export function UnivetEgPortal() {
   const progress = dedup.data?.progress;
   const dedupPageCount = dedup.data ? Math.max(1, Math.ceil(dedup.data.total_clusters / dedup.data.page_size)) : 1;
 
-  if (!key) {
+  if (!isAuthorized && !loadingUser) {
     return (
       <UnivetPortalChrome subtitle="Acesso Restrito">
         <section className="uvHero" style={{ textAlign: "center", padding: "60px 20px" }}>
           <h2 className="uvHeroHeadline">Área Restrita à Operação EverGreen</h2>
           <p className="uvHeroSubtitle" style={{ maxWidth: 540, margin: "12px auto 24px" }}>
-            Esta área contém ferramentas internas de leitura e escrita no CRM do cliente e exige autorização direta da agência.
+            Esta área é restrita à equipe interna da EverGreen. Faça login no Bioma ou digite a chave de acesso da agência.
           </p>
-          <div>
-            <a href="/portal/univet/v2" className="uvBtnPrimary" style={{ display: "inline-flex", textDecoration: "none" }}>
-              Acessar Painel de Dados Reais
+          <div style={{ display: "flex", gap: 10, justifyContent: "center", alignItems: "center", flexWrap: "wrap", marginTop: 16 }}>
+            <input
+              type="password"
+              placeholder="Chave de acesso da agência..."
+              value={keyInput}
+              onChange={(e) => setKeyInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && keyInput.trim()) {
+                  savePortalKey(keyInput.trim());
+                  setKey(keyInput.trim());
+                }
+              }}
+              style={{ padding: "8px 12px", borderRadius: 8, border: "1px solid var(--uv-line)", background: "var(--uv-surface-2)", color: "var(--uv-text)", width: 240 }}
+            />
+            <button
+              type="button"
+              className="uvBtnPrimary"
+              onClick={() => {
+                if (keyInput.trim()) {
+                  savePortalKey(keyInput.trim());
+                  setKey(keyInput.trim());
+                }
+              }}
+            >
+              Entrar com Chave
+            </button>
+            <a href="/" className="uvBtnSecondary" style={{ textDecoration: "none" }}>
+              Ir para Login do Bioma
             </a>
           </div>
         </section>

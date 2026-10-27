@@ -36,6 +36,23 @@ export function clearPortalKey() {
   sessionStorage.removeItem(KEY_STORAGE);
 }
 
+/** Verifica se há um usuário da EverGreen autenticado no Bioma (raiz). */
+export function isBiomaUser(): boolean {
+  try {
+    const raw = localStorage.getItem("bioma_user_cache");
+    if (!raw) return false;
+    const user = JSON.parse(raw);
+    return Boolean(user && (user.id || user.email));
+  } catch {
+    return false;
+  }
+}
+
+/** Autoriza acesso à Operação EG se o usuário estiver logado no Bioma ou tiver a chave. */
+export function isEgAuthorized(): boolean {
+  return isBiomaUser() || Boolean(capturePortalKey());
+}
+
 async function portalRequest<T>(path: string, init: { method?: string; body?: unknown; key?: string } = {}): Promise<T> {
   const headers: Record<string, string> = {};
   if (init.body !== undefined) headers["Content-Type"] = "application/json";
