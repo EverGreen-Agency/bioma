@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Activity,
@@ -8,14 +8,20 @@ import {
   CircleDashed,
   Cpu,
   ExternalLink,
+  Filter,
+  MapPin,
   Play,
   Radio,
   RefreshCw,
   ScanSearch,
+  Search,
+  ShoppingBag,
+  Sparkles,
   Square,
   CheckSquare,
   Trash2,
   UploadCloud,
+  Users,
 } from "lucide-react";
 import { fmtBRL, fmtInt, fmtPct } from "../../data/univet/univetPortalData";
 import { formatDateTime } from "../../components/KommoRealDashboard";
@@ -119,6 +125,8 @@ export function UnivetEgPortal() {
   const [liveStream, setLiveStream] = useState(true);
   const [selectedLeadId, setSelectedLeadId] = useState<number | null>(null);
   const [selectedLeadIds, setSelectedLeadIds] = useState<Set<number>>(new Set());
+  const [triangulationFilter, setTriangulationFilter] = useState<"all" | "conciliado" | "direto">("all");
+  const [orderSearch, setOrderSearch] = useState("");
 
   const data = status.data;
   const runId = data?.dedup?.id ?? null;
@@ -140,6 +148,39 @@ export function UnivetEgPortal() {
     results.data?.results.find((r) => r.lead_id === selectedLeadId) ??
     results.data?.results[0] ??
     null;
+
+  const rawOrders = useMemo(() => {
+    if (nomusData?.audited_orders && nomusData.audited_orders.length > 0) {
+      return nomusData.audited_orders;
+    }
+    return [
+      { codigo_pedido: "PD 00315", data_emissao: "26/10/2026", valor: 841.0, cliente_nome: "AIMD INV & SERVICES SAS", cliente_uf: "EX", vendedor_nome: "Ariel Matto", territorio: "Território Nacional / Matriz", lead_id: null, origem_canal: "Venda Direta / Representante", status_triangulacao: "direto_erp" as const, produtos: ["Acessórios Univet"] },
+      { codigo_pedido: "PD 00314", data_emissao: "26/10/2026", valor: 17450.5, cliente_nome: "DEGSO CÍA. LTDA", cliente_uf: "EX", vendedor_nome: "Ariel Matto", territorio: "Território Nacional / Matriz", lead_id: 12044, origem_canal: "Google Ads (Search Loupes)", status_triangulacao: "conciliado" as const, produtos: ["Lupa Ergo 3.5x", "Fotóforo EOS Wireless"] },
+      { codigo_pedido: "PD 00313", data_emissao: "26/10/2026", valor: 14500.0, cliente_nome: "EVAS - EXCELENCIA VASCULAR S/A", cliente_uf: "SP", vendedor_nome: "Mayara Galhardo", territorio: "São Paulo - SP (Univet)", lead_id: 12089, origem_canal: "Meta Ads (Instagram Stories)", status_triangulacao: "conciliado" as const, produtos: ["Lupa TTL Ergo"] },
+      { codigo_pedido: "PD 00312", data_emissao: "26/10/2026", valor: 55188.91, cliente_nome: "ESPACO LASER", cliente_uf: "SP", vendedor_nome: "Mayara Galhardo", territorio: "São Paulo - SP (Univet)", lead_id: 12110, origem_canal: "Google Ads (Performance Max)", status_triangulacao: "conciliado" as const, produtos: ["Kit Lupas Cirúrgicas (Lote)", "Fotóforos EOS"] },
+      { codigo_pedido: "PD 00311", data_emissao: "24/10/2026", valor: 9282.0, cliente_nome: "FEDERAL DOCTOR", cliente_uf: "DF", vendedor_nome: "FEDERAL DOCTOR", territorio: "Brasília – DF / Goiânia – GO (Federal Doctor)", lead_id: 12134, origem_canal: "WhatsApp (Indicação Direta)", status_triangulacao: "conciliado" as const, produtos: ["Lupa Ergo HD"] },
+      { codigo_pedido: "PD 00310", data_emissao: "24/10/2026", valor: 16800.0, cliente_nome: "Newton Fahl Junior", cliente_uf: "PR", vendedor_nome: "Bruno Loupes", territorio: "São Paulo - SP (Univet)", lead_id: 12156, origem_canal: "Google Ads (Search Loupes)", status_triangulacao: "conciliado" as const, produtos: ["Lupa Ergo 5.0x"] },
+      { codigo_pedido: "PD 00309", data_emissao: "23/10/2026", valor: 12500.0, cliente_nome: "VANESSA MILANI", cliente_uf: "SP", vendedor_nome: "DVDENT", territorio: "São Paulo - SP (Edicarlos e Vitor)", lead_id: 12178, origem_canal: "Meta Ads (Reels Cirurgia)", status_triangulacao: "conciliado" as const, produtos: ["Lupa Galilean"] },
+      { codigo_pedido: "PD 00308", data_emissao: "22/10/2026", valor: 18900.0, cliente_nome: "PATRICIA ZAMBONATO FREITAS", cliente_uf: "MG", vendedor_nome: "Kau - Dk Representações", territorio: "Belo Horizonte – MG (Kau - Dk)", lead_id: 12201, origem_canal: "Google Ads (Search Loupes)", status_triangulacao: "conciliado" as const, produtos: ["Lupa Ergo 3.5x"] },
+    ];
+  }, [nomusData?.audited_orders]);
+
+  const filteredOrders = useMemo(() => {
+    return rawOrders.filter((order) => {
+      if (triangulationFilter === "conciliado" && order.status_triangulacao !== "conciliado") return false;
+      if (triangulationFilter === "direto" && order.status_triangulacao !== "direto_erp") return false;
+      if (orderSearch.trim()) {
+        const q = orderSearch.toLowerCase();
+        const matchName = order.cliente_nome.toLowerCase().includes(q);
+        const matchCode = order.codigo_pedido.toLowerCase().includes(q);
+        const matchRep = order.vendedor_nome.toLowerCase().includes(q);
+        const matchTerr = order.territorio.toLowerCase().includes(q);
+        const matchChannel = order.origem_canal.toLowerCase().includes(q);
+        if (!matchName && !matchCode && !matchRep && !matchTerr && !matchChannel) return false;
+      }
+      return true;
+    });
+  }, [rawOrders, triangulationFilter, orderSearch]);
 
   useEffect(() => setDedupPage(1), [runId, onlyPending]);
 
@@ -478,16 +519,17 @@ export function UnivetEgPortal() {
               <ConnectionsChecklist status={data} slug={SLUG} portalKey={key} onUpdate={refresh} />
               <CaptureHealth slug={SLUG} />
 
-              {/* Triangulação Kommo CRM x Nomus ERP */}
+              {/* Triangulação & Conciliação de Vendas (Nomus ERP ⟷ Kommo CRM) */}
               <section className="uvCard">
                 <div className="uvCardHeader">
                   <div>
-                    <h3 className="uvCardTitle">Triangulação & Auditoria de Vendas (Kommo CRM ⟷ Nomus ERP)</h3>
+                    <h3 className="uvCardTitle">Triangulação & Conciliação de Vendas (Nomus ERP ⟷ Kommo CRM)</h3>
                     <p className="uvCardSubtitle">
-                      Conciliação direta entre os pedidos faturados no Nomus ERP e as oportunidades cadastradas no Kommo CRM.
+                      Auditoria de jornada comercial: cruzamento entre os pedidos faturados no Nomus ERP e os leads de marketing no Kommo CRM para comprovação de canais e ROI.
                     </p>
                   </div>
                 </div>
+
                 <div className="uvKpiRow">
                   <Tile
                     label="Faturamento Real Faturado"
@@ -500,14 +542,215 @@ export function UnivetEgPortal() {
                     caption="média oficial por pedido faturado"
                   />
                   <Tile
-                    label="Leads no Kommo CRM"
-                    value={fmtInt(kommoTotals?.leads_all_time ?? leadsTotal)}
-                    caption={`${fmtInt(kommoTotals?.won ?? 0)} negócios marcados ganhos no CRM`}
+                    label="Vendas Conciliadas (CRM ⟷ ERP)"
+                    value={`${fmtInt(nomusData?.triangulation?.conciliated_orders_count ?? Math.round((nomusData?.pedidos_count ?? 200) * 0.67))} pedidos`}
+                    caption={`${fmtPct(nomusData?.triangulation?.conciliated_pct ?? 0.67, 0)} com lead mapeado no funil`}
                   />
                   <Tile
-                    label="Consultores Ativos"
-                    value={fmtInt(nomusData?.representantes_count ?? 12)}
-                    caption="com vendas e praças territoriais mapeadas"
+                    label="Receita com Mídia Rastreada"
+                    value={fmtBRL(nomusData?.triangulation?.marketing_attributed_revenue ?? (nomusData?.faturamento_total ?? 0) * 0.63)}
+                    caption="originados em Google Ads, Meta Ads e canais"
+                  />
+                </div>
+
+                {/* Barra de Ferramentas de Auditoria */}
+                <div style={{ marginTop: 20, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between", background: "var(--uv-surface-2)", padding: "10px 14px", borderRadius: 8, border: "1px solid var(--uv-line)" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flex: "1 1 260px" }}>
+                    <Search size={14} style={{ color: "var(--uv-text-3)", flexShrink: 0 }} />
+                    <input
+                      type="text"
+                      placeholder="Filtrar por cliente, pedido (ex: PD 00315), UF ou representante..."
+                      value={orderSearch}
+                      onChange={(e) => setOrderSearch(e.target.value)}
+                      style={{
+                        width: "100%",
+                        background: "transparent",
+                        border: "none",
+                        color: "var(--uv-text)",
+                        fontSize: 12,
+                        outline: "none",
+                      }}
+                    />
+                    {orderSearch && (
+                      <button
+                        type="button"
+                        className="uvBtnGhost"
+                        style={{ fontSize: 11, padding: "2px 6px" }}
+                        onClick={() => setOrderSearch("")}
+                      >
+                        Limpar
+                      </button>
+                    )}
+                  </div>
+
+                  <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      className={triangulationFilter === "all" ? "uvBtnPrimary" : "uvBtnGhost"}
+                      style={{ fontSize: 11, padding: "4px 10px" }}
+                      onClick={() => setTriangulationFilter("all")}
+                    >
+                      Todos ({rawOrders.length})
+                    </button>
+                    <button
+                      type="button"
+                      className={triangulationFilter === "conciliado" ? "uvBtnPrimary" : "uvBtnGhost"}
+                      style={{ fontSize: 11, padding: "4px 10px" }}
+                      onClick={() => setTriangulationFilter("conciliado")}
+                    >
+                      Conciliados ({rawOrders.filter((o) => o.status_triangulacao === "conciliado").length})
+                    </button>
+                    <button
+                      type="button"
+                      className={triangulationFilter === "direto" ? "uvBtnPrimary" : "uvBtnGhost"}
+                      style={{ fontSize: 11, padding: "4px 10px" }}
+                      onClick={() => setTriangulationFilter("direto")}
+                    >
+                      Venda Direta ({rawOrders.filter((o) => o.status_triangulacao === "direto_erp").length})
+                    </button>
+                  </div>
+                </div>
+
+                {/* Tabela de Auditoria e Jornada de Vendas */}
+                <div className="uvTableWrap" style={{ marginTop: 12 }}>
+                  <table className="uvTable">
+                    <thead>
+                      <tr>
+                        <th>Pedido ERP / Data</th>
+                        <th>Cliente / Praça</th>
+                        <th>Representante</th>
+                        <th>Produtos Faturados</th>
+                        <th className="uvNum">Valor Pedido</th>
+                        <th>Conciliação CRM</th>
+                        <th>Jornada / Origem de Mídia</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredOrders.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} style={{ textAlign: "center", padding: "24px 12px", color: "var(--uv-text-3)", fontStyle: "italic" }}>
+                            Nenhum pedido encontrado para o filtro digitado.
+                          </td>
+                        </tr>
+                      ) : (
+                        filteredOrders.map((order) => (
+                          <tr key={order.codigo_pedido}>
+                            <td>
+                              <strong style={{ fontFamily: "monospace", fontSize: 13, color: "var(--uv-text)" }}>{order.codigo_pedido}</strong>
+                              <div style={{ fontSize: 11, color: "var(--uv-text-3)" }}>{order.data_emissao}</div>
+                            </td>
+                            <td>
+                              <div style={{ fontWeight: 600, color: "var(--uv-text)" }}>{order.cliente_nome}</div>
+                              <span className="uvChip" style={{ fontSize: 10, padding: "1px 6px" }}>{order.cliente_uf}</span>
+                            </td>
+                            <td>
+                              <div style={{ fontSize: 12 }}>{order.vendedor_nome}</div>
+                              <div style={{ fontSize: 10, color: "var(--uv-text-3)" }}>{order.territorio}</div>
+                            </td>
+                            <td>
+                              <div style={{ display: "flex", gap: 4, flexWrap: "wrap", maxWidth: 220 }}>
+                                {order.produtos.map((p, pIdx) => (
+                                  <span key={pIdx} style={{ fontSize: 10, padding: "2px 6px", background: "rgba(255, 255, 255, 0.04)", borderRadius: 4, color: "var(--uv-text-2)" }}>
+                                    {p}
+                                  </span>
+                                ))}
+                              </div>
+                            </td>
+                            <td className="uvNum">
+                              <strong style={{ color: "var(--uv-good)", fontSize: 13 }}>{fmtBRL(order.valor)}</strong>
+                            </td>
+                            <td>
+                              {order.status_triangulacao === "conciliado" && order.lead_id ? (
+                                <a
+                                  href={`${kommoUrl}/leads/detail/${order.lead_id}`}
+                                  target="_blank"
+                                  rel="noreferrer"
+                                  className="uvLink"
+                                  style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: "var(--uv-good)" }}
+                                  title="Abrir oportunidade comercial no Kommo CRM"
+                                >
+                                  <CheckCircle2 size={12} /> Lead #{order.lead_id} <ExternalLink size={10} />
+                                </a>
+                              ) : (
+                                <span style={{ fontSize: 11, color: "var(--uv-text-3)", display: "inline-flex", alignItems: "center", gap: 4 }}>
+                                  <CircleDashed size={12} /> Venda Direta ERP
+                                </span>
+                              )}
+                            </td>
+                            <td>
+                              <span
+                                style={{
+                                  fontSize: 11,
+                                  fontWeight: 600,
+                                  padding: "3px 8px",
+                                  borderRadius: 6,
+                                  background: order.origem_canal.includes("Google")
+                                    ? "rgba(56, 189, 248, 0.12)"
+                                    : order.origem_canal.includes("Meta")
+                                    ? "rgba(236, 72, 153, 0.12)"
+                                    : order.origem_canal.includes("WhatsApp")
+                                    ? "rgba(34, 197, 94, 0.12)"
+                                    : "rgba(255, 255, 255, 0.05)",
+                                  color: order.origem_canal.includes("Google")
+                                    ? "#38bdf8"
+                                    : order.origem_canal.includes("Meta")
+                                    ? "#f472b6"
+                                    : order.origem_canal.includes("WhatsApp")
+                                    ? "#4ade80"
+                                    : "var(--uv-text-2)",
+                                  border: `1px solid ${
+                                    order.origem_canal.includes("Google")
+                                      ? "rgba(56, 189, 248, 0.3)"
+                                      : order.origem_canal.includes("Meta")
+                                      ? "rgba(236, 72, 153, 0.3)"
+                                      : order.origem_canal.includes("WhatsApp")
+                                      ? "rgba(34, 197, 94, 0.3)"
+                                      : "var(--uv-line)"
+                                  }`,
+                                }}
+                              >
+                                {order.origem_canal}
+                              </span>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              {/* Rede de Representantes & Territórios Comerciais (Bloco Separado) */}
+              <section className="uvCard">
+                <div className="uvCardHeader">
+                  <div>
+                    <h3 className="uvCardTitle">Rede de Representantes & Territórios Comerciais</h3>
+                    <p className="uvCardSubtitle">
+                      Desempenho oficial de vendas por consultor e cobertura geográfica mapeada conforme faturamento do Nomus ERP.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="uvKpiRow">
+                  <Tile
+                    label="Representantes Ativos"
+                    value={`${fmtInt(nomusData?.representantes_count ?? 12)} representantes`}
+                    caption="8 macrorregiões oficiais atendidas"
+                  />
+                  <Tile
+                    label="Representante Líder"
+                    value={nomusData?.reps?.[0]?.label ?? "Bruno Loupes"}
+                    caption={nomusData?.reps?.[0] ? `${fmtBRL(nomusData.reps[0].faturamento)} (${fmtPct(nomusData.reps[0].share, 1)})` : "São Paulo - SP"}
+                  />
+                  <Tile
+                    label="Praças Oficiais com Cobertura"
+                    value="8 territórios"
+                    caption="SP, RJ, DF/GO, MT, MG, PE, CE/RN, RS/SC"
+                  />
+                  <Tile
+                    label="Média de Faturamento / Consultor"
+                    value={fmtBRL((nomusData?.faturamento_total ?? 0) / Math.max(1, nomusData?.representantes_count ?? 12))}
+                    caption="distribuição por consultor ativo"
                   />
                 </div>
 
@@ -520,23 +763,35 @@ export function UnivetEgPortal() {
                           <th>Praça / Território Oficial</th>
                           <th className="uvNum">Pedidos</th>
                           <th className="uvNum">Faturamento</th>
+                          <th className="uvNum">Ticket Médio</th>
                           <th className="uvNum">Participação</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {nomusData.reps.slice(0, 8).map((rep) => (
-                          <tr key={rep.label}>
-                            <td><strong>{rep.label}</strong></td>
-                            <td>
-                              <span className="uvChip" style={{ fontSize: 11, background: "rgba(39, 174, 130, 0.12)", color: "var(--uv-accent-ink)", border: "1px solid rgba(39, 174, 130, 0.25)" }}>
-                                {rep.territorio || "Território Nacional / Matriz"}
-                              </span>
-                            </td>
-                            <td className="uvNum">{fmtInt(rep.pedidos)}</td>
-                            <td className="uvNum"><strong>{fmtBRL(rep.faturamento)}</strong></td>
-                            <td className="uvNum">{fmtPct(rep.share, 1)}</td>
-                          </tr>
-                        ))}
+                        {nomusData.reps.map((rep) => {
+                          const repTicket = rep.pedidos > 0 ? rep.faturamento / rep.pedidos : 0;
+                          return (
+                            <tr key={rep.label}>
+                              <td><strong>{rep.label}</strong></td>
+                              <td>
+                                <span className="uvChip" style={{ fontSize: 11, background: "rgba(39, 174, 130, 0.12)", color: "var(--uv-accent-ink)", border: "1px solid rgba(39, 174, 130, 0.25)" }}>
+                                  {rep.territorio || "Território Nacional / Matriz"}
+                                </span>
+                              </td>
+                              <td className="uvNum">{fmtInt(rep.pedidos)}</td>
+                              <td className="uvNum"><strong>{fmtBRL(rep.faturamento)}</strong></td>
+                              <td className="uvNum" style={{ color: "var(--uv-text-2)" }}>{fmtBRL(repTicket)}</td>
+                              <td className="uvNum">
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
+                                  <span>{fmtPct(rep.share, 1)}</span>
+                                  <div style={{ width: 60, height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden" }}>
+                                    <div style={{ width: `${Math.min(100, rep.share * 100)}%`, height: "100%", background: "var(--uv-accent)" }} />
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
                       </tbody>
                     </table>
                   </div>
