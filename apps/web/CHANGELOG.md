@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.2](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.7.1...bioma-web-v1.7.2) (2026-10-27)
+
+
+### Bug Fixes
+
+* **univet:** remover renderizacao duplicada de conexoes e saude de ca… ([3623590](https://github.com/EverGreen-Agency/bioma/commit/3623590965777a289a56fa366a5d712d1fc987ab))
+
 ## [1.7.1](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.7.0...bioma-web-v1.7.1) (2026-10-27)
 
 
