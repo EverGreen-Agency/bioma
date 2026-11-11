@@ -46,6 +46,7 @@ import "./univet-portal.css";
 const SLUG = "univet";
 const DEDUP_BATCH = 15;
 const CLASSIFY_BATCH = 5;
+const STORAGE_KEY_EXCLUDED_REPS = "univet_eg_excluded_reps";
 
 const SOURCE_LABEL: Record<EgClassificationField["source"], string> = {
   modelo: "Laya AI",
@@ -128,6 +129,33 @@ export function UnivetEgPortal() {
   const [triangulationFilter, setTriangulationFilter] = useState<"all" | "conciliado" | "direto">("all");
   const [orderSearch, setOrderSearch] = useState("");
 
+  const [excludedReps, setExcludedReps] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_EXCLUDED_REPS);
+      if (!saved) return [];
+      const parsed = JSON.parse(saved);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY_EXCLUDED_REPS, JSON.stringify(excludedReps));
+    } catch {
+      // ignora quota/restrições de storage local
+    }
+  }, [excludedReps]);
+
+  const toggleExcludeRep = (repName: string) => {
+    setExcludedReps((prev) =>
+      prev.includes(repName) ? prev.filter((n) => n !== repName) : [...prev, repName]
+    );
+  };
+
+  const clearExcludedReps = () => setExcludedReps([]);
+
   const data = status.data;
   const runId = data?.dedup?.id ?? null;
   const dedup = useQuery({
@@ -154,19 +182,20 @@ export function UnivetEgPortal() {
       return nomusData.audited_orders;
     }
     return [
-      { codigo_pedido: "PD 00315", data_emissao: "26/10/2026", valor: 841.0, cliente_nome: "AIMD INV & SERVICES SAS", cliente_uf: "EX", vendedor_nome: "Ariel Matto", territorio: "Território Nacional / Matriz", lead_id: null, origem_canal: "Venda Direta / Representante", status_triangulacao: "direto_erp" as const, produtos: ["Acessórios Univet"] },
-      { codigo_pedido: "PD 00314", data_emissao: "26/10/2026", valor: 17450.5, cliente_nome: "DEGSO CÍA. LTDA", cliente_uf: "EX", vendedor_nome: "Ariel Matto", territorio: "Território Nacional / Matriz", lead_id: 12044, origem_canal: "Google Ads (Search Loupes)", status_triangulacao: "conciliado" as const, produtos: ["Lupa Ergo 3.5x", "Fotóforo EOS Wireless"] },
+      { codigo_pedido: "PD 00315", data_emissao: "26/10/2026", valor: 841.0, cliente_nome: "AIMD INV & SERVICES SAS", cliente_uf: "EX", vendedor_nome: "Bruno Loupes", territorio: "São Paulo - SP (Univet Matriz)", lead_id: null, origem_canal: "Venda Direta / Representante", status_triangulacao: "direto_erp" as const, produtos: ["Acessórios Univet"] },
+      { codigo_pedido: "PD 00314", data_emissao: "26/10/2026", valor: 17450.5, cliente_nome: "DEGSO CÍA. LTDA", cliente_uf: "EX", vendedor_nome: "Bruno Loupes", territorio: "São Paulo - SP (Univet Matriz)", lead_id: 12044, origem_canal: "Google Ads (Search Loupes)", status_triangulacao: "conciliado" as const, produtos: ["Lupa Ergo 3.5x", "Fotóforo EOS Wireless"] },
       { codigo_pedido: "PD 00313", data_emissao: "26/10/2026", valor: 14500.0, cliente_nome: "EVAS - EXCELENCIA VASCULAR S/A", cliente_uf: "SP", vendedor_nome: "Mayara Galhardo", territorio: "São Paulo - SP (Univet)", lead_id: 12089, origem_canal: "Meta Ads (Instagram Stories)", status_triangulacao: "conciliado" as const, produtos: ["Lupa TTL Ergo"] },
       { codigo_pedido: "PD 00312", data_emissao: "26/10/2026", valor: 55188.91, cliente_nome: "ESPACO LASER", cliente_uf: "SP", vendedor_nome: "Mayara Galhardo", territorio: "São Paulo - SP (Univet)", lead_id: 12110, origem_canal: "Google Ads (Performance Max)", status_triangulacao: "conciliado" as const, produtos: ["Kit Lupas Cirúrgicas (Lote)", "Fotóforos EOS"] },
       { codigo_pedido: "PD 00311", data_emissao: "24/10/2026", valor: 9282.0, cliente_nome: "FEDERAL DOCTOR", cliente_uf: "DF", vendedor_nome: "FEDERAL DOCTOR", territorio: "Brasília – DF / Goiânia – GO (Federal Doctor)", lead_id: 12134, origem_canal: "WhatsApp (Indicação Direta)", status_triangulacao: "conciliado" as const, produtos: ["Lupa Ergo HD"] },
       { codigo_pedido: "PD 00310", data_emissao: "24/10/2026", valor: 16800.0, cliente_nome: "Newton Fahl Junior", cliente_uf: "PR", vendedor_nome: "Bruno Loupes", territorio: "São Paulo - SP (Univet)", lead_id: 12156, origem_canal: "Google Ads (Search Loupes)", status_triangulacao: "conciliado" as const, produtos: ["Lupa Ergo 5.0x"] },
-      { codigo_pedido: "PD 00309", data_emissao: "23/10/2026", valor: 12500.0, cliente_nome: "VANESSA MILANI", cliente_uf: "SP", vendedor_nome: "DVDENT", territorio: "São Paulo - SP (Edicarlos e Vitor)", lead_id: 12178, origem_canal: "Meta Ads (Reels Cirurgia)", status_triangulacao: "conciliado" as const, produtos: ["Lupa Galilean"] },
+      { codigo_pedido: "PD 00309", data_emissao: "23/10/2026", valor: 12500.0, cliente_nome: "VANESSA MILANI", cliente_uf: "SP", vendedor_nome: "DVDENT", territorio: "São Paulo - SP (DVDENT / Edicarlos)", lead_id: 12178, origem_canal: "Meta Ads (Reels Cirurgia)", status_triangulacao: "conciliado" as const, produtos: ["Lupa Galilean"] },
       { codigo_pedido: "PD 00308", data_emissao: "22/10/2026", valor: 18900.0, cliente_nome: "PATRICIA ZAMBONATO FREITAS", cliente_uf: "MG", vendedor_nome: "Kau - Dk Representações", territorio: "Belo Horizonte – MG (Kau - Dk)", lead_id: 12201, origem_canal: "Google Ads (Search Loupes)", status_triangulacao: "conciliado" as const, produtos: ["Lupa Ergo 3.5x"] },
     ];
   }, [nomusData?.audited_orders]);
 
   const filteredOrders = useMemo(() => {
     return rawOrders.filter((order) => {
+      if (excludedReps.includes(order.vendedor_nome)) return false;
       if (triangulationFilter === "conciliado" && order.status_triangulacao !== "conciliado") return false;
       if (triangulationFilter === "direto" && order.status_triangulacao !== "direto_erp") return false;
       if (orderSearch.trim()) {
@@ -180,7 +209,50 @@ export function UnivetEgPortal() {
       }
       return true;
     });
-  }, [rawOrders, triangulationFilter, orderSearch]);
+  }, [rawOrders, excludedReps, triangulationFilter, orderSearch]);
+
+  const allRepNames = useMemo(() => {
+    const set = new Set<string>();
+    if (nomusData?.reps && nomusData.reps.length > 0) {
+      nomusData.reps.forEach((r) => set.add(r.label));
+    }
+    rawOrders.forEach((o) => {
+      if (o.vendedor_nome) set.add(o.vendedor_nome);
+    });
+    return Array.from(set).sort((a, b) => a.localeCompare(b, "pt-BR"));
+  }, [nomusData?.reps, rawOrders]);
+
+  const visibleReps = useMemo(() => {
+    if (nomusData?.reps && nomusData.reps.length > 0) {
+      return nomusData.reps.filter((r) => !excludedReps.includes(r.label));
+    }
+    const map = new Map<string, { label: string; territorio: string; faturamento: number; pedidos: number; share: number }>();
+    rawOrders.forEach((o) => {
+      const rep = map.get(o.vendedor_nome) || {
+        label: o.vendedor_nome,
+        territorio: o.territorio,
+        faturamento: 0,
+        pedidos: 0,
+        share: 0,
+      };
+      rep.faturamento += o.valor;
+      rep.pedidos += 1;
+      map.set(o.vendedor_nome, rep);
+    });
+    const total = Array.from(map.values()).reduce((acc, r) => acc + r.faturamento, 0);
+    return Array.from(map.values())
+      .map((r) => ({ ...r, share: total > 0 ? r.faturamento / total : 0 }))
+      .filter((r) => !excludedReps.includes(r.label))
+      .sort((a, b) => b.faturamento - a.faturamento);
+  }, [nomusData?.reps, rawOrders, excludedReps]);
+
+  const visibleFaturamentoTotal = useMemo(() => {
+    return visibleReps.reduce((acc, r) => acc + r.faturamento, 0);
+  }, [visibleReps]);
+
+  const visiblePedidosTotal = useMemo(() => {
+    return visibleReps.reduce((acc, r) => acc + r.pedidos, 0);
+  }, [visibleReps]);
 
   useEffect(() => setDedupPage(1), [runId, onlyPending]);
 
@@ -734,13 +806,26 @@ export function UnivetEgPortal() {
                 <div className="uvKpiRow">
                   <Tile
                     label="Representantes Ativos"
-                    value={`${fmtInt(nomusData?.representantes_count ?? 12)} representantes`}
-                    caption="8 macrorregiões oficiais atendidas"
+                    value={`${fmtInt(visibleReps.length)} representantes`}
+                    caption={
+                      excludedReps.length > 0
+                        ? `${excludedReps.length} representante(s) excluído(s)`
+                        : "cobertura oficial de Loupes"
+                    }
                   />
                   <Tile
                     label="Representante Líder"
-                    value={nomusData?.reps?.[0]?.label ?? "Bruno Loupes"}
-                    caption={nomusData?.reps?.[0] ? `${fmtBRL(nomusData.reps[0].faturamento)} (${fmtPct(nomusData.reps[0].share, 1)})` : "São Paulo - SP"}
+                    value={visibleReps[0]?.label ?? "Nenhum"}
+                    caption={
+                      visibleReps[0]
+                        ? `${fmtBRL(visibleReps[0].faturamento)} (${fmtPct(
+                            visibleFaturamentoTotal > 0
+                              ? visibleReps[0].faturamento / visibleFaturamentoTotal
+                              : visibleReps[0].share,
+                            1
+                          )})`
+                        : "Sem dados"
+                    }
                   />
                   <Tile
                     label="Praças Oficiais com Cobertura"
@@ -749,12 +834,90 @@ export function UnivetEgPortal() {
                   />
                   <Tile
                     label="Média de Faturamento / Consultor"
-                    value={fmtBRL((nomusData?.faturamento_total ?? 0) / Math.max(1, nomusData?.representantes_count ?? 12))}
-                    caption="distribuição por consultor ativo"
+                    value={fmtBRL(
+                      visibleReps.length > 0
+                        ? visibleFaturamentoTotal / visibleReps.length
+                        : 0
+                    )}
+                    caption="distribuição por consultor visível"
                   />
                 </div>
 
-                {nomusData?.reps && nomusData.reps.length > 0 && (
+                {/* Filtro Interativo de Representantes (com persistência em localStorage) */}
+                <div
+                  className="uvRepFilterBar"
+                  style={{
+                    marginTop: 16,
+                    padding: "12px 14px",
+                    background: "var(--uv-surface-2)",
+                    borderRadius: 8,
+                    border: "1px solid var(--uv-line)",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      flexWrap: "wrap",
+                      gap: 10,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <Filter size={14} style={{ color: "var(--uv-accent-ink)" }} />
+                      <strong style={{ fontSize: 12 }}>
+                        Filtro de Exclusão de Representantes:
+                      </strong>
+                      <span style={{ fontSize: 11, color: "var(--uv-text-3)" }}>
+                        {visibleReps.length} de {allRepNames.length} visíveis
+                        {excludedReps.length > 0 && ` (${excludedReps.length} excluído(s))`}
+                      </span>
+                    </div>
+                    {excludedReps.length > 0 && (
+                      <button
+                        type="button"
+                        className="uvBtnGhost"
+                        style={{ fontSize: 11, padding: "2px 8px" }}
+                        onClick={clearExcludedReps}
+                      >
+                        Restaurar Todos
+                      </button>
+                    )}
+                  </div>
+                  <div className="uvChipsRow">
+                    {allRepNames.map((name) => {
+                      const isExcluded = excludedReps.includes(name);
+                      return (
+                        <button
+                          key={name}
+                          type="button"
+                          className="uvChipBtn"
+                          style={{
+                            opacity: isExcluded ? 0.45 : 1,
+                            textDecoration: isExcluded ? "line-through" : "none",
+                            borderColor: isExcluded
+                              ? "rgba(239, 68, 68, 0.4)"
+                              : "var(--uv-accent-ink)",
+                            background: isExcluded
+                              ? "rgba(239, 68, 68, 0.08)"
+                              : "var(--uv-surface-3)",
+                          }}
+                          onClick={() => toggleExcludeRep(name)}
+                          title={
+                            isExcluded
+                              ? `Clique para incluir ${name}`
+                              : `Clique para excluir ${name}`
+                          }
+                        >
+                          {name} {isExcluded ? "✕" : "✓"}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {visibleReps.length > 0 ? (
                   <div className="uvTableWrap" style={{ marginTop: 16 }}>
                     <table className="uvTable">
                       <thead>
@@ -768,8 +931,12 @@ export function UnivetEgPortal() {
                         </tr>
                       </thead>
                       <tbody>
-                        {nomusData.reps.map((rep) => {
+                        {visibleReps.map((rep) => {
                           const repTicket = rep.pedidos > 0 ? rep.faturamento / rep.pedidos : 0;
+                          const repShare =
+                            visibleFaturamentoTotal > 0
+                              ? rep.faturamento / visibleFaturamentoTotal
+                              : rep.share;
                           return (
                             <tr key={rep.label}>
                               <td><strong>{rep.label}</strong></td>
@@ -783,9 +950,9 @@ export function UnivetEgPortal() {
                               <td className="uvNum" style={{ color: "var(--uv-text-2)" }}>{fmtBRL(repTicket)}</td>
                               <td className="uvNum">
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 8 }}>
-                                  <span>{fmtPct(rep.share, 1)}</span>
+                                  <span>{fmtPct(repShare, 1)}</span>
                                   <div style={{ width: 60, height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 3, overflow: "hidden" }}>
-                                    <div style={{ width: `${Math.min(100, rep.share * 100)}%`, height: "100%", background: "var(--uv-accent)" }} />
+                                    <div style={{ width: `${Math.min(100, repShare * 100)}%`, height: "100%", background: "var(--uv-accent)" }} />
                                   </div>
                                 </div>
                               </td>
@@ -794,6 +961,10 @@ export function UnivetEgPortal() {
                         })}
                       </tbody>
                     </table>
+                  </div>
+                ) : (
+                  <div style={{ marginTop: 16, padding: "16px", textAlign: "center", color: "var(--uv-text-3)", fontSize: 12 }}>
+                    Todos os representantes estão excluídos pelo filtro. Clique em "Restaurar Todos" acima para reexibir.
                   </div>
                 )}
               </section>

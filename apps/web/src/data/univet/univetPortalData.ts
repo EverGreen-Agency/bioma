@@ -139,7 +139,7 @@ export interface RepDef {
 
 export const REPS: RepDef[] = [
   { id: 'sp_univet', name: 'Univet Matriz (Bruno & Mayara)', role: 'Especialista Clínico / Consultoria Óptica', territory: 'São Paulo (Capital, Litoral e Interior)', ufs: ['SP'], responseMin: 18, staleShare: 0.05 },
-  { id: 'sp_dvdent', name: 'DVDENT (Edicarlos & Vitor)', role: 'Representação Comercial Autorizada', territory: 'São Paulo (Grande SP e Interior)', ufs: ['SP'], responseMin: 22, staleShare: 0.06 },
+  { id: 'sp_dvdent', name: 'DVDENT (Edicarlos)', role: 'Representação Comercial Autorizada', territory: 'São Paulo (Grande SP e Interior)', ufs: ['SP'], responseMin: 22, staleShare: 0.06 },
   { id: 'rj_wfaria', name: 'W de Faria Representações', role: 'Representação Comercial Autorizada', territory: 'Rio de Janeiro e Região', ufs: ['RJ'], responseMin: 35, staleShare: 0.08 },
   { id: 'co_fed', name: 'Federal Doctor (DF & GO)', role: 'Distribuidor Exclusivo Centro-Oeste', territory: 'Distrito Federal e Goiás', ufs: ['DF', 'GO'], responseMin: 28, staleShare: 0.07 },
   { id: 'mt_doc', name: 'Doctor Master', role: 'Representação Especializada', territory: 'Mato Grosso', ufs: ['MT'], responseMin: 45, staleShare: 0.09 },
@@ -150,7 +150,14 @@ export const REPS: RepDef[] = [
 ];
 
 const REP_BY_UF = new Map<string, RepDef>();
-REPS.forEach((rep) => rep.ufs.forEach((uf) => REP_BY_UF.set(uf, rep)));
+REPS.forEach((rep) => {
+  rep.ufs.forEach((uf) => {
+    // Preserva a primeira atribuição declarada (ex: sp_univet para 'SP')
+    if (!REP_BY_UF.has(uf)) {
+      REP_BY_UF.set(uf, rep);
+    }
+  });
+});
 
 export type CreativeFormat = 'search' | 'imagem' | 'video' | 'carrossel';
 
