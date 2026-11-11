@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.9.0](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.8.0...bioma-web-v1.9.0) (2026-11-11)
+
+
+### Features
+
+* **univet:** filtro de exclusao de representantes na aba eg e expurg… ([b79658b](https://github.com/EverGreen-Agency/bioma/commit/b79658bdc42e4cafbcb3032b78eacb49703afb34))
+
 ## [1.8.0](https://github.com/EverGreen-Agency/bioma/compare/bioma-web-v1.7.2...bioma-web-v1.8.0) (2026-10-27)
 
 
