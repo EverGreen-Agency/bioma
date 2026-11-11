@@ -105,6 +105,7 @@ class NomusAuditedOrder(BaseModel):
     origem_canal: str = "Venda Direta / Representante"
     status_triangulacao: str = "conciliado"  # "conciliado" | "direto_erp"
     produtos: list[str] = []
+    match_method: str | None = None
 
 
 class NomusTriangulationStats(BaseModel):
