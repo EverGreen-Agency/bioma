@@ -178,19 +178,7 @@ export function UnivetEgPortal() {
     null;
 
   const rawOrders = useMemo(() => {
-    if (nomusData?.audited_orders && nomusData.audited_orders.length > 0) {
-      return nomusData.audited_orders;
-    }
-    return [
-      { codigo_pedido: "PD 00315", data_emissao: "26/10/2026", valor: 841.0, cliente_nome: "AIMD INV & SERVICES SAS", cliente_uf: "EX", vendedor_nome: "Bruno Loupes", territorio: "São Paulo - SP (Univet Matriz)", lead_id: null, origem_canal: "Venda Direta / Representante", status_triangulacao: "direto_erp" as const, produtos: ["Acessórios Univet"] },
-      { codigo_pedido: "PD 00314", data_emissao: "26/10/2026", valor: 17450.5, cliente_nome: "DEGSO CÍA. LTDA", cliente_uf: "EX", vendedor_nome: "Bruno Loupes", territorio: "São Paulo - SP (Univet Matriz)", lead_id: 12044, origem_canal: "Google Ads (Search Loupes)", status_triangulacao: "conciliado" as const, produtos: ["Lupa Ergo 3.5x", "Fotóforo EOS Wireless"] },
-      { codigo_pedido: "PD 00313", data_emissao: "26/10/2026", valor: 14500.0, cliente_nome: "EVAS - EXCELENCIA VASCULAR S/A", cliente_uf: "SP", vendedor_nome: "Mayara Galhardo", territorio: "São Paulo - SP (Univet)", lead_id: 12089, origem_canal: "Meta Ads (Instagram Stories)", status_triangulacao: "conciliado" as const, produtos: ["Lupa TTL Ergo"] },
-      { codigo_pedido: "PD 00312", data_emissao: "26/10/2026", valor: 55188.91, cliente_nome: "ESPACO LASER", cliente_uf: "SP", vendedor_nome: "Mayara Galhardo", territorio: "São Paulo - SP (Univet)", lead_id: 12110, origem_canal: "Google Ads (Performance Max)", status_triangulacao: "conciliado" as const, produtos: ["Kit Lupas Cirúrgicas (Lote)", "Fotóforos EOS"] },
-      { codigo_pedido: "PD 00311", data_emissao: "24/10/2026", valor: 9282.0, cliente_nome: "FEDERAL DOCTOR", cliente_uf: "DF", vendedor_nome: "FEDERAL DOCTOR", territorio: "Brasília – DF / Goiânia – GO (Federal Doctor)", lead_id: 12134, origem_canal: "WhatsApp (Indicação Direta)", status_triangulacao: "conciliado" as const, produtos: ["Lupa Ergo HD"] },
-      { codigo_pedido: "PD 00310", data_emissao: "24/10/2026", valor: 16800.0, cliente_nome: "Newton Fahl Junior", cliente_uf: "PR", vendedor_nome: "Bruno Loupes", territorio: "São Paulo - SP (Univet)", lead_id: 12156, origem_canal: "Google Ads (Search Loupes)", status_triangulacao: "conciliado" as const, produtos: ["Lupa Ergo 5.0x"] },
-      { codigo_pedido: "PD 00309", data_emissao: "23/10/2026", valor: 12500.0, cliente_nome: "VANESSA MILANI", cliente_uf: "SP", vendedor_nome: "DVDENT", territorio: "São Paulo - SP (DVDENT / Edicarlos)", lead_id: 12178, origem_canal: "Meta Ads (Reels Cirurgia)", status_triangulacao: "conciliado" as const, produtos: ["Lupa Galilean"] },
-      { codigo_pedido: "PD 00308", data_emissao: "22/10/2026", valor: 18900.0, cliente_nome: "PATRICIA ZAMBONATO FREITAS", cliente_uf: "MG", vendedor_nome: "Kau - Dk Representações", territorio: "Belo Horizonte – MG (Kau - Dk)", lead_id: 12201, origem_canal: "Google Ads (Search Loupes)", status_triangulacao: "conciliado" as const, produtos: ["Lupa Ergo 3.5x"] },
-    ];
+    return nomusData?.audited_orders ?? [];
   }, [nomusData?.audited_orders]);
 
   const filteredOrders = useMemo(() => {
@@ -701,7 +689,9 @@ export function UnivetEgPortal() {
                       {filteredOrders.length === 0 ? (
                         <tr>
                           <td colSpan={7} style={{ textAlign: "center", padding: "24px 12px", color: "var(--uv-text-3)", fontStyle: "italic" }}>
-                            Nenhum pedido encontrado para o filtro digitado.
+                            {rawOrders.length === 0
+                              ? "Nenhum pedido faturado registrado no Nomus ERP para o período consultado."
+                              : "Nenhum pedido encontrado para o filtro digitado."}
                           </td>
                         </tr>
                       ) : (
@@ -733,16 +723,23 @@ export function UnivetEgPortal() {
                             </td>
                             <td>
                               {order.status_triangulacao === "conciliado" && order.lead_id ? (
-                                <a
-                                  href={`${kommoUrl}/leads/detail/${order.lead_id}`}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="uvLink"
-                                  style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: "var(--uv-good)" }}
-                                  title="Abrir oportunidade comercial no Kommo CRM"
-                                >
-                                  <CheckCircle2 size={12} /> Lead #{order.lead_id} <ExternalLink size={10} />
-                                </a>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                                  <a
+                                    href={`${kommoUrl}/leads/detail/${order.lead_id}`}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="uvLink"
+                                    style={{ display: "inline-flex", alignItems: "center", gap: 4, fontSize: 12, fontWeight: 600, color: "var(--uv-good)" }}
+                                    title="Abrir oportunidade comercial no Kommo CRM"
+                                  >
+                                    <CheckCircle2 size={12} /> Lead #{order.lead_id} <ExternalLink size={10} />
+                                  </a>
+                                  {order.match_method && order.match_method !== "direto_erp" && (
+                                    <span style={{ fontSize: 10, color: "var(--uv-text-3)", paddingLeft: 16 }}>
+                                      via {order.match_method === "cpf_cnpj" ? "CPF/CNPJ" : order.match_method === "telefone" ? "Telefone/WhatsApp" : order.match_method === "email" ? "E-mail" : order.match_method === "nome_territorio" ? "Nome e UF" : "Território"}
+                                    </span>
+                                  )}
+                                </div>
                               ) : (
                                 <span style={{ fontSize: 11, color: "var(--uv-text-3)", display: "inline-flex", alignItems: "center", gap: 4 }}>
                                   <CircleDashed size={12} /> Venda Direta ERP

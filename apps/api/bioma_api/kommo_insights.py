@@ -50,13 +50,18 @@ _FIELD_TO_DIMENSION = {name: key for key, _label, names in DIMENSIONS for name i
 
 
 def compact_lead(lead: dict[str, Any]) -> dict[str, Any]:
-    """Reduz um lead da API v4 ao que o painel agrega, sem dado pessoal."""
+    """Reduz um lead da API v4 ao que o painel agrega e chaves para conciliação ERP."""
+    import re
     dims: dict[str, list[str]] = {}
     utm: dict[str, str] = {}
+    phones: list[str] = []
+    emails: list[str] = []
+    documents: list[str] = []
     has_visit = False
 
     for entry in lead.get("custom_fields_values") or []:
         name = normalize(entry.get("field_name"))
+        code = str(entry.get("field_code") or "").upper()
         values = [str(v.get("value")).strip() for v in entry.get("values") or [] if v.get("value") not in (None, "")]
         if not values:
             continue
@@ -66,6 +71,38 @@ def compact_lead(lead: dict[str, Any]) -> dict[str, Any]:
             has_visit = True
         elif name in _UTM_FIELDS:
             utm[_UTM_FIELDS[name]] = values[0]
+        elif code == "PHONE" or name in ("telefone", "whatsapp", "celular", "phone", "contato"):
+            for v in values:
+                digits = re.sub(r"\D", "", v)
+                if len(digits) >= 8:
+                    phones.append(digits)
+        elif code == "EMAIL" or name in ("email", "e-mail"):
+            for v in values:
+                clean_email = v.strip().lower()
+                if "@" in clean_email:
+                    emails.append(clean_email)
+        elif code in ("CPF", "CNPJ") or name in ("cpf", "cnpj", "cpf/cnpj", "documento"):
+            for v in values:
+                digits = re.sub(r"\D", "", v)
+                if len(digits) in (11, 14):
+                    documents.append(digits)
+
+    # Extrai também dos contatos embutidos se disponíveis
+    for c in (lead.get("_embedded") or {}).get("contacts") or []:
+        for entry in c.get("custom_fields_values") or []:
+            name = normalize(entry.get("field_name"))
+            code = str(entry.get("field_code") or "").upper()
+            values = [str(v.get("value")).strip() for v in entry.get("values") or [] if v.get("value") not in (None, "")]
+            if code == "PHONE" or name in ("telefone", "whatsapp", "celular", "phone", "contato"):
+                for v in values:
+                    digits = re.sub(r"\D", "", v)
+                    if len(digits) >= 8:
+                        phones.append(digits)
+            elif code == "EMAIL" or name in ("email", "e-mail"):
+                for v in values:
+                    clean_email = v.strip().lower()
+                    if "@" in clean_email:
+                        emails.append(clean_email)
 
     loss_reasons = (lead.get("_embedded") or {}).get("loss_reason") or []
     return {
@@ -80,6 +117,9 @@ def compact_lead(lead: dict[str, Any]) -> dict[str, Any]:
         "dims": dims,
         "has_visit": has_visit,
         "utm": utm,
+        "phones": list(dict.fromkeys(phones)),
+        "emails": list(dict.fromkeys(emails)),
+        "documents": list(dict.fromkeys(documents)),
     }
 
 

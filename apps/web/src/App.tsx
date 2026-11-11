@@ -12,7 +12,7 @@ import { PrivacyView } from "./views/PrivacyView";
 import { PublicProposalView } from "./views/PublicProposalView";
 import { UnivetExecutivePortal } from "./views/univet/UnivetExecutivePortal";
 import { UnivetEgPortal } from "./views/univet/UnivetEgPortal";
-import { UnivetRealPortal } from "./views/univet/UnivetRealPortal";
+import { UnivetRealPortal, isPresentationTabEnabled } from "./views/univet/UnivetRealPortal";
 import { ArtifactModal } from "./components/ArtifactModal";
 import { CopilotPanel } from "./components/CopilotPanel";
 import { Sidebar } from "./components/Sidebar";
@@ -103,6 +103,7 @@ export function App() {
     const portalPath = location.pathname.replace(/\/$/, "");
     if (portalPath === "/portal/univet/eg" || portalPath === "/univet/eg") return <UnivetEgPortal />;
     if (portalPath === "/portal/univet/v2" || portalPath === "/univet/v2") return <UnivetRealPortal />;
+    if (!isPresentationTabEnabled()) return <UnivetRealPortal />;
     return <UnivetExecutivePortal />;
   }
 

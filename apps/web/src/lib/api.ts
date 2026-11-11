@@ -738,6 +738,7 @@ export type NomusAuditedOrder = {
   origem_canal: string;
   status_triangulacao: "conciliado" | "direto_erp";
   produtos: string[];
+  match_method?: string | null;
 };
 
 export type NomusTriangulationStats = {

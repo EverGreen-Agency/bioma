@@ -66,7 +66,7 @@ def _fetch_crm(subdomain: str, token: str) -> tuple[list[dict], list[dict]]:
         for page in range(1, _MAX_PAGES + 1):
             response = client.get(
                 f"{base_url}/api/v4/leads",
-                params={"limit": _PAGE_SIZE, "page": page, "with": "loss_reason"},
+                params={"limit": _PAGE_SIZE, "page": page, "with": "contacts,loss_reason"},
             )
             if response.status_code == 204:
                 break

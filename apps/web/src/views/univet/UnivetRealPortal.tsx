@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { KommoDashboardBody, PeriodSegmented, formatDateTime } from "../../components/KommoRealDashboard";
 import { isEgAuthorized, portalApi } from "../../lib/portalApi";
@@ -6,6 +6,27 @@ import { useCurrentUser } from "../../hooks/api/auth";
 import "./univet-portal.css";
 
 const SLUG = "univet";
+
+export const STORAGE_KEY_SHOW_PRESENTATION = "univet_show_presentation_tab";
+
+export function isPresentationTabEnabled(): boolean {
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get("presentation") === "1") return true;
+    if (urlParams.get("presentation") === "0") return false;
+    return localStorage.getItem(STORAGE_KEY_SHOW_PRESENTATION) === "true";
+  } catch {
+    return false;
+  }
+}
+
+export function setPresentationTabEnabled(enabled: boolean): void {
+  try {
+    localStorage.setItem(STORAGE_KEY_SHOW_PRESENTATION, enabled ? "true" : "false");
+  } catch {
+    // ignora erros de quota/localStorage
+  }
+}
 
 const PORTALS = [
   { path: "/portal/univet", label: "Apresentação" },
@@ -18,10 +39,30 @@ export function UnivetPortalChrome({ subtitle, children, actions }: { subtitle: 
   const { data: user } = useCurrentUser();
   const [authorized] = useState(() => isEgAuthorized());
   const canSeeEg = Boolean(user?.id || authorized);
+  const [showPresentation, setShowPresentation] = useState(() => isPresentationTabEnabled());
   const current = window.location.pathname.replace(/\/$/, "");
   const normalizedCurrent = current.startsWith("/portal") ? current : `/portal${current}`;
-  // Operação EG só aparece para quem está logado no Bioma ou acessa com chave de agência EverGreen
-  const portals = canSeeEg ? PORTALS : PORTALS.filter((p) => p.path !== "/portal/univet/eg");
+
+  const togglePresentation = () => {
+    const next = !showPresentation;
+    setShowPresentation(next);
+    setPresentationTabEnabled(next);
+    if (!next && (normalizedCurrent === "/portal/univet" || normalizedCurrent === "/univet")) {
+      window.location.href = "/portal/univet/v2";
+    }
+  };
+
+  // Portais visíveis filtrados por permissão e pela flag de apresentação (mock)
+  const portals = useMemo(() => {
+    let list = PORTALS;
+    if (!showPresentation) {
+      list = list.filter((p) => p.path !== "/portal/univet");
+    }
+    if (!canSeeEg) {
+      list = list.filter((p) => p.path !== "/portal/univet/eg");
+    }
+    return list;
+  }, [showPresentation, canSeeEg]);
 
   // Destrava e garante scroll nativo livre da página inteira
   useEffect(() => {
@@ -55,6 +96,17 @@ export function UnivetPortalChrome({ subtitle, children, actions }: { subtitle: 
               </a>
             ))}
           </nav>
+          {canSeeEg && (
+            <button
+              type="button"
+              className="uvBtnGhost"
+              onClick={togglePresentation}
+              title={showPresentation ? "Ocultar aba de demonstração/mock" : "Exibir aba de demonstração/mock"}
+              style={{ fontSize: 11, padding: "4px 8px", cursor: "pointer", border: "1px dashed var(--uv-border-subtle, rgba(255,255,255,0.2))" }}
+            >
+              {showPresentation ? "Apresentação: ON" : "Apresentação: OFF"}
+            </button>
+          )}
           {actions}
         </div>
       </header>
