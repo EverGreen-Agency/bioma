@@ -107,7 +107,7 @@ def get_nomus_status() -> dict[str, Any]:
 _REPRESENTANTE_TERRITORIOS: dict[str, str] = {
     "bruno": "São Paulo - SP (Univet)",
     "mayara": "São Paulo - SP (Univet)",
-    "dvdent": "São Paulo - SP (Edicarlos e Vitor)",
+    "dvdent": "São Paulo - SP (DVDENT / Edicarlos)",
     "edicarlos": "São Paulo - SP (DVDENT)",
     "vitor": "São Paulo - SP (DVDENT)",
     "faria": "Rio de Janeiro – RJ (W de Faria)",
@@ -122,6 +122,29 @@ _REPRESENTANTE_TERRITORIOS: dict[str, str] = {
 }
 
 
+# Representantes da linha Univet Safety (EPIs / Óculos industriais) que não
+# devem constar nas operações, territórios e relatórios da linha Loupes.
+SAFETY_REPRESENTATIVE_IDS: set[int] = {140, 142}
+SAFETY_REPRESENTATIVE_KEYWORDS: tuple[str, ...] = ("ariel", "victor de souza", "victor pereira")
+
+
+def is_safety_representative(rep_id: int | None = None, rep_name: str | None = None) -> bool:
+    """Retorna True se o representante pertencer à linha Safety (Ariel, Victor).
+
+    Atenção à distinção: 'victor' (Safety) é diferente de 'vitor' (Loupes / DVDENT em SP).
+    """
+    if rep_id is not None and rep_id in SAFETY_REPRESENTATIVE_IDS:
+        return True
+    if rep_name:
+        norm = rep_name.lower().strip()
+        if "ariel" in norm:
+            return True
+        # Verifica 'victor' com 'c', preservando 'vitor' (DVDENT)
+        if "victor" in norm:
+            return True
+    return False
+
+
 def _infer_territory(name: str) -> str:
     norm = name.lower()
     for key, territory in _REPRESENTANTE_TERRITORIOS.items():
@@ -130,8 +153,16 @@ def _infer_territory(name: str) -> str:
     return "Território Nacional / Matriz"
 
 
-def compute_nomus_analytics(days: int = 0, leads: list[dict[str, Any]] | None = None) -> dict[str, Any]:
-    """Calcula faturamento, pedidos e triangulação com o Kommo CRM."""
+def compute_nomus_analytics(
+    days: int = 0,
+    leads: list[dict[str, Any]] | None = None,
+    exclude_safety: bool = True,
+) -> dict[str, Any]:
+    """Calcula faturamento, pedidos e triangulação com o Kommo CRM.
+
+    Por padrão (exclude_safety=True), exclui representantes e pedidos da linha
+    Safety (Victor e Ariel), isolando a performance de Loupes.
+    """
     data = get_cached_nomus_data()
     pedidos = data["pedidos"]
     reps_map = {r.get("id"): r.get("nome") for r in data["representantes"] if r.get("id")}
@@ -146,8 +177,16 @@ def compute_nomus_analytics(days: int = 0, leads: list[dict[str, Any]] | None = 
     for p in pedidos:
         # Usa data de emissão ou data de criação
         emissao_ts = _parse_nomus_timestamp(p.get("dataEmissao")) or _parse_nomus_timestamp(p.get("dataCriacao"))
-        if emissao_ts is None or emissao_ts >= cutoff_ts:
-            filtered_pedidos.append(p)
+        if emissao_ts is not None and emissao_ts < cutoff_ts:
+            continue
+
+        if exclude_safety:
+            vid = p.get("idPessoaVendedor")
+            vendedor_nome = reps_map.get(vid, "")
+            if is_safety_representative(vid, vendedor_nome):
+                continue
+
+        filtered_pedidos.append(p)
 
     faturamento_total = 0.0
     rep_faturamento: Counter[str] = Counter()
